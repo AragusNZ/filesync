@@ -10,8 +10,6 @@ _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_CMD_ROOT/../lib/runtime.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
 
-filesync_scripts_dir_from_state_config
-
 REPO_FILTER=""
 FILE_FRAGMENT=""
 DRY_RUN=false
@@ -149,12 +147,6 @@ for ((i=0; i<FILES_COUNT; i++)); do
   if ! sync_entry_allowed "$ROW_STATUS"; then
     echo -e "${YELLOW}⊘ $LOCAL_PATH: Skipped (sync_status=${ROW_STATUS:-unset}, not selected)${NC}"
     STATUS_SKIPPED=$((STATUS_SKIPPED + 1))
-    continue
-  fi
-
-  if [[ "$LOCAL_PATH" == "$SCRIPTS_DIR"/* ]]; then
-    echo -e "${YELLOW}⚠ $LOCAL_PATH: Skipped (scripts excluded from standard sync)${NC}"
-    SKIPPED=$((SKIPPED + 1))
     continue
   fi
 

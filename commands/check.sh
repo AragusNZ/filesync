@@ -13,8 +13,6 @@ filesync_command_init "${BASH_SOURCE[0]}"
 col_st() { file_sync_status_color "$1"; }
 rst() { file_sync_color_reset; }
 
-filesync_scripts_dir_from_state_config
-
 REPO_FILTER=""
 FILE_FRAGMENT=""
 while [[ $# -gt 0 ]]; do
@@ -108,10 +106,6 @@ for ((i=0; i<FILES_COUNT; i++)); do
     echo -e "${RED}✗ $LOCAL_PATH: Invalid repo_file_path in config${NC}"
     BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
     append_patch "$(jq -nc --argjson idx "$i" --arg now "$NOW_ISO" '{i: $idx, last_check_at: $now, sync_status: "error_invalid_repo_path"}')"
-    continue
-  fi
-
-  if [[ "$LOCAL_PATH" == "$SCRIPTS_DIR"/* ]]; then
     continue
   fi
 

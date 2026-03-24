@@ -12,8 +12,6 @@ A single JSON object. It is **shallow-merged** over `share/defaults/config.defau
 - **`path_mode`**: `"relative"` (default) or `"absolute"`.
   - **relative**: each repo’s `path` in `repos` is resolved under the project root.
   - **absolute**: `path` is used as a filesystem path as-is (must exist as a directory).
-- Optional keys used by sync/check (see default JSON): `scripts_local_directory`, `scripts_repo_directory`, `scripts_repo`, `exclude_scripts`, etc.
-
 Avoid deep nesting in `config.json` unless you document a merge policy; the merge is **one level** (`jq` `*`).
 
 ### `repos.json`

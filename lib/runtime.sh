@@ -27,8 +27,6 @@ filesync_command_init() {
   # shellcheck source=/dev/null
   source "$FILESYNC_PKG_ROOT/lib/deps.sh"
   # shellcheck source=/dev/null
-  source "$FILESYNC_PKG_ROOT/lib/scripts-dir.sh"
-  # shellcheck source=/dev/null
   source "$FILESYNC_PKG_ROOT/lib/resolve.sh"
   # shellcheck source=/dev/null
   source "$FILESYNC_PKG_ROOT/lib/config-merge.sh"
