@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+# Re-couple an uncoupled mapping: refresh clone from master, clear status, run check for that file.
+
+set -euo pipefail
+
+_CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/runtime.sh"
+filesync_command_init "${BASH_SOURCE[0]}"
+
+trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+if [[ $# -lt 1 ]]; then
+  echo -e "${RED}Usage: filesync attach <local_path1> [local_path2 ...]${NC}"
+  exit 1
+fi
+
+declare -a LOCAL_PATHS=()
+declare -A SEEN_LOCAL_PATHS=()
+for arg in "$@"; do
+  [[ -n "$arg" ]] || { echo -e "${RED}Error: empty local_path${NC}"; exit 1; }
+  [[ -z "${SEEN_LOCAL_PATHS[$arg]:-}" ]] || { echo -e "${RED}Error: duplicate '$arg'${NC}"; exit 1; }
+  SEEN_LOCAL_PATHS["$arg"]=1
+  LOCAL_PATHS+=("$arg")
+done
+
+if ! command -v jq &>/dev/null; then
+  echo -e "${RED}jq is required.${NC}"
+  exit 1
+fi
+
+attach_one() {
+  local local_path="$1"
+  local full="$PROJECT_ROOT/$local_path"
+
+  if ! jq -e --arg local "$local_path" 'any(.local_path == $local)' "$FILESYNC_FILES_FILE" &>/dev/null; then
+    echo -e "${RED}Error: No mapping for local_path '$local_path'.${NC}"
+    return 1
+  fi
+
+  local prior
+  prior="$(jq -r --arg local "$local_path" '.[] | select(.local_path == $local) | .sync_status // ""' "$FILESYNC_FILES_FILE")"
+  if [[ "$prior" != "uncoupled" ]]; then
+    echo -e "${YELLOW}Skip:${NC} $local_path is not uncoupled (sync_status=${prior:-unset}); nothing to attach."
+    return 0
+  fi
+
+  local repo_file_path repo_name
+  repo_file_path="$(jq -r --arg local "$local_path" '.[] | select(.local_path == $local) | .repo_file_path // ""' "$FILESYNC_FILES_FILE")"
+  repo_name="$(jq -r --arg local "$local_path" '.[] | select(.local_path == $local) | .repo_name // ""' "$FILESYNC_FILES_FILE")"
+
+  if [[ -z "$repo_name" || "$repo_name" == "null" ]]; then
+    echo -e "${RED}Error: Missing repo_name for $local_path${NC}"
+    return 1
+  fi
+
+  local repo_root
+  if ! repo_root=$(filesync_get_repo_dir "$repo_name"); then
+    echo -e "${RED}Error: Could not resolve repo $repo_name${NC}"
+    return 1
+  fi
+
+  local full_master="$repo_root/$repo_file_path"
+  if [[ ! -f "$full_master" ]]; then
+    echo -e "${RED}Error: Master file not found: $repo_name/$repo_file_path${NC}"
+    return 1
+  fi
+
+  jq --arg local "$local_path" 'map(if .local_path == $local then del(.sync_status) else . end)' \
+    "$FILESYNC_FILES_FILE" > "${FILESYNC_FILES_FILE}.tmp"
+  mv "${FILESYNC_FILES_FILE}.tmp" "$FILESYNC_FILES_FILE"
+
+  mkdir -p "$(dirname "$full")"
+  render_clone_from_master_file "$full_master" "$repo_file_path" "$repo_name" "$full"
+  echo -e "${GREEN}Re-coupled from master:${NC} $local_path"
+
+  bash "$_CMD_ROOT/check.sh" --repo="$repo_name" --file="$local_path"
+}
+
+for lp in "${LOCAL_PATHS[@]}"; do
+  attach_one "$lp" || exit 1
+done

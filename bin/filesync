@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+RED='\033[0;31m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+print_header() {
+  echo -e "${CYAN}=============================================${NC}"
+  echo -e "${CYAN}$1${NC}"
+  echo -e "${CYAN}=============================================${NC}"
+}
+
+help() {
+  echo "filesync — sync tracked files with master repos (.filesync/ config)"
+  echo ""
+  echo "  filesync sync [--repo=name] [--file=path_fragment] [--dry-run|--force|--all|...]"
+  echo "  filesync check [--repo=name] [--file=path_fragment]"
+  echo "  filesync repos [--repo=name]   # list repos"
+  echo "  filesync list [--repo=name]    # list file mappings + status"
+  echo "  filesync enable | disable"
+  echo "  filesync add <repo> <path_in_repo>[:<local_path>] ... [--also=repo1,repo2]"
+  echo "           # path_in_repo = file under the repo checkout; omit :local_path if project uses the same path"
+  echo "  filesync add-master <repo> <local_path>[:<path_in_repo>] ... [--also=...]"
+  echo "           # promote local file to master; omit :path_in_repo if master path matches local_path"
+  echo "  filesync push <local_path> [local_path ...]"
+  echo "  filesync detach <local_path> [local_path ...]"
+  echo "  filesync attach <local_path> [local_path ...]   # re-couple uncoupled rows + check each"
+  echo "  filesync rm <local_path> [local_path ...]"
+  echo "  filesync repo                 # interactive add repo"
+  echo "  filesync repo-edit <name> [--rename=] [--path=] [--url=] [--branch=]"
+  echo "           # edit repos.json; rename updates repo_name in all files.json rows"
+  echo "  filesync help"
+  echo ""
+  echo "Config: <project>/.filesync/config.json, repos.json, files.json (see filesync/docs/)"
+  echo "Composer: composer filesync …  (pass '--' before flags)"
+}
+
+main() {
+  if [[ $# -eq 0 ]]; then
+    help
+    exit 0
+  fi
+  local sub="$1"
+  shift
+
+  case "$sub" in
+    sync)
+      print_header "filesync: sync from master"
+      exec "$ROOT/commands/sync.sh" "$@"
+      ;;
+    check)
+      print_header "filesync: check"
+      exec "$ROOT/commands/check.sh" "$@"
+      ;;
+    add)
+      exec "$ROOT/commands/add.sh" "$@"
+      ;;
+    add-master)
+      exec "$ROOT/commands/add-master.sh" "$@"
+      ;;
+    push)
+      exec "$ROOT/commands/push.sh" "$@"
+      ;;
+    detach)
+      exec "$ROOT/commands/detach.sh" "$@"
+      ;;
+    attach)
+      exec "$ROOT/commands/attach.sh" "$@"
+      ;;
+    rm|remove)
+      exec "$ROOT/commands/rm.sh" "$@"
+      ;;
+    repo)
+      exec "$ROOT/commands/add-repo.sh" "$@"
+      ;;
+    repo-edit)
+      exec "$ROOT/commands/edit-repo.sh" "$@"
+      ;;
+    repos)
+      exec "$ROOT/commands/list.sh" repos "$@"
+      ;;
+    list)
+      exec "$ROOT/commands/list.sh" list "$@"
+      ;;
+    enable)
+      exec "$ROOT/commands/enable-disable.sh" enable
+      ;;
+    disable)
+      exec "$ROOT/commands/enable-disable.sh" disable
+      ;;
+    help|-h|--help)
+      help
+      ;;
+    *)
+      if [[ "$sub" == -* ]]; then
+        print_header "filesync: sync from master"
+        exec "$ROOT/commands/sync.sh" "$sub" "$@"
+      fi
+      echo -e "${RED}Unknown subcommand: $sub${NC}" >&2
+      help >&2
+      exit 1
+      ;;
+  esac
+}
+
+main "$@"
