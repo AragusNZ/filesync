@@ -6,27 +6,44 @@ Bash tooling to map and sync files across multiple git checkouts (e.g. a monorep
 
 - `bash`, `jq`, `git`
 
+## Installing via Composer
+
+From your PHP project root:
+
+```bash
+composer require aragusnz/filesync
+```
+
+Composer installs the package under `vendor/aragusnz/filesync` and links the CLI to `vendor/bin/filesync`.
+
 ## Usage
 
 From the **project root** (a directory that contains `.filesync/`):
 
 ```bash
-composer filesync check
-composer filesync check --repo=emissions --file=HealthStatusService.php
-composer filesync sync --file=Foo.php --dry-run
-composer filesync list --repo=emissions
-composer filesync list
-
-# Or invoke the entrypoint directly:
-bash filesync/bin/filesync check
-bash filesync/bin/filesync sync --dry-run
+vendor/bin/filesync check
+vendor/bin/filesync check --repo=emissions --file=HealthStatusService.php
+vendor/bin/filesync sync --file=Foo.php --dry-run
+vendor/bin/filesync list --repo=emissions
+vendor/bin/filesync list
 ```
+
+Using Composer’s binary resolution (same effect when `vendor/bin` is not on your `PATH`):
+
+```bash
+composer exec filesync -- check
+composer exec filesync -- sync --dry-run
+```
+
+Optional project script (in your app’s `composer.json`): `"scripts": { "filesync": "filesync" }` — then run `composer run filesync -- check` (note `--` before arguments).
+
+**Direct / git checkout:** invoke `bin/filesync` from this tree (or `bash path/to/filesync/bin/filesync …`).
 
 Subcommands: `check`, `sync`, `list`, `repos`, `add`, `add-master`, `push`, `detach`, `attach`, `rm`, `repo`, `repo-edit`, `enable`, `disable`.
 
 **`check`**, **`sync`**, **`repos`**, and **`list`** accept optional **`--repo=name`** (repo `name`). **`check`** and **`sync`** also accept **`--file=fragment`**: substring match on `local_path` or `repo_file_path` (case-sensitive). Combine **`--repo`** and **`--file`** to scope to one repo and matching paths.
 
-Run `bash filesync/bin/filesync` with no arguments for a short usage line.
+Run `vendor/bin/filesync` (or `bin/filesync`) with no arguments for a short usage line.
 
 ## Layout
 
@@ -55,4 +72,8 @@ Discovery: walk parents from the current working directory until a directory con
 
 ## Embedding
 
-This tree may be a nested git repo, submodule, or subtree in a consumer. Point scripts at `filesync/bin/filesync` relative to that consumer’s root.
+This tree may be installed via Composer, or used as a nested git repo, submodule, or subtree. Point automation at `vendor/bin/filesync` (Composer) or `filesync/bin/filesync` relative to your project.
+
+## Packagist
+
+After tagging releases (e.g. `v1.0.0`), submit the repository URL at [packagist.org/packages/submit](https://packagist.org/packages/submit) and connect the Git webhook for automatic updates.

@@ -3,24 +3,14 @@
 
 set -euo pipefail
 
-_PKG="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+_CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
-source "$_PKG/lib/resolve.sh"
-filesync_resolve_or_exit
-
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+source "$_CMD_ROOT/../lib/runtime.sh"
+filesync_command_init_lite "${BASH_SOURCE[0]}"
 
 repos="$FILESYNC_DIR/$FILESYNC_REPOS_NAME"
 if [[ ! -f "$repos" ]]; then
   echo -e "${RED}Missing $repos — create it (JSON array of repos).${NC}"
-  exit 1
-fi
-
-if ! command -v jq &>/dev/null; then
-  echo -e "${RED}jq is required.${NC}"
   exit 1
 fi
 

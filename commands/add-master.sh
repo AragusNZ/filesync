@@ -12,11 +12,6 @@ filesync_command_init "${BASH_SOURCE[0]}"
 
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
 if [[ $# -lt 2 ]]; then
   echo -e "${RED}Usage: filesync add-master <target_repo> <local_path> ... [--also=repo1,repo2]${NC}"
   exit 1
@@ -63,11 +58,6 @@ for local_path in "${LOCAL_PATHS[@]}"; do
   fi
   SEEN_LOCAL_PATHS["$local_path"]=1
 done
-
-if ! command -v jq &>/dev/null; then
-  echo -e "${RED}jq is required.${NC}"
-  exit 1
-fi
 
 if ! jq -e --arg n "$TARGET_REPO" 'any(.name == $n)' "$FILESYNC_REPOS_FILE" &>/dev/null; then
   echo -e "${RED}Error: Target repo '$TARGET_REPO' is not in repos.${NC}"

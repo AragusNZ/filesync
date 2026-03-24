@@ -10,10 +10,6 @@ filesync_command_init "${BASH_SOURCE[0]}"
 
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-NC='\033[0m'
-
 if [[ $# -lt 1 ]]; then
   echo -e "${RED}Usage: filesync rm <local_path1> [local_path2 ...]${NC}"
   exit 1
@@ -27,11 +23,6 @@ for arg in "$@"; do
   SEEN_LOCAL_PATHS["$arg"]=1
   LOCAL_PATHS+=("$arg")
 done
-
-if ! command -v jq &>/dev/null; then
-  echo -e "${RED}jq is required.${NC}"
-  exit 1
-fi
 
 remove_one() {
   local local_path="$1"

@@ -10,16 +10,6 @@ filesync_command_init "${BASH_SOURCE[0]}"
 
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
-RED='\033[0;31m'
-CYAN='\033[0;36m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
-if ! command -v jq &>/dev/null; then
-  echo -e "${RED}jq is required.${NC}"
-  exit 1
-fi
-
 sub="${1:-}"
 if [[ -z "$sub" ]]; then
   echo -e "${RED}Usage: filesync repos [--repo=name] | filesync list [--repo=name]${NC}"

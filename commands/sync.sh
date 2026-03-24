@@ -10,20 +10,7 @@ _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_CMD_ROOT/../lib/runtime.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
 
-FALLBACK_SCRIPTS_DIR=".scripts"
-SCRIPTS_DIR="$FALLBACK_SCRIPTS_DIR"
-val=$(jq -r '.scripts_local_directory // .scripts_repo_directory // ""' "$CONFIG_FILE" 2>/dev/null)
-if [[ -n "$val" ]] && [[ "$val" != "null" ]]; then
-  SCRIPTS_DIR="$val"
-fi
-SCRIPTS_DIR="${SCRIPTS_DIR:-$FALLBACK_SCRIPTS_DIR}"
-
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-WHITE='\033[0;37m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+filesync_scripts_dir_from_state_config
 
 REPO_FILTER=""
 FILE_FRAGMENT=""
@@ -91,11 +78,6 @@ cleanup_sync_exit() {
   rm -rf "${FILESYNC_CLONED_TEMP_DIRS[@]:-}"
 }
 trap cleanup_sync_exit EXIT
-
-if ! command -v jq &> /dev/null; then
-  echo -e "${RED}Error: jq is required.${NC}"
-  exit 1
-fi
 
 if ! jq -e '.file_sync_enabled == true' "$CONFIG_FILE" &>/dev/null; then
   echo -e "${YELLOW}filesync is disabled. Run 'filesync enable' to enable.${NC}"

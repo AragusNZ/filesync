@@ -10,11 +10,6 @@ filesync_command_init "${BASH_SOURCE[0]}"
 
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-CYAN='\033[0;36m'
-NC='\033[0m'
-
 REPO_CURRENT=""
 RENAME=""
 PATH_NEW=""
@@ -64,11 +59,6 @@ fi
 
 if [[ -z "$RENAME" ]] && [[ -z "$PATH_NEW" ]] && [[ -z "$URL_NEW" ]] && [[ -z "$BRANCH_NEW" ]]; then
   echo -e "${RED}Error: specify at least one of --rename, --path, --url, --branch${NC}"
-  exit 1
-fi
-
-if ! command -v jq &>/dev/null; then
-  echo -e "${RED}jq is required.${NC}"
   exit 1
 fi
 

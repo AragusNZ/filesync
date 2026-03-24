@@ -3,15 +3,10 @@
 
 set -euo pipefail
 
-_PKG="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+_CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
-source "$_PKG/lib/resolve.sh"
-filesync_resolve_or_exit
-
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+source "$_CMD_ROOT/../lib/runtime.sh"
+filesync_command_init_lite "${BASH_SOURCE[0]}"
 
 if [[ $# -lt 1 ]]; then
   echo -e "${RED}Usage: filesync enable | filesync disable${NC}"
@@ -20,11 +15,6 @@ fi
 
 mkdir -p "$FILESYNC_DIR"
 cfg="$FILESYNC_DIR/$FILESYNC_CONFIG_NAME"
-
-if ! command -v jq &>/dev/null; then
-  echo -e "${RED}jq is required.${NC}"
-  exit 1
-fi
 
 if [[ ! -f "$cfg" ]]; then
   echo '{}' > "$cfg"

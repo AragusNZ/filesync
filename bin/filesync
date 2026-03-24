@@ -2,10 +2,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-
-RED='\033[0;31m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+# shellcheck source=/dev/null
+source "$ROOT/lib/colors.sh"
 
 print_header() {
   echo -e "${CYAN}=============================================${NC}"
@@ -34,8 +32,8 @@ help() {
   echo "           # edit repos.json; rename updates repo_name in all files.json rows"
   echo "  filesync help"
   echo ""
-  echo "Config: <project>/.filesync/config.json, repos.json, files.json (see filesync/docs/)"
-  echo "Composer: composer filesync …  (pass '--' before flags)"
+  echo "Config: <project>/.filesync/config.json, repos.json, files.json (see docs/configuration.md in this package)"
+  echo "Composer: vendor/bin/filesync …  or: composer exec filesync -- <args>"
 }
 
 main() {
