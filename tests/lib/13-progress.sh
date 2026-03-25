@@ -27,25 +27,46 @@ else
 fi
 
 _cfg="${LIB_TEST_TMP}/prog_cfg.json"
-printf '%s\n' '{"show_progress": false}' >"$_cfg"
-if jq -e '.show_progress == false' "$_cfg" >/dev/null; then
-	ok "config can express show_progress false"
+printf '%s\n' '{"progress_display":"hidden"}' >"$_cfg"
+if jq -e '.progress_display == "hidden"' "$_cfg" >/dev/null; then
+	ok "config can express progress_display hidden"
 else
-	bad "jq show_progress false"
+	bad "jq progress_display hidden"
 fi
 
-line="$(COLUMNS=60 filesync_progress_format_line 5 10)"
+line="$(FILESYNC_PROGRESS_STYLE=bar COLUMNS=60 filesync_progress_format_line 5 10)"
 if [[ "$line" == *' 5/10' ]] && [[ "$line" == '['*'#'* ]]; then
-	ok "format_line 5/10 shape"
+	ok "format_line 5/10 shape (bar)"
 else
 	bad "unexpected format_line: $line"
 fi
 
-line2="$(COLUMNS=60 filesync_progress_format_line 10 10)"
+line2="$(FILESYNC_PROGRESS_STYLE=bar COLUMNS=60 filesync_progress_format_line 10 10)"
 if [[ "$line2" == *'10/10' ]]; then
-	ok "format_line complete"
+	ok "format_line complete (bar)"
 else
 	bad "unexpected format_line full: $line2"
+fi
+
+linep="$(COLUMNS=60 filesync_progress_format_line 5 10)"
+if [[ "$linep" == '[  50% ]' ]]; then
+	ok "format_line mid (percent)"
+else
+	bad "unexpected format_line percent: $linep"
+fi
+
+linep2="$(filesync_progress_format_line 1 460)"
+if [[ "$linep2" == '[   1% ]' ]]; then
+	ok "format_line small slice (percent)"
+else
+	bad "unexpected format_line percent small: $linep2"
+fi
+
+linep3="$(filesync_progress_format_line 460 460)"
+if [[ "$linep3" == '[ 100% ]' ]]; then
+	ok "format_line done (percent)"
+else
+	bad "unexpected format_line percent full: $linep3"
 fi
 
 if [[ "${fail}" -ne 0 ]]; then exit 1; fi

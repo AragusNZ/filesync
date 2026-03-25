@@ -16,10 +16,30 @@ echo '{"path_mode":"absolute"}' >"${FILESYNC_DIR}/${FILESYNC_CONFIG_NAME}"
 # shellcheck source=/dev/null
 source "${ROOT}/lib/config-merge.sh"
 merged="$(filesync_merged_top_level_config)"
-if echo "${merged}" | jq -e '.path_mode == "absolute" and .file_sync_enabled == true and .show_progress == true' >/dev/null; then
+if echo "${merged}" | jq -e '.path_mode == "absolute" and .file_sync_enabled == true and .progress_display == "percent" and (has("show_progress") | not)' >/dev/null; then
 	ok "merged config user overrides default"
 else
 	bad "merged config: ${merged}"
+fi
+
+export FILESYNC_DIR="${td}/cfg_prog_true"
+mkdir -p "${FILESYNC_DIR}"
+echo '{"show_progress":true}' >"${FILESYNC_DIR}/${FILESYNC_CONFIG_NAME}"
+merged_bt="$(filesync_merged_top_level_config)"
+if echo "${merged_bt}" | jq -e '.progress_display == "bar" and (has("show_progress") | not)' >/dev/null; then
+	ok "merged config normalizes legacy show_progress true to progress_display bar"
+else
+	bad "show_progress true merge: ${merged_bt}"
+fi
+
+export FILESYNC_DIR="${td}/cfg_prog_false"
+mkdir -p "${FILESYNC_DIR}"
+echo '{"show_progress":false}' >"${FILESYNC_DIR}/${FILESYNC_CONFIG_NAME}"
+merged_bf="$(filesync_merged_top_level_config)"
+if echo "${merged_bf}" | jq -e '.progress_display == "hidden" and (has("show_progress") | not)' >/dev/null; then
+	ok "merged config normalizes legacy show_progress false to progress_display hidden"
+else
+	bad "show_progress false merge: ${merged_bf}"
 fi
 
 export FILESYNC_DIR="${td}/cfg_enabled"

@@ -18,5 +18,12 @@ filesync_merged_top_level_config() {
   jq -s '
     .[0] * .[1]
     | if .enabled != null then .file_sync_enabled = .enabled | del(.enabled) else . end
+    | (if has("show_progress") then .show_progress else .progress_display end)       as $raw
+    | del(.show_progress)
+    | .progress_display = (
+        if ($raw | type) == "boolean" then (if $raw then "bar" else "hidden" end)
+        elif $raw == "hidden" or $raw == "bar" or $raw == "percent" then $raw
+        else "percent" end
+      )
   ' "$def" <(echo "$user_json")
 }

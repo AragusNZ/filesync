@@ -12,6 +12,7 @@ A single JSON object. It is **shallow-merged** over `share/defaults/config.defau
 - **`path_mode`**: `"relative"` (default) or `"absolute"`.
   - **relative**: each repo’s `path` in `repos` is resolved under the project root.
   - **absolute**: `path` is used as a filesystem path as-is (must exist as a directory).
+- **`progress_display`**: `"percent"` (default), `"bar"`, or `"hidden"`. Controls TTY progress on stderr for long `check` / `sync` / multi-file loops when stderr is a terminal and there are at least 10 items: **percent** prints `[NNN%]`; **bar** prints the filled bracket bar and counts; **hidden** turns progress off. The legacy key **`show_progress`** (boolean or string) is still read when merging and is dropped after normalization to **`progress_display`**. Use **`filesync progress`** to show or set the value.
 Avoid deep nesting in `config.json` unless you document a merge policy; the merge is **one level** (`jq` `*`).
 
 ### `repos.json`
@@ -108,4 +109,4 @@ Master files must contain **`filesync kind=master`** or the row is skipped (with
 
 ## Dependencies
 
-`jq` is required. **`git`** must be on `PATH` for: `check`, `sync`, `list-files`, `list-repos`, `add-file`, `add-master`, `push`, `detach`, `attach`, `rm`, and `edit-repo` (the shared runtime checks for `git` even when a given command does not invoke it). Other commands (`init`, `update`, `enable`, `disable`, `path-mode`, `add-repo`) only require `jq` (and `curl` or `wget` for `update` when fetching release metadata or assets).
+`jq` is required. **`git`** must be on `PATH` for: `check`, `sync`, `list-files`, `list-repos`, `add-file`, `add-master`, `push`, `detach`, `attach`, `rm`, and `edit-repo` (the shared runtime checks for `git` even when a given command does not invoke it). Other commands (`init`, `update`, `enable`, `disable`, `progress`, `path-mode`, `add-repo`) only require `jq` (and `curl` or `wget` for `update` when fetching release metadata or assets).

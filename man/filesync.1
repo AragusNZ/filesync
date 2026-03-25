@@ -96,17 +96,33 @@ uses
 .B path
 as a filesystem directory as-is.
 .TP
+.B progress
+.RI [ hidden | bar | percent ]
+With no arguments, print the effective
+.I progress_display
+value (merged package defaults and
+.BR .filesync/config.json )
+to standard output.
+With one argument, store
+.I progress_display
+in
+.BR .filesync/config.json :
+.B hidden
+disables TTY progress;
+.B bar
+draws the full bracket bar with counts on standard error;
+.B percent
+draws a compact
+.RI [ NNN% ]
+indicator (package default).
+.TP
 .B show-progress
-Set
-.I show_progress
-to true in
-.BR .filesync/config.json
-(merged default is true).
+Same as
+.BR "progress bar" .
 .TP
 .B hide-progress
-Set
-.I show_progress
-to false so long file loops do not draw TTY progress on standard error.
+Same as
+.BR "progress hidden" .
 .SS "Inspect and sync"
 .TP
 .B check
@@ -148,12 +164,14 @@ If the master file cannot be rendered, the row is
 .I error_master_marker
 but the command exits successfully unless other blocking issues exist.
 When standard error is a terminal,
-.I show_progress
-in merged config is true (see
-.BR show-progress " / " hide-progress ),
+.I progress_display
+in merged config is not
+.B hidden
+(see
+.BR progress ),
 and at least 10 rows are in the configuration,
 .B check
-may draw a scanning progress bar on standard error; per-row lines go to standard output, so the bar may jump between lines on some terminals.
+may draw a scanning progress indicator on standard error; per-row lines go to standard output, so output may not stay fixed on one line.
 .TP
 .B sync
 Also
@@ -220,7 +238,7 @@ and end with a bracketed outcome
 Rows skipped by status filter or marker rules are printed in gray.
 Like
 .BR check ,
-a TTY progress bar on standard error may appear when scanning many rows; per-file sync lines go to standard output, so the bar may not stay fixed on one line.
+a TTY progress indicator on standard error may appear when scanning many rows; per-file sync lines go to standard output, so output may not stay fixed on one line.
 .TP
 .B list-repos
 Also
@@ -386,8 +404,9 @@ skips the confirmation prompt before apply.
 .TP
 .I .filesync/config.json
 Merged over package defaults; toggles, path mode, and
-.I show_progress
-for TTY bars on long loops.
+.I progress_display
+.RI ( hidden \| bar \| percent )
+for TTY progress on long loops.
 .TP
 .I .filesync/repos.json
 Array of repo definitions.
@@ -419,8 +438,8 @@ When set to a non-empty value, enables extra informational messages on standard 
 .B FILESYNC_NO_PROGRESS
 When set to
 .BR 1 ,
-progress bars are not drawn on standard error (overrides
-.IR show_progress ).
+TTY progress is not drawn on standard error (overrides
+.IR progress_display ).
 .TP
 .B NO_COLOR
 When set to a non-empty value, disables ANSI color in terminal output.
