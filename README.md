@@ -60,15 +60,15 @@ From any directory under a project that contains `.filesync/` (discovery walks u
 filesync check
 filesync check --repo=api --file=src/types.ts
 filesync sync --file=lib/config.py --dry-run
-filesync list --repo=api
-filesync list
+filesync list-files --repo=api
+filesync list-files
 ```
 
 **Development without install:** run `./bin/filesync` from this tree (or `bash /path/to/filesync/bin/filesync …`).
 
-Subcommands: `init`, `check`, `sync`, `list`, `repos`, `add`, `add-master`, `push`, `detach`, `attach`, `rm` (alias: `remove`), `repo`, `repo-edit`, `enable`, `disable`, `update`.
+Primary subcommands: `init`, `enable`, `disable`, `sync`, `check`, `list-repos`, `list-files`, `add-file`, `add-master`, `push`, `detach`, `attach`, `remove`, `add-repo`, `edit-repo`, `update`. Shorter aliases (`s`, `c`, `lr`, `lf`, `files`, `af`, `am`, `p`, `dd`, `da`, `ar`, `er`, `en`, `dis`, …) are listed in the built-in help — run **`filesync`** with no arguments. Legacy names `repos`, `list`, `add`, `repo`, and `repo-edit` are still accepted.
 
-**`check`**, **`sync`**, **`repos`**, and **`list`** accept optional **`--repo=name`**. **`check`**, **`sync`**, and **`list`** also accept **`--file=fragment`**: substring match on `local_path` or `repo_file_path` (case-sensitive). Combine **`--repo`** and **`--file`** to scope to one repo and matching paths.
+**`check`**, **`sync`**, **`list-repos`**, and **`list-files`** accept optional **`--repo=name`**. **`check`**, **`sync`**, and **`list-files`** also accept **`--file=fragment`**: substring match on `local_path` or `repo_file_path` (case-sensitive). Combine **`--repo`** and **`--file`** to scope to one repo and matching paths.
 
 When file sync is off in **merged** config (`file_sync_enabled` is not boolean `true` — e.g. after **`filesync disable`**, or `enabled: false` normalized from `config.json`), **`check`** and **`sync`** print a message and exit **0** without doing work.
 
@@ -87,7 +87,7 @@ Run `filesync` with no arguments to print a short usage summary (same idea as **
 | Path | Role |
 |------|------|
 | `bin/filesync` | Dispatcher |
-| `commands/*.sh` | One script per subcommand |
+| `commands/*.sh` | Subcommand implementations (e.g. `list.sh` handles both `list-repos` and `list-files`) |
 | `lib/*.sh` | Resolve project, merge config, assemble state JSON, paths, status |
 | `share/defaults/config.default.json` | Shallow-merge defaults for `.filesync/config.json` |
 | `share/VERSION` | Single-line version for `filesync --version` |
@@ -117,7 +117,7 @@ CI runs **`shellcheck`**, **`bash scripts/ci-test.sh`** (orchestrates `tests/run
 
 ```bash
 shellcheck -x bin/filesync commands/*.sh lib/*.sh scripts/ci-test.sh scripts/build-deb.sh tests/run-lib-tests.sh tests/run-command-tests.sh tests/harness-lib.sh tests/harness-command.sh tests/lib/*.sh tests/commands/*.sh
-bash scripts/ci-test.sh
+bash scripts/ci-test.sh --quiet
 VERSION=0.0.0-ci bash scripts/build-deb.sh
 lintian --fail-on warning filesync_0.0.0-ci_all.deb
 ```

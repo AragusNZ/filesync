@@ -27,9 +27,9 @@ mkdir -p "${proj}"
 	jq -n \
 		--arg url "file://${master}" \
 		'[{"name":"origin","path":"../git-master","url":$url,"branch":"main"}]' >".filesync/repos.json"
-	filesync add origin tools/demo.txt
-	_ll="$(filesync list --file=demo.txt 2>&1)" || die "list --file exit"
-	[[ "${_ll}" == *tools/demo.txt* ]] || die "list --file should show matching row"
+	filesync add-file origin tools/demo.txt
+	_ll="$(filesync list-files --file=demo.txt 2>&1)" || die "list-files --file exit"
+	[[ "${_ll}" == *tools/demo.txt* ]] || die "list-files --file should show matching row"
 	_dr="$(filesync sync --dry-run 2>&1)" || die "sync --dry-run exit"
 	[[ "${_dr}" == *"Would sync"* ]] || die "dry-run should mention Would sync"
 	[[ ! -f tools/demo.txt ]] || die "dry-run must not create local file"
@@ -59,7 +59,7 @@ mkdir -p "${proj}"
 		git add public/page.html
 		git commit -q -m page
 	)
-	filesync add origin public/page.html
+	filesync add-file origin public/page.html
 	filesync sync
 	[[ -f public/page.html ]] || die "sync html"
 	grep -qF '<!-- filesync:sync kind=clone' public/page.html || die "html clone marker"
@@ -74,15 +74,15 @@ mkdir -p "${proj}"
 		git add tools/extra.txt
 		git commit -q -m extra
 	)
-	filesync add origin tools/extra.txt
+	filesync add-file origin tools/extra.txt
 	filesync sync
 	[[ -f tools/extra.txt ]] || die "sync extra"
 	filesync rm tools/extra.txt
 	[[ "$(jq '. | length' .filesync/files.json)" -eq 1 ]] || die "rm should leave one row"
-	filesync repo-edit origin --rename=upstream
-	jq -e '.[] | select(.local_path=="tools/demo.txt") | .repo_name == "upstream"' ".filesync/files.json" >/dev/null || die "repo-edit rename files.json"
-	_ru="$(filesync repos --repo=upstream 2>&1)" || die "repos upstream"
-	[[ "${_ru}" == *upstream* ]] || die "repos filter upstream"
+	filesync edit-repo origin --rename=upstream
+	jq -e '.[] | select(.local_path=="tools/demo.txt") | .repo_name == "upstream"' ".filesync/files.json" >/dev/null || die "edit-repo rename files.json"
+	_ru="$(filesync list-repos --repo=upstream 2>&1)" || die "list-repos upstream"
+	[[ "${_ru}" == *upstream* ]] || die "list-repos filter upstream"
 	_sda="$(filesync sync --dry-run --all 2>&1)" || die "sync --all dry-run exit"
 	[[ "${_sda,,}" == *sync* ]] || [[ "${_sda}" == *"Nothing"* ]] || [[ "${_sda,,}" == *already* ]] || die "sync --all dry-run"
 )

@@ -46,7 +46,7 @@ Description: map and sync files across git checkouts
  This package provides a Bash CLI that maps and synchronizes files across
  multiple git checkouts using a per-project .filesync/ directory (JSON
  configuration, repos, and file mappings). Typical commands are init, check,
- sync, list, and helpers for repos and file rows.
+ sync, list-files, list-repos, and helpers for repos and file rows.
 EOF
 
 mkdir -p "${OUTPUT_DIR}"

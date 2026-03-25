@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Promote local files to master repo and add mappings (.filesync/files.json).
+# CLI: filesync add-master — promote local files to master repo and add mappings (.filesync/files.json).
 
 set -euo pipefail
 
@@ -13,7 +13,7 @@ filesync_command_init "${BASH_SOURCE[0]}"
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
 if [[ $# -lt 2 ]]; then
-  echo -e "${RED}Usage: filesync add-master <target_repo> <local_path> ... [--also=repo1,repo2]${NC}"
+  echo -e "${RED}Usage: filesync add-master <repo_name> <local_path> ... [--also=repo1,repo2]${NC}"
   exit 1
 fi
 

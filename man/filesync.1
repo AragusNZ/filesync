@@ -40,6 +40,9 @@ it is passed to
 .B sync
 as if you had run
 .BR "filesync sync" .
+The same dispatch accepts the
+.B s
+alias.
 .SH OPTIONS
 .TP
 .BR \-V ", " \-\-version
@@ -61,13 +64,19 @@ at the project root. Default directory is the current working directory.
 does not walk parents; the given directory establishes the project root.
 .TP
 .B enable
+Also
+.BR en .
 Turn on file sync in merged config.
 .TP
 .B disable
+Also
+.BR dis .
 Turn off file sync in merged config.
 .SS "Inspect and sync"
 .TP
 .B check
+Also
+.BR c .
 .RI [ \-\-repo= name ]
 .RI [ \-\-file= fragment ]
 Verify mappings, refresh
@@ -85,6 +94,8 @@ or
 contains the fragment (substring).
 .TP
 .B sync
+Also
+.BR s .
 .RI [ \-\-repo= name ]
 .RI [ \-\-file= fragment ]
 .RI [ \-\-dry\-run ]
@@ -116,16 +127,20 @@ prints planned work without writing files or status.
 overwrites a local file that lacks a clone marker.
 Coupled sync requires a master marker on the repo file.
 .TP
-.B repos
+.B list-repos
+Also
+.BR lr ", " repos .
 .RI [ \-\-repo= name ]
 List configured repos or details for one repo by name.
-.B repos
+.B list-repos
 accepts only
 .BR \-\-repo= ;
 it does not accept
 .BR \-\-file= .
 .TP
-.B list
+.B list-files
+Also
+.BR lf ", " list ", " files .
 .RI [ \-\-repo= name ]
 .RI [ \-\-file= fragment ]
 List file mappings and cached status; run
@@ -134,7 +149,9 @@ to refresh status fields. Filters match
 .BR check .
 .SS "Mappings and repos"
 .TP
-.B add
+.B add-file
+Also
+.BR af ", " add .
 .I repo_name path_in_repo \fR[\fI:local_path\fR] \fR...
 .RI [ \-\-also= repo1,repo2 ]
 Track files from a repo checkout into the project. Each path token is relative to the repo; append
@@ -146,6 +163,8 @@ mirrors rows into sibling projects'
 trees.
 .TP
 .B add-master
+Also
+.BR am .
 .I target_repo local_path \fR[\fI:path_in_repo\fR] \fR...
 .RI [ \-\-also= repo1,repo2 ]
 Promote local files into the master repo and add mappings. Omit
@@ -154,14 +173,20 @@ when the master path matches
 .IR local_path .
 .TP
 .B push
+Also
+.BR p .
 .I local_path \fR[\fIlocal_path ...\fR]
 Push local content to the master path in the linked repo.
 .TP
 .B detach
+Also
+.BR dd .
 .I local_path \fR[\fIlocal_path ...\fR]
 Detach mappings (leave marker content).
 .TP
 .B attach
+Also
+.BR da .
 .I local_path \fR[\fIlocal_path ...\fR]
 Re-couple detached rows and run
 .B check
@@ -171,11 +196,15 @@ on each.
 .I local_path \fR[\fIlocal_path ...\fR]
 Remove mapping rows.
 .TP
-.B repo
+.B add-repo
+Also
+.BR ar ", " repo .
 Interactively add a repo definition to
 .IR repos.json .
 .TP
-.B repo-edit
+.B edit-repo
+Also
+.BR er ", " repo-edit .
 .I repo_name
 .RI [ \-\-rename= name ]
 .RI [ \-\-path= path ]
@@ -200,7 +229,17 @@ pull and
 .B make install
 (from a clone) or the latest
 .B .deb
-package.
+package (uses
+.B sudo
+for
+.B make install
+and
+.B dpkg \-i
+when
+.B sudo
+is on
+.BR PATH ,
+otherwise runs them without elevation).
 .B \-y
 or
 .B \-\-yes

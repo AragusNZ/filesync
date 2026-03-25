@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Usage: list.sh repos [--repo=name] | list.sh list [--repo=name] [--file=path_fragment]
+# Usage: list.sh list-repos [--repo=name] | list.sh list-files [--repo=name] [--file=path_fragment]
+# Dispatcher passes longform mode; repos|lr and list|lf are accepted for compatibility.
 
 set -euo pipefail
 
@@ -10,9 +11,11 @@ filesync_command_init "${BASH_SOURCE[0]}"
 
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
+_list_usage_pair='filesync list-repos [--repo=name] | filesync list-files [--repo=name] [--file=path_fragment]'
+
 sub="${1:-}"
 if [[ -z "$sub" ]]; then
-  echo -e "${RED}Usage: filesync repos [--repo=name] | filesync list [--repo=name] [--file=path_fragment]${NC}"
+  echo -e "${RED}Usage: ${_list_usage_pair}${NC}"
   exit 1
 fi
 shift
@@ -31,25 +34,34 @@ while [[ $# -gt 0 ]]; do
       ;;
     -*)
       echo -e "${RED}Unknown option: $1${NC}" >&2
-      echo "Usage: filesync repos [--repo=name] | filesync list [--repo=name] [--file=path_fragment]" >&2
+      echo "Usage: ${_list_usage_pair}" >&2
       exit 1
       ;;
     *)
       echo -e "${RED}Unexpected argument: $1${NC}" >&2
-      echo "Usage: filesync repos [--repo=name] | filesync list [--repo=name] [--file=path_fragment]" >&2
+      echo "Usage: ${_list_usage_pair}" >&2
       exit 1
       ;;
   esac
 done
 
-if [[ "$sub" == "repos" && -n "$FILE_FRAGMENT" ]]; then
-  echo -e "${RED}filesync repos does not accept --file${NC}" >&2
-  echo "Usage: filesync repos [--repo=name]" >&2
+case "$sub" in
+  list-repos|repos|lr) ;;
+  list-files|list|lf|files) ;;
+  *)
+    echo -e "${RED}Usage: ${_list_usage_pair}${NC}"
+    exit 1
+    ;;
+esac
+
+if [[ "$sub" == list-repos || "$sub" == repos || "$sub" == lr ]] && [[ -n "$FILE_FRAGMENT" ]]; then
+  echo -e "${RED}filesync list-repos does not accept --file${NC}" >&2
+  echo "Usage: filesync list-repos [--repo=name]" >&2
   exit 1
 fi
 
 case "$sub" in
-  repos)
+  list-repos|repos|lr)
     echo -e "${CYAN}Repos${NC}"
     echo "------"
     [[ -n "$REPO_FILTER" ]] && echo -e "${CYAN}Filter: --repo=$REPO_FILTER${NC}"
@@ -64,7 +76,7 @@ case "$sub" in
       jq -r '.repos[] | "\(.name)\n  url: \(.url)\n  path: \(.path)\n  branch: \(.branch)\n"' "$CONFIG_FILE"
     fi
     ;;
-  list)
+  list-files|list|lf|files)
     echo -e "${CYAN}Files${NC} (run ${YELLOW}filesync check${CYAN} to refresh status)"
     echo "------"
     [[ -n "$REPO_FILTER" ]] && echo -e "${CYAN}Filter: --repo=$REPO_FILTER${NC}"
@@ -110,9 +122,5 @@ case "$sub" in
     if [[ -n "$FILE_FRAGMENT" ]] && [[ "$printed" -eq 0 ]] && [[ "$TOTAL_FOR_LIST" -gt 0 ]]; then
       echo -e "${YELLOW}No file rows matched --file=${FILE_FRAGMENT}${NC} (and repo filter if any)."
     fi
-    ;;
-  *)
-    echo -e "${RED}Usage: filesync repos [--repo=name] | filesync list [--repo=name] [--file=path_fragment]${NC}"
-    exit 1
     ;;
 esac

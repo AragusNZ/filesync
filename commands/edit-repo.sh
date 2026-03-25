@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Update a repo in repos.json; optional rename updates repo_name in every files.json row.
+# CLI: filesync edit-repo — update repos.json; optional rename updates repo_name in every files.json row.
 
 set -euo pipefail
 
@@ -36,7 +36,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     -*)
       echo -e "${RED}Unknown option: $1${NC}" >&2
-      echo "Usage: filesync repo-edit <repo_name> [--rename=new] [--path=...] [--url=...] [--branch=...]" >&2
+      echo "Usage: filesync edit-repo <repo_name> [--rename=new] [--path=...] [--url=...] [--branch=...]" >&2
       exit 1
       ;;
     *)
@@ -52,7 +52,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$REPO_CURRENT" ]]; then
-  echo -e "${RED}Usage: filesync repo-edit <repo_name> [--rename=new] [--path=...] [--url=...] [--branch=...]${NC}"
+  echo -e "${RED}Usage: filesync edit-repo <repo_name> [--rename=new] [--path=...] [--url=...] [--branch=...]${NC}"
   echo "At least one of --rename, --path, --url, or --branch is required."
   exit 1
 fi

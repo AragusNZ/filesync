@@ -27,22 +27,22 @@ print_header() {
 help() {
   echo "filesync — sync tracked files with master repos (.filesync/ config)"
   echo ""
-  echo "  filesync sync [--repo=name] [--file=path_fragment] [--dry-run|--force|--all|...]"
-  echo "  filesync check [--repo=name] [--file=path_fragment]"
-  echo "  filesync repos [--repo=name]   # list repos"
-  echo "  filesync list [--repo=name] [--file=path_fragment]  # list file mappings + status"
   echo "  filesync init [directory]   # create .filesync/ here (default: cwd); establishes project root"
-  echo "  filesync enable | disable"
-  echo "  filesync add <repo> <path_in_repo>[:<local_path>] ... [--also=repo1,repo2]"
+  echo "  filesync en|enable | dis|disable"
+  echo "  filesync s|sync [--repo=name] [--file=path_fragment] [--dry-run|--force|--all|...]"
+  echo "  filesync c|check [--repo=name] [--file=path_fragment]"
+  echo "  filesync lr|repos|list-repos [--repo=name]   # list repos"
+  echo "  filesync lf|files|list-files [--repo=name] [--file=path_fragment]  # list file mappings + status"
+  echo "  filesync af|add-file <repo> <path_in_repo>[:<local_path>] ... [--also=repo1,repo2]"
   echo "           # path_in_repo = file under the repo checkout; omit :local_path if project uses the same path"
-  echo "  filesync add-master <repo> <local_path>[:<path_in_repo>] ... [--also=...]"
+  echo "  filesync am|add-master <repo> <local_path>[:<path_in_repo>] ... [--also=...]"
   echo "           # promote local file to master; omit :path_in_repo if master path matches local_path"
-  echo "  filesync push <local_path> [local_path ...]"
-  echo "  filesync detach <local_path> [local_path ...]"
-  echo "  filesync attach <local_path> [local_path ...]   # re-couple detached rows + check each"
-  echo "  filesync rm <local_path> [local_path ...]"
-  echo "  filesync repo                 # interactive add repo"
-  echo "  filesync repo-edit <name> [--rename=] [--path=] [--url=] [--branch=]"
+  echo "  filesync p|push <local_path> [local_path ...]"
+  echo "  filesync dd|detach <local_path> [local_path ...]"
+  echo "  filesync da|attach <local_path> [local_path ...]   # re-couple detached rows + check each"
+  echo "  filesync rm|remove <local_path> [local_path ...]"
+  echo "  filesync ar|add-repo                 # interactive add repo"
+  echo "  filesync er|edit-repo <name> [--rename=] [--path=] [--url=] [--branch=]"
   echo "           # edit repos.json; rename updates repo_name in all files.json rows"
   echo "  filesync update [--check] [--apply] [-y]   # newer release from GitHub (git or .deb)"
   echo "  filesync help"
@@ -64,11 +64,11 @@ main() {
   shift
 
   case "$sub" in
-    sync)
+    sync|s)
       print_header "filesync: sync from master"
       exec "$ROOT/commands/sync.sh" "$@"
       ;;
-    check)
+    check|c)
       print_header "filesync: check"
       exec "$ROOT/commands/check.sh" "$@"
       ;;
@@ -76,40 +76,40 @@ main() {
       print_header "filesync: init"
       exec "$ROOT/commands/init.sh" "$@"
       ;;
-    add)
+    add-file|af|add)
       exec "$ROOT/commands/add.sh" "$@"
       ;;
-    add-master)
+    add-master|am)
       exec "$ROOT/commands/add-master.sh" "$@"
       ;;
-    push)
+    push|p)
       exec "$ROOT/commands/push.sh" "$@"
       ;;
-    detach)
+    detach|dd)
       exec "$ROOT/commands/detach.sh" "$@"
       ;;
-    attach)
+    attach|da)
       exec "$ROOT/commands/attach.sh" "$@"
       ;;
-    rm|remove)
+    remove|rm)
       exec "$ROOT/commands/rm.sh" "$@"
       ;;
-    repo)
+    add-repo|ar|repo)
       exec "$ROOT/commands/add-repo.sh" "$@"
       ;;
-    repo-edit)
+    edit-repo|er|repo-edit)
       exec "$ROOT/commands/edit-repo.sh" "$@"
       ;;
-    repos)
-      exec "$ROOT/commands/list.sh" repos "$@"
+    list-repos|repos|lr)
+      exec "$ROOT/commands/list.sh" list-repos "$@"
       ;;
-    list)
-      exec "$ROOT/commands/list.sh" list "$@"
+    list-files|list|lf|files)
+      exec "$ROOT/commands/list.sh" list-files "$@"
       ;;
-    enable)
+    enable|en)
       exec "$ROOT/commands/enable-disable.sh" enable
       ;;
-    disable)
+    disable|dis)
       exec "$ROOT/commands/enable-disable.sh" disable
       ;;
     update)

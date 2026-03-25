@@ -66,20 +66,20 @@ They do **not** rewrite a single monolithic config file at the project root.
 
 ### Enable / disable
 
-**`filesync enable`** and **`filesync disable`** set **`file_sync_enabled`** in `.filesync/config.json` (`enable` asks for **y/N** confirmation; `disable` does not). While disabled, **`filesync check`** and **`filesync sync`** print a short message and exit with status **0** without updating or syncing files.
+**`filesync enable`** and **`filesync disable`** (aliases **`en`** / **`dis`**) set **`file_sync_enabled`** in `.filesync/config.json` (`enable` asks for **y/N** confirmation; `disable` does not). While disabled, **`filesync check`** and **`filesync sync`** print a short message and exit with status **0** without updating or syncing files.
 
 ## Assembled state
 
 Internally, commands build a **temporary** JSON file (merged top-level config + `repos` + `files`) using **`jq --slurpfile`** so large `files` arrays are not passed through shell arguments.
 
-## Repo metadata (`repo-edit`)
+## Repo metadata (`edit-repo`)
 
-**`filesync repo-edit <repo_name>`** updates **`repos.json`**. Pass any of **`--rename=new_name`**, **`--path=...`**, **`--url=...`**, **`--branch=...`** (at least one required). Renaming a repo rewrites **`repo_name`** on every row in **`files.json`** that referenced the old name. Use **`--branch=`** to change the configured branch.
+**`filesync edit-repo <repo_name>`** updates **`repos.json`**. Pass any of **`--rename=new_name`**, **`--path=...`**, **`--url=...`**, **`--branch=...`** (at least one required). Renaming a repo rewrites **`repo_name`** on every row in **`files.json`** that referenced the old name. Use **`--branch=`** to change the configured branch.
 
-## `check` / `sync` / `repos` / `list` filters
+## `check` / `sync` / `list-repos` / `list-files` filters
 
-- **`--repo=name`**: for **`check`**, **`sync`**, and **`list`**, only rows (or repos) where `repo_name` equals this name. For **`repos`**, show only that repo’s entry.
-- **`--file=fragment`**: for **`check`**, **`sync`**, and **`list`**, only rows where `local_path` **or** `repo_file_path` contains the fragment (substring / “like” match). Whitespace is trimmed from the fragment; an empty value matches all rows. Not valid for **`repos`**.
+- **`--repo=name`**: for **`check`**, **`sync`**, and **`list-files`**, only rows where `repo_name` equals this name. For **`list-repos`**, show only that repo’s entry.
+- **`--file=fragment`**: for **`check`**, **`sync`**, and **`list-files`**, only rows where `local_path` **or** `repo_file_path` contains the fragment (substring / “like” match). Whitespace is trimmed from the fragment; an empty value matches all rows. Not valid for **`list-repos`**.
 
 **`attach`**: re-couples rows with `sync_status: detached` by rewriting the local file from master (clone marker), clearing `sync_status`, then running **`check`** for that repo and path so status is recomputed.
 
@@ -97,4 +97,4 @@ Master files must contain **`filesync:sync kind=master`** or the row is skipped 
 
 ## Dependencies
 
-`jq` is required. **`git`** must be on `PATH` for: `check`, `sync`, `list`, `add`, `add-master`, `push`, `detach`, `attach`, `rm`, and `repo-edit` (the shared runtime checks for `git` even when a given command does not invoke it). Other commands (`init`, `update`, `enable`, `disable`, `repo`) only require `jq` (and `curl` or `wget` for `update` when fetching release metadata or assets).
+`jq` is required. **`git`** must be on `PATH` for: `check`, `sync`, `list-files`, `list-repos`, `add-file`, `add-master`, `push`, `detach`, `attach`, `rm`, and `edit-repo` (the shared runtime checks for `git` even when a given command does not invoke it). Other commands (`init`, `update`, `enable`, `disable`, `add-repo`) only require `jq` (and `curl` or `wget` for `update` when fetching release metadata or assets).

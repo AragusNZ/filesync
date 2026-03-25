@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Add file mappings to .filesync/files.json (--also updates sibling projects' files.json).
+# CLI: filesync add-file — add file mappings to .filesync/files.json (--also updates sibling projects' files.json).
 
 set -euo pipefail
 
@@ -13,7 +13,7 @@ filesync_command_init "${BASH_SOURCE[0]}"
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
 if [[ $# -lt 2 ]]; then
-  echo -e "${RED}Usage: filesync add <repo_name> <repo_file_path> ... [--also=repo1,repo2]${NC}"
+  echo -e "${RED}Usage: filesync add-file <repo_name> <path_in_repo> ... [--also=repo1,repo2]${NC}"
   exit 1
 fi
 

@@ -11,7 +11,7 @@ filesync_command_init "${BASH_SOURCE[0]}"
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
 if [[ $# -lt 1 ]]; then
-  echo -e "${RED}Usage: filesync rm <local_path1> [local_path2 ...]${NC}"
+  echo -e "${RED}Usage: filesync rm|remove <local_path1> [local_path2 ...]${NC}"
   exit 1
 fi
 

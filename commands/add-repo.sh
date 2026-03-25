@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Interactive: append a repo to .filesync/repos.json.
+# CLI: filesync add-repo — interactive append to .filesync/repos.json.
 
 set -euo pipefail
 
