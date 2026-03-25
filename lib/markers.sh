@@ -83,7 +83,7 @@ filesync_marker_format_line() {
   case "$style" in
     line_slash) printf '// %s\n' "$inner" ;;
     line_hash) printf '# %s\n' "$inner" ;;
-    line_dash) printf '-- %s\n' "$inner" ;;
+    line_dash) printf -- '-- %s\n' "$inner" ;;
     block_c) printf '/* %s */\n' "$inner" ;;
     html) printf '<!-- %s -->\n' "$inner" ;;
     *) printf '# %s\n' "$inner" ;;
