@@ -361,8 +361,30 @@ to validate timestamps and status in its own context.
 .B push
 Also
 .BR p .
+.RI [\-\-all]
 .I local_path \fR[\fIlocal_path ...\fR]
 Push local content to the master path in the linked repo.
+With
+.BR \-\-all ,
+also pushes every mapping whose
+.I sync_status
+in
+.I files.json
+is
+.BR local_newer ;
+if no
+.I local_path
+arguments are given, only those rows are selected.
+If both
+.B \-\-all
+and explicit
+.I local_path
+arguments are given, the union is pushed (each path once).
+If
+.B \-\-all
+is given, no paths are listed, and there are no
+.B local_newer
+rows, the command exits successfully after a short notice.
 .TP
 .B detach
 Also

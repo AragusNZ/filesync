@@ -12,19 +12,56 @@ source "$_CMD_ROOT/../lib/progress.sh"
 
 trap 'filesync_progress_end || true; rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
-if [[ $# -lt 1 ]]; then
-  echo -e "${RED}Usage: filesync push <local_path1> [local_path2 ...]${NC}" >&2
+PUSH_ALL=false
+declare -a POSITIONAL_PATHS=()
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --all)
+      PUSH_ALL=true
+      shift
+      ;;
+    -*)
+      echo -e "${RED}Unknown option: $1${NC}" >&2
+      echo "Usage: filesync push [--all] [<local_path1> [local_path2 ...]]" >&2
+      exit 1
+      ;;
+    *)
+      POSITIONAL_PATHS+=("$1")
+      shift
+      ;;
+  esac
+done
+
+if [[ "$PUSH_ALL" != true ]] && [[ ${#POSITIONAL_PATHS[@]} -eq 0 ]]; then
+  echo -e "${RED}Usage: filesync push [--all] [<local_path1> [local_path2 ...]]${NC}" >&2
   exit 1
 fi
 
 declare -a LOCAL_PATHS=()
 declare -A SEEN_LOCAL_PATHS=()
-for arg in "$@"; do
+
+for arg in "${POSITIONAL_PATHS[@]}"; do
   [[ -n "$arg" ]] || { echo -e "${RED}Error: empty local_path${NC}" >&2; exit 1; }
   [[ -z "${SEEN_LOCAL_PATHS[$arg]:-}" ]] || { echo -e "${RED}Error: duplicate '$arg'${NC}" >&2; exit 1; }
   SEEN_LOCAL_PATHS["$arg"]=1
   LOCAL_PATHS+=("$arg")
 done
+
+if [[ "$PUSH_ALL" == true ]]; then
+  while IFS= read -r _lp; do
+    [[ -z "$_lp" || "$_lp" == "null" ]] && continue
+    if [[ -z "${SEEN_LOCAL_PATHS[$_lp]:-}" ]]; then
+      SEEN_LOCAL_PATHS["$_lp"]=1
+      LOCAL_PATHS+=("$_lp")
+    fi
+  done < <(jq -r '.files[] | select(.sync_status == "local_newer" and (.local_path | type == "string") and (.local_path | length > 0)) | .local_path' "$CONFIG_FILE")
+fi
+
+if [[ ${#LOCAL_PATHS[@]} -eq 0 ]]; then
+  echo "filesync push: no local_newer rows to push." >&2
+  exit 0
+fi
 
 _ppaths=${#LOCAL_PATHS[@]}
 if filesync_progress_want "$_ppaths"; then
