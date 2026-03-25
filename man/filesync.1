@@ -62,6 +62,15 @@ with default
 at the project root. Default directory is the current working directory.
 .B init
 does not walk parents; the given directory establishes the project root.
+If
+.B .filesync/config.json
+,
+.B .filesync/repos.json
+and
+.B .filesync/files.json
+all already exist,
+.B init
+exits with an error; if only some exist, it creates whichever files are missing.
 .TP
 .B enable
 Also
@@ -205,8 +214,10 @@ and
 .BI \-\-file=
 match
 .BR check .
-By default only rows with unset or
+By default only rows with unset,
 .I sync_required
+or
+.I error_missing_local
 status are considered; detached rows are skipped unless
 .BR \-\-include\-detached .
 .BI \-\-status=
@@ -253,6 +264,11 @@ Rows skipped by status filter or marker rules are printed in gray.
 Like
 .BR check ,
 a TTY progress indicator on standard error may appear when scanning many rows; per-file sync lines go to standard output, so output may not stay fixed on one line.
+If no repos are configured (for example
+.I repos.json
+is an empty array),
+.B sync
+exits with failure.
 .TP
 .B list-repos
 Also
@@ -276,6 +292,9 @@ List file mappings and cached status; run
 .B check
 to refresh status fields. Filters match
 .BR check .
+If filters match no rows,
+.B list-files
+prints nothing and exits successfully.
 Optional
 .BI \-\-status=
 uses the same comma-separated tokens as

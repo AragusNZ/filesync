@@ -97,7 +97,7 @@ Internally, commands build a **temporary** JSON file (merged top-level config + 
 
 **`list-files`**: optional **`--status=a,b,...`** and optional **`--include-detached`** (with **`--status`** only). Omit **`--status`** to list every row (after **`--repo`** / **`--file`** filters).
 
-**`sync`**: by default only rows whose **`sync_status`** is empty/unset or **`sync_required`** are processed; **`detached`** rows are skipped unless **`--include-detached`** is set. Pass **`--status=`** to replace that default with other tokens.
+**`sync`**: by default only rows whose **`sync_status`** is **unset**, **`sync_required`**, or **`error_missing_local`** are processed (so missing local files are recreated from master); **`detached`** rows are skipped unless **`--include-detached`** is set. Pass **`--status=`** to replace that default with other tokens.
 
 Comma-separated tokens (whitespace around tokens is stripped). A row matches if **any** token matches (OR):
 
@@ -112,9 +112,19 @@ Examples: **`--status=all`** (all non-detached); **`--status=all --include-detac
 
 - **`--include-detached`**: allow **`sync_status: detached`** rows when using the default status filter, or include them when **`--status=`** contains **`all`** (without adding the **`detached`** token).
 - **`--dry-run`**: report what would be copied; do not write files or update `files.json`.
-- **`--force`**: if the local file exists but lacks the **`filesync kind=clone`** marker, sync anyway (default is to skip those paths).
+- **`--force`**: if the local file exists but lacks the **`filesync kind=clone`** marker, sync anyway (default is to skip those paths). When no **`--status`** filter is given, **`--force`** also selects **`local_newer`** and **`conflict`** rows so master replaces local.
 
 Master files must contain **`filesync kind=master`** or the row is skipped (with a warning), regardless of other flags.
+
+## Environment variables
+
+- **`FILESYNC_PROJECT_ROOT`**: forces the project root (discovery does not walk parents); `.filesync` defaults to `$FILESYNC_PROJECT_ROOT/.filesync` unless `FILESYNC_DIR` is also set.
+- **`FILESYNC_DIR`**: forces the `.filesync` directory path; project root becomes its parent.
+- **`FILESYNC_INSTALL_PREFIX`**: for `filesync update --apply` from a git checkout, overrides the inferred `PREFIX` passed to `make install` when autodetection is wrong.
+- **`FILESYNC_VERBOSE`**: when set, enables extra informational messages on stderr (where supported).
+- **`FILESYNC_DEBUG`**: when set, enables a short debug line on stderr when a command fails under `set -e` (ERR trap / errtrace).
+- **`FILESYNC_NO_PROGRESS`**: when set to `1`, disables TTY progress output (overrides `progress_display`).
+- **`NO_COLOR`**: when set, disables ANSI color sequences in terminal output.
 
 ## Dependencies
 
