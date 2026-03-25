@@ -42,7 +42,7 @@ GitHub Releases publish a **source tarball** (`make install` from the extracted 
 
 ### Updating filesync
 
-- **`filesync update`** — compares your install to the [latest GitHub release](https://github.com/AragusNZ/filesync/releases/latest). If a newer version exists and the install can be upgraded automatically (git checkout of filesync, or a matching release **`.deb`**), prompts to apply it (**`git pull`** + **`make install`**, or **`dpkg -i`** the **`.deb`**; **`sudo`** is used when on `PATH`). Use **`-y`** to skip the prompt. If you are already up to date, it says so; if an update exists but cannot be applied from this layout, it points you to the release page.
+- **`filesync update`** — compares your install to the [latest GitHub release](https://github.com/AragusNZ/filesync/releases/latest). If a newer version exists and the install can be upgraded automatically (git checkout of filesync, or a matching release **`.deb`**), prompts to apply it (**`git pull`** + **`make install`**, or **`dpkg -i`** the **`.deb`**; **`sudo`** is used when on `PATH`). Use **`-y`** or **`--yes`** to skip the prompt. If you are already up to date, it says so; if an update exists but cannot be applied from this layout, it points you to the release page.
 
 ## Usage
 
@@ -65,11 +65,15 @@ filesync list-files
 
 **Development without install:** run `./bin/filesync` from this tree (or `bash /path/to/filesync/bin/filesync …`).
 
-Primary subcommands: `init`, `enable`, `disable`, `progress`, `path-mode`, `sync`, `check`, `list-repos`, `list-files`, `add-file`, `add-master`, `add-clone`, `push`, `detach-file`, `attach-file`, `detach-repo`, `attach-repo`, `remove-file`, `remove-repo`, `add-repo`, `edit-repo`, `update`. Shorter aliases (`s`, `c`, `lr`, `lf`, `af`, `am`, `ddf`, `daf`, `ddr`, `dar`, `rmf`, `rmr`, `ar`, `er`, …) are listed in the built-in help — run **`filesync`** with no arguments.
+Primary subcommands: `init`, `enable`, `disable`, `progress`, `path-mode`, `sync`, `check`, `list-repos`, `list-files`, `add-file`, `add-master`, `add-clone`, `push`, `detach-file`, `attach-file`, `detach-repo`, `attach-repo`, `remove-file`, `remove-repo`, `add-repo`, `edit-repo`, `update`. Shorter aliases (`s`, `c`, `lr`, `lf`, `af`, `am`, `ac`, `ddf`, `daf`, `ddr`, `dar`, `rmf`, `rmr`, `ar`, `er`, …) are listed in the built-in help — run **`filesync`** with no arguments.
 
 **`check`**, **`sync`**, **`list-repos`**, and **`list-files`** accept optional **`--repo=name`**. **`check`**, **`sync`**, and **`list-files`** also accept **`--file=fragment`**: substring match on `local_path` or `repo_file_path` (case-sensitive). **`check`** also accepts **`--status=a,b,...`** (same token rules as `sync`/`list-files`) and matches against each row's current cached `sync_status` before re-checking selected rows. Combine filters to narrow scope.
 
-**`add-file`**, **`add-master`**, and **`add-clone`** support **`--also=repo1,repo2`** to mirror into sibling projects. Each value is a repo name from the current project's `.filesync/repos.json` whose configured `path` points at another initialized project root (a directory containing its own `.filesync/`).
+**`add-file`**, **`add-master`**, and **`add-clone`** support **`--also=repo1,repo2`** to mirror into sibling projects. Each value is a repo name from the current project's `.filesync/repos.json` whose configured `path` points at another initialized project root (a directory containing its own `.filesync/`). For **`add-file`**, the path in the repo must already have a **`kind=master`** marker unless you pass **`--mark-master`**, which prepends one when the repo file has no filesync marker yet.
+
+**`filesync push`** copies local content to the linked master paths (reverse of default **`sync`**). Use **`--all`** to include every mapping whose status is **`local_newer`**, combined with any explicit paths you list; see [docs/configuration.md](docs/configuration.md) and **`man filesync`** for details.
+
+**Detach** vs **remove**: **`detach-file`** / **`detach-repo`** keep the row but mark it **`detached`**; **`remove-file`** drops the mapping and strips clone/detached markers on disk; **`remove-repo`** drops a repo after optionally clearing its mappings. See [docs/configuration.md](docs/configuration.md#removing-mappings).
 
 When file sync is off in **merged** config (`file_sync_enabled` is not boolean `true` — e.g. after **`filesync disable`**), **`check`** and **`sync`** print a message and exit **0** without doing work.
 

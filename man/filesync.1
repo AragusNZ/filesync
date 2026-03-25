@@ -466,7 +466,7 @@ lines so a shared master copy can stay valid for other projects.
 .TP
 .BR rmr ", " remove-repo
 .I repo_name
-.RI [ \-y ]
+.RI [ \-y " | " \-\-yes ]
 Remove the named repo from
 .IR repos.json .
 If
@@ -477,7 +477,9 @@ then the repo entry is removed. Local file contents are not deleted. Answer
 .B n
 or press Enter to abort without changes.
 .B \-y
-skips that prompt (non-interactive / scripting).
+and
+.B \-\-yes
+skip that prompt (non-interactive / scripting).
 .TP
 .B add-repo
 Also
@@ -503,7 +505,7 @@ token in local clone/detached sync markers for those rows.
 .SS "Self-update"
 .TP
 .B update
-.RI [ \-y ]
+.RI [ \-y " | " \-\-yes ]
 Compare the installed version with the latest GitHub release. If a newer release exists and this install can be upgraded automatically (a git checkout of filesync, or a matching
 .B .deb
 on the release), prompts whether to apply the update:
@@ -526,7 +528,9 @@ is on
 .BR PATH ,
 otherwise runs them without elevation). If no update is needed, prints that and exits. If an update is available but cannot be installed automatically from this layout, prints a link to the release page.
 .B \-y
-skips the confirmation prompt and applies immediately when an update is available.
+and
+.B \-\-yes
+skip the confirmation prompt and apply immediately when an update is available.
 .SH FILES
 .TP
 .I .filesync/config.json

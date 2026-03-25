@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Usage: list.sh list-repos [--repo=name] | list.sh list-files [--repo=name] [--file=path_fragment] [--status=a,b,...] [--include-detached]
-# Dispatcher passes list-repos|list-files (or lr|lf).
+# Dispatcher always passes list-repos or list-files as argv1; lr|lf are accepted for direct script invocation.
 
 set -euo pipefail
 

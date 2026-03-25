@@ -77,9 +77,23 @@ Internally, commands build a **temporary** JSON file (merged top-level config + 
 
 **`filesync edit-repo <repo_name>`** updates **`repos.json`**. Pass any of **`--rename=new_name`**, **`--path=...`**, **`--url=...`**, **`--branch=...`** (at least one required). Renaming a repo rewrites **`repo_name`** on every row in **`files.json`** that referenced the old name, and updates the **`repo=`** field in the first **`filesync`** marker on each affected local file (clone or detached copies). Use **`--branch=`** to change the configured branch.
 
+## Adding mappings (`add-file`, `add-master`, `add-clone`)
+
+**`add-file`** tracks paths from a repo checkout into the project. The file under the repo must already contain a **`kind=master`** marker; **`kind=clone`** (or another non-master marker) is rejected. If the repo file has **no** filesync marker yet, pass **`--mark-master`** so the tool prepends a master marker (comment style follows the path).
+
+**`add-master`** promotes local files into the master repo checkout and adds mappings; omit **`:path_in_repo`** when it matches **`local_path`**. See **`man filesync`** for arguments and **`--also`**.
+
+**`add-clone`** creates a **`kind=clone`** copy and row in a **sibling** initialized project from a **`kind=master`** file that lives under the **current** project. If that source file has no filesync marker, a **`kind=master`** marker is prepended automatically; other non-master markers are rejected. This differs from **`add-file`**, where an unmarked repo file requires **`--mark-master`** explicitly.
+
+## Removing mappings
+
+- **`detach-file`** / **`detach-repo`**: the row stays in **`files.json`** with **`sync_status: detached`**; the local file’s marker becomes **`kind=detached`**. Use when you want to pause syncing but keep the mapping.
+- **`remove-file`**: removes the row from **`files.json`** and strips **`kind=clone`** or **`kind=detached`** markers from the local file; **`kind=master`** in the repo checkout is unchanged.
+- **`remove-repo`**: removes a repo from **`repos.json`**; if **`files.json`** still references that repo, the command confirms, then removes each mapping like **`remove-file`**. See the next section.
+
 ## Removing a repo (`remove-repo`)
 
-**`filesync remove-repo`** (alias **`rmr`**) drops an entry from **`repos.json`**. If **`files.json`** still has rows for that repo, the command asks for confirmation; if you confirm, each mapping is removed the same way as **`remove-file`** (row deleted; clone/detached markers stripped on disk; master marker kept), then the repo entry is removed. **`rmr -y`** skips the prompt. See **`man filesync`** for details.
+**`filesync remove-repo`** (alias **`rmr`**) drops an entry from **`repos.json`**. If **`files.json`** still has rows for that repo, the command asks for confirmation; if you confirm, each mapping is removed the same way as **`remove-file`** (row deleted; clone/detached markers stripped on disk; master marker kept), then the repo entry is removed. **`rmr -y`** or **`--yes`** skips the prompt. See **`man filesync`** for details.
 
 ## `check` / `sync` / `list-repos` / `list-files` filters
 
@@ -87,6 +101,10 @@ Internally, commands build a **temporary** JSON file (merged top-level config + 
 - **`--file=fragment`**: for **`check`**, **`sync`**, and **`list-files`**, only rows where `local_path` **or** `repo_file_path` contains the fragment (substring / “like” match). Whitespace is trimmed from the fragment; an empty value matches all rows. Not valid for **`list-repos`**.
 
 **`attach-file`** (and **`attach-repo`**, which runs it for every row for a repo): re-couples rows with `sync_status: detached` by rewriting the local file from master (clone marker), clearing `sync_status`, then running **`check`** for that repo and path so status is recomputed. **`detach-repo`** runs **`detach-file`** for every mapping with that **`repo_name`**.
+
+## Push (`push`)
+
+**`filesync push`** writes local content to the master path in the linked repo (the inverse of copying from master during **`sync`**). Use **`filesync push [--all] [<local_path> …]`**: **`--all`** adds every mapping whose **`sync_status`** is **`local_newer`**, unioned with any paths you list. If **`--all`** is given with no paths and there are no **`local_newer`** rows, the command exits successfully after a short message. Full behavior is in **`man filesync`**.
 
 ## Cross-project mirroring (`--also`)
 
@@ -125,10 +143,10 @@ Master files must contain **`filesync kind=master`** or the row is skipped (with
 - **`FILESYNC_PROJECT_ROOT`**: forces the project root (discovery does not walk parents); `.filesync` defaults to `$FILESYNC_PROJECT_ROOT/.filesync` unless `FILESYNC_DIR` is also set.
 - **`FILESYNC_DIR`**: forces the `.filesync` directory path; project root becomes its parent.
 - **`FILESYNC_INSTALL_PREFIX`**: for `filesync update` from a git checkout when installing an update, overrides the inferred `PREFIX` passed to `make install` when autodetection is wrong.
-- **`FILESYNC_VERBOSE`**: when set, enables extra informational messages on stderr (where supported).
-- **`FILESYNC_DEBUG`**: when set, enables a short debug line on stderr when a command fails under `set -e` (ERR trap / errtrace).
+- **`FILESYNC_VERBOSE`**: when set to a **non-empty** value, enables extra informational messages on stderr (where supported).
+- **`FILESYNC_DEBUG`**: when set to a **non-empty** value, enables a short debug line on stderr when a command fails under `set -e` (ERR trap / errtrace).
 - **`FILESYNC_NO_PROGRESS`**: when set to `1`, disables TTY progress output (overrides `progress_display`).
-- **`NO_COLOR`**: when set, disables ANSI color sequences in terminal output.
+- **`NO_COLOR`**: when set to a **non-empty** value, disables ANSI color sequences in terminal output.
 
 ## Dependencies
 
