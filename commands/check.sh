@@ -60,6 +60,14 @@ append_patch() {
   echo "$1" >> "$PATCH_LINES_FILE"
 }
 
+append_patch_with_status() {
+  local status="$1"
+  local patch_json="$2"
+  append_patch "$patch_json"
+  UPDATED_ROWS=$((UPDATED_ROWS + 1))
+  filesync_counts_inc CHECK_STATUS_COUNTS "$status"
+}
+
 # JSON array of strings for jq --argjson (empty -> []).
 check_marker_warn_codes_json() {
   if [[ ${#CHECK_MARKER_WARN_CODES[@]} -eq 0 ]]; then
@@ -96,6 +104,8 @@ check_marker_warnings_csv() {
 BLOCKING_ISSUES=0
 CHECKED=0
 MARKER_WARN_ROWS=0
+UPDATED_ROWS=0
+declare -A CHECK_STATUS_COUNTS=()
 
 filesync_print_check_banner
 filesync_print_filter_context "$REPO_FILTER" "$FILE_FRAGMENT" "$STATUS_FILTER" false 0
@@ -138,7 +148,7 @@ while IFS=$'\t' read -r i REPO_NAME LOCAL_PATH REPO_FILE_PATH PRIOR_STATUS LAST_
   if [[ -z "$REPO_NAME" ]] || [[ "$REPO_NAME" == "null" ]]; then
     filesync_print_config_error_invalid_repo_name "$i"
     BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
-    append_patch "$(jq -nc --argjson idx "$i" --arg now "$NOW_ISO" --argjson cw '[]' '{i: $idx, last_check_at: $now, sync_status: "error_invalid_repo", check_marker_warnings: $cw}')"
+    append_patch_with_status "error_invalid_repo" "$(jq -nc --argjson idx "$i" --arg now "$NOW_ISO" --argjson cw '[]' '{i: $idx, last_check_at: $now, sync_status: "error_invalid_repo", check_marker_warnings: $cw}')"
     filesync_check_iter_progress
     continue
   fi
@@ -161,7 +171,7 @@ while IFS=$'\t' read -r i REPO_NAME LOCAL_PATH REPO_FILE_PATH PRIOR_STATUS LAST_
   if [[ -z "$LOCAL_PATH" ]] || [[ "$LOCAL_PATH" == "null" ]]; then
     filesync_print_config_error_invalid_local_path "$i"
     BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
-    append_patch "$(jq -nc --argjson idx "$i" --arg now "$NOW_ISO" --argjson cw '[]' '{i: $idx, last_check_at: $now, sync_status: "error_invalid_local_path", check_marker_warnings: $cw}')"
+    append_patch_with_status "error_invalid_local_path" "$(jq -nc --argjson idx "$i" --arg now "$NOW_ISO" --argjson cw '[]' '{i: $idx, last_check_at: $now, sync_status: "error_invalid_local_path", check_marker_warnings: $cw}')"
     filesync_check_iter_progress
     continue
   fi
@@ -169,7 +179,7 @@ while IFS=$'\t' read -r i REPO_NAME LOCAL_PATH REPO_FILE_PATH PRIOR_STATUS LAST_
   if [[ -z "$REPO_FILE_PATH" ]] || [[ "$REPO_FILE_PATH" == "null" ]]; then
     filesync_print_config_error_invalid_repo_file_path "$LOCAL_PATH"
     BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
-    append_patch "$(jq -nc --argjson idx "$i" --arg now "$NOW_ISO" --argjson cw '[]' '{i: $idx, last_check_at: $now, sync_status: "error_invalid_repo_path", check_marker_warnings: $cw}')"
+    append_patch_with_status "error_invalid_repo_path" "$(jq -nc --argjson idx "$i" --arg now "$NOW_ISO" --argjson cw '[]' '{i: $idx, last_check_at: $now, sync_status: "error_invalid_repo_path", check_marker_warnings: $cw}')"
     filesync_check_iter_progress
     continue
   fi
@@ -178,7 +188,7 @@ while IFS=$'\t' read -r i REPO_NAME LOCAL_PATH REPO_FILE_PATH PRIOR_STATUS LAST_
   if ! REPO_ROOT=$(filesync_get_repo_dir "$REPO_NAME"); then
     echo -e "${RED}✗${NC} ${WHITE}$LOCAL_PATH: Could not resolve repo $REPO_NAME${NC}" >&2
     BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
-    append_patch "$(jq -nc --argjson idx "$i" --arg now "$NOW_ISO" --argjson cw '[]' '{i: $idx, last_check_at: $now, sync_status: "error_repo_unavailable", check_marker_warnings: $cw}')"
+    append_patch_with_status "error_repo_unavailable" "$(jq -nc --argjson idx "$i" --arg now "$NOW_ISO" --argjson cw '[]' '{i: $idx, last_check_at: $now, sync_status: "error_repo_unavailable", check_marker_warnings: $cw}')"
     filesync_check_iter_progress
     continue
   fi
@@ -202,7 +212,7 @@ while IFS=$'\t' read -r i REPO_NAME LOCAL_PATH REPO_FILE_PATH PRIOR_STATUS LAST_
 
   if [[ "$PRIOR_STATUS" == "detached" ]]; then
     CHECKED=$((CHECKED + 1))
-    append_patch "$(jq -nc \
+    append_patch_with_status "detached" "$(jq -nc \
       --argjson idx "$i" \
       --arg now "$NOW_ISO" \
       --arg rs "${REPO_ISO:-}" \
@@ -224,7 +234,7 @@ while IFS=$'\t' read -r i REPO_NAME LOCAL_PATH REPO_FILE_PATH PRIOR_STATUS LAST_
   if [[ ! -f "$FULL_MASTER_PATH" ]]; then
     echo -e "$(col_st error_missing_master)${RED}✗${NC} ${WHITE}$LOCAL_PATH: Source not found in $REPO_NAME ($REPO_FILE_PATH)${NC}" >&2
     BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
-    append_patch "$(jq -nc \
+    append_patch_with_status "error_missing_master" "$(jq -nc \
       --argjson idx "$i" \
       --arg now "$NOW_ISO" \
       --arg ls "${LOCAL_ISO:-}" \
@@ -244,7 +254,7 @@ while IFS=$'\t' read -r i REPO_NAME LOCAL_PATH REPO_FILE_PATH PRIOR_STATUS LAST_
   if [[ ! -f "$FULL_LOCAL_PATH" ]]; then
     echo -e "$(col_st error_missing_local)${RED}✗${NC} ${WHITE}$LOCAL_PATH: Local file not found${NC}" >&2
     BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
-    append_patch "$(jq -nc \
+    append_patch_with_status "error_missing_local" "$(jq -nc \
       --argjson idx "$i" \
       --arg now "$NOW_ISO" \
       --arg rs "${REPO_ISO:-}" \
@@ -270,7 +280,7 @@ while IFS=$'\t' read -r i REPO_NAME LOCAL_PATH REPO_FILE_PATH PRIOR_STATUS LAST_
     filesync_warn "${LOCAL_PATH}: could not render clone from master ${REPO_NAME}/${REPO_FILE_PATH} (unparsable or missing filesync marker line)"
     CHECKED=$((CHECKED + 1))
     _cw_json="$(check_marker_warn_codes_json)"
-    append_patch "$(jq -nc \
+    append_patch_with_status "error_master_marker" "$(jq -nc \
       --argjson idx "$i" \
       --arg now "$NOW_ISO" \
       --arg rs "${REPO_ISO:-}" \
@@ -304,7 +314,7 @@ while IFS=$'\t' read -r i REPO_NAME LOCAL_PATH REPO_FILE_PATH PRIOR_STATUS LAST_
   CHECKED=$((CHECKED + 1))
 
   _cw_json="$(check_marker_warn_codes_json)"
-  append_patch "$(jq -nc \
+  append_patch_with_status "$STATUS" "$(jq -nc \
     --argjson idx "$i" \
     --arg now "$NOW_ISO" \
     --arg rs "${REPO_ISO:-}" \
@@ -352,6 +362,9 @@ if [[ -n "$STATUS_FILTER" ]] && [[ "$CHECKED" -eq 0 ]]; then
 fi
 if [[ "$MARKER_WARN_ROWS" -gt 0 ]]; then
   echo -e "${YELLOW}Marker warning(s) on $MARKER_WARN_ROWS file row(s) (see ⚠ on lines above; codes in .filesync/files.json check_marker_warnings).${NC}" >&2
+fi
+if [[ "$UPDATED_ROWS" -gt 0 ]]; then
+  filesync_print_status_summary "rows updated" "$UPDATED_ROWS" CHECK_STATUS_COUNTS
 fi
 if [[ $BLOCKING_ISSUES -gt 0 ]]; then
   echo -e "${RED}Check completed with $BLOCKING_ISSUES blocking issue(s).${NC} ${WHITE}Rows updated: $CHECKED${NC}" >&2

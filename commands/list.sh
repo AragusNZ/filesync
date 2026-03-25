@@ -104,6 +104,7 @@ case "$sub" in
   list-files|list|lf|files)
     filesync_print_list_files_heading
     filesync_print_filter_context "$REPO_FILTER" "$FILE_FRAGMENT" "$STATUS_CSV" "$INCLUDE_DETACHED" 0
+    declare -A LIST_STATUS_COUNTS=()
     print_file_line() {
       file_sync_print_file_row "$1" "$2" "$3" "${4:-unset}" "${5:-}"
     }
@@ -126,6 +127,7 @@ case "$sub" in
         fi
         print_file_line "$rn" "$rp" "$lp" "$st" "$mw"
         printed=$((printed + 1))
+        filesync_counts_inc LIST_STATUS_COUNTS "${st:-unset}"
       done < <(jq -r --arg n "$REPO_FILTER" '.files[] | select(.repo_name == $n) | "\(.repo_name)\t\(.repo_file_path)\t\(.local_path)\t\(.sync_status // "")\t\(.check_marker_warnings // [] | join(","))"' "$CONFIG_FILE")
     else
       while IFS=$'\t' read -r rn rp lp st mw; do
@@ -135,6 +137,7 @@ case "$sub" in
         fi
         print_file_line "$rn" "$rp" "$lp" "$st" "$mw"
         printed=$((printed + 1))
+        filesync_counts_inc LIST_STATUS_COUNTS "${st:-unset}"
       done < <(jq -r '.files[] | "\(.repo_name)\t\(.repo_file_path)\t\(.local_path)\t\(.sync_status // "")\t\(.check_marker_warnings // [] | join(","))"' "$CONFIG_FILE")
     fi
     if [[ -n "$FILE_FRAGMENT" ]] && [[ "$printed" -eq 0 ]] && [[ "$TOTAL_FOR_LIST" -gt 0 ]]; then
@@ -142,6 +145,9 @@ case "$sub" in
     fi
     if [[ -n "$STATUS_CSV" ]] && [[ "$printed" -eq 0 ]] && [[ "$TOTAL_FOR_LIST" -gt 0 ]]; then
       filesync_print_no_file_rows_for_status "$STATUS_CSV"
+    fi
+    if [[ "$printed" -gt 0 ]]; then
+      filesync_print_status_summary "rows listed" "$printed" LIST_STATUS_COUNTS
     fi
     ;;
 esac

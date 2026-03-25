@@ -28,4 +28,6 @@ mkdir -p "${p}"
 	_out="$(filesync list-files --status=synced 2>&1)" || die "list-files --status=synced"
 	[[ "${_out}" == *a.txt* ]] || die "list-files --status=synced should list a.txt"
 	[[ "${_out}" != *b.txt* ]] || die "list-files --status=synced should omit b.txt"
+	[[ "${_out}" == *"Status summary (rows listed: 1): synced=1"* ]] \
+		|| die "list-files summary should report synced=1"
 )

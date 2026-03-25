@@ -244,6 +244,13 @@ if [[ -n "$FILE_FRAGMENT" ]] && [[ "$FILE_PATH_MATCHES" -eq 0 ]]; then
   filesync_print_no_file_rows_for_fragment "$FILE_FRAGMENT"
 fi
 
+SELECTED=$((FILE_PATH_MATCHES - STATUS_SKIPPED))
+if [[ "$SELECTED" -lt 0 ]]; then
+  SELECTED=0
+fi
+ATTEMPTED=$((SYNCED + ALREADY_SYNCED + SKIPPED + FAILED))
+echo "Sync report: selected=$SELECTED attempted=$ATTEMPTED synced=$SYNCED already_in_sync=$ALREADY_SYNCED skipped=$SKIPPED status_skipped=$STATUS_SKIPPED failed=$FAILED" >&2
+
 if [[ $FAILED -gt 0 ]]; then
   echo "" >&2
   echo -e "${RED}Failed: $FAILED${NC} ${WHITE}| Synced: $SYNCED | Already in sync: $ALREADY_SYNCED | Skipped: $SKIPPED | Status-filtered: $STATUS_SKIPPED${NC}" >&2

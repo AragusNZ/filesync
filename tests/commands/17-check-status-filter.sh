@@ -42,6 +42,8 @@ mkdir -p "${master}/tools" "${proj}/tools"
 	[[ "${_ec}" -eq 0 ]] || die "check --status=local_newer should succeed, got ${_ec}: ${_out}"
 	[[ "${_out}" == *"tools/a.txt"* ]] || die "status-filtered check should include a.txt output"
 	[[ "${_out}" != *"tools/b.txt"* ]] || die "status-filtered check should not include b.txt output"
+	[[ "${_out}" == *"Status summary (rows updated: 1): "* ]] \
+		|| die "check status summary should report one updated row"
 
 	jq -e '.[] | select(.local_path=="tools/a.txt") | .last_check_at != null' ".filesync/files.json" >/dev/null \
 		|| die "a.txt should be rechecked"

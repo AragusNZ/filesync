@@ -48,6 +48,8 @@ filesync_command_init() {
   # shellcheck source=/dev/null
   source "$FILESYNC_PKG_ROOT/lib/status.sh"
   # shellcheck source=/dev/null
+  source "$FILESYNC_PKG_ROOT/lib/report.sh"
+  # shellcheck source=/dev/null
   source "$FILESYNC_PKG_ROOT/lib/repo-resolve.sh"
 
   filesync_resolve_or_exit
