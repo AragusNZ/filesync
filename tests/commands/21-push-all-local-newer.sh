@@ -39,6 +39,8 @@ mkdir -p "${proj}"
 	filesync add-file origin tools/b.txt
 	filesync sync
 	filesync check >/dev/null || die "check after sync"
+	# Ensure local mtime is strictly after last_sync_at (second resolution).
+	sleep 1
 
 	echo "EDIT_A" >>tools/a.txt
 	filesync check >/dev/null || die "check after local edit"

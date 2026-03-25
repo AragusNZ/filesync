@@ -358,6 +358,42 @@ or
 .B sync
 to validate timestamps and status in its own context.
 .TP
+.B add-clone
+.I target_repo master_path \fR[\fI:local_path\fR] \fR...
+.RI [ \-\-also= repo1,repo2 ]
+Add a
+.B kind=clone
+copy and
+.I files.json
+row in a sibling initialized project, using a
+.B kind=master
+file that lives under the current project root.
+Each
+.I master_path
+token is project-relative; append
+.IB : local_path
+to write the clone at a different path in the target project (the clone marker
+.B path=
+still uses
+.IR master_path ).
+If the source file has no filesync marker, a
+.B kind=master
+marker is prepended automatically (comment style follows the path extension); other non-master markers are rejected.
+The target project's
+.B repo=
+token and row
+.B repo_name
+are inferred from that project's
+.B repos.json
+by finding the repo entry whose configured checkout path resolves to this project root.
+The command fails if the target local file already exists or if
+.I files.json
+already lists that
+.IR local_path .
+.B \-\-also=
+mirrors the same operation into additional sibling projects (same rules as
+.BR add-file ).
+.TP
 .B push
 Also
 .BR p .

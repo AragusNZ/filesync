@@ -33,6 +33,8 @@ help() {
   echo "           # path_in_repo = file under the repo checkout; omit :local_path if project uses the same path"
   echo "  filesync am|add-master <repo> <local_path>[:<path_in_repo>] ... [--also=...]"
   echo "           # promote local file to master; omit :path_in_repo if master path matches local_path"
+  echo "  filesync ac|add-clone <target_repo> <master_path>[:<local_path>] ... [--also=repo1,repo2]"
+  echo "           # clone from kind=master file in this project into sibling project(s); fails if target exists"
   echo "  filesync p|push [--all] [<local_path> [local_path ...]]"
   echo "  filesync dd|detach <local_path> [local_path ...]"
   echo "  filesync da|attach <local_path> [local_path ...]   # re-couple detached rows + check each"
@@ -79,6 +81,9 @@ main() {
       ;;
     add-master|am)
       exec "$ROOT/commands/add-master.sh" "$@"
+      ;;
+    add-clone|ac)
+      exec "$ROOT/commands/add-clone.sh" "$@"
       ;;
     push|p)
       exec "$ROOT/commands/push.sh" "$@"

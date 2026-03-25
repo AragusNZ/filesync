@@ -86,12 +86,12 @@ Internally, commands build a **temporary** JSON file (merged top-level config + 
 
 ## Cross-project mirroring (`--also`)
 
-**`add-file`** and **`add-master`** accept **`--also=repo1,repo2`** to mirror mappings into sibling initialized projects.
+**`add-file`**, **`add-master`**, and **`add-clone`** accept **`--also=repo1,repo2`** to mirror mappings into sibling initialized projects.
 
 - Each value is a repo name from the **current** project’s `.filesync/repos.json`.
 - That repo’s configured **`path`** must point at a directory that is itself an initialized filesync project (it contains its own `.filesync/`).
 - For each sibling project, filesync uses that sibling’s configuration (including **`path_mode`**) when resolving the master repo checkout.
-- For `add-master --also`, mirrored rows in sibling projects are initialized as **`sync_required`** so each project can run **`check`** / **`sync`** to compute timestamps and verify status in its own context.
+- For `add-master --also` and `add-clone --also`, mirrored rows in sibling projects are initialized as **`sync_required`** so each project can run **`check`** / **`sync`** to compute timestamps and verify status in its own context.
 
 ## `sync` / `list-files` status filter (`--status`)
 
@@ -128,4 +128,4 @@ Master files must contain **`filesync kind=master`** or the row is skipped (with
 
 ## Dependencies
 
-`jq` is required. **`git`** must be on `PATH` for: `check`, `sync`, `list-files`, `list-repos`, `add-file`, `add-master`, `push`, `detach`, `attach`, `rm`, and `edit-repo` (the shared runtime checks for `git` even when a given command does not invoke it). Other commands (`init`, `update`, `enable`, `disable`, `progress`, `path-mode`, `add-repo`) only require `jq` (and `curl` or `wget` for `update` when fetching release metadata or assets).
+`jq` is required. **`git`** must be on `PATH` for: `check`, `sync`, `list-files`, `list-repos`, `add-file`, `add-master`, `add-clone`, `push`, `detach`, `attach`, `rm`, and `edit-repo` (the shared runtime checks for `git` even when a given command does not invoke it). Other commands (`init`, `update`, `enable`, `disable`, `progress`, `path-mode`, `add-repo`) only require `jq` (and `curl` or `wget` for `update` when fetching release metadata or assets).
