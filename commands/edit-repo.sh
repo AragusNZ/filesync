@@ -115,3 +115,4 @@ fi
 [[ -n "$PATH_NEW" ]] && echo "  path: $PATH_NEW"
 [[ -n "$URL_NEW" ]] && echo "  url: $URL_NEW"
 [[ -n "$BRANCH_NEW" ]] && echo "  branch: $BRANCH_NEW"
+exit 0

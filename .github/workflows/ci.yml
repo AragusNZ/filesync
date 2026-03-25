@@ -15,13 +15,13 @@ jobs:
       - name: Install CI tools
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y shellcheck dpkg-dev lintian
+          sudo apt-get install -y shellcheck dpkg-dev lintian jq
 
       - name: Shellcheck
-        run: shellcheck -x bin/filesync commands/*.sh lib/*.sh scripts/ci-smoke-prefix.sh scripts/build-deb.sh
+        run: shellcheck -x bin/filesync commands/*.sh lib/*.sh scripts/ci-test.sh tests/run-lib-tests.sh scripts/build-deb.sh
 
-      - name: Prefix-install smoke
-        run: bash scripts/ci-smoke-prefix.sh
+      - name: Project tests
+        run: bash scripts/ci-test.sh
 
       - name: Build .deb and lintian
         env:

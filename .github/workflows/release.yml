@@ -14,6 +14,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install test deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y jq
+
+      - name: Project tests
+        run: bash scripts/ci-test.sh
+
       - name: Version
         id: ver
         run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"

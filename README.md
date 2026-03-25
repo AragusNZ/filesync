@@ -109,11 +109,11 @@ Discovery: walk parents from the current working directory until a directory `D`
 
 ## Developing
 
-CI runs **`shellcheck`**, **`bash scripts/ci-smoke-prefix.sh`** (staged installs with **`PREFIX=/usr/local`** and **`PREFIX=/usr`**, then `filesync init` / `help` / `check` / `--version`), builds a **`VERSION=0.0.0-ci`** `.deb`, and runs **`lintian --fail-on warning`**. To reproduce locally:
+CI runs **`shellcheck`**, **`bash scripts/ci-test.sh`** (staged installs, CLI matrix, git-backed integration, and lib checks), builds a **`VERSION=0.0.0-ci`** `.deb`, and runs **`lintian --fail-on warning`**. To reproduce locally:
 
 ```bash
-shellcheck -x bin/filesync commands/*.sh lib/*.sh scripts/ci-smoke-prefix.sh scripts/build-deb.sh
-bash scripts/ci-smoke-prefix.sh
+shellcheck -x bin/filesync commands/*.sh lib/*.sh scripts/ci-test.sh tests/run-lib-tests.sh scripts/build-deb.sh
+bash scripts/ci-test.sh
 VERSION=0.0.0-ci bash scripts/build-deb.sh
 lintian --fail-on warning filesync_0.0.0-ci_all.deb
 ```

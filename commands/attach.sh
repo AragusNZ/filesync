@@ -10,6 +10,9 @@ filesync_command_init "${BASH_SOURCE[0]}"
 
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
+declare -A FILESYNC_REPO_DIR_CACHE
+declare -a FILESYNC_CLONED_TEMP_DIRS
+
 if [[ $# -lt 1 ]]; then
   echo -e "${RED}Usage: filesync attach <local_path1> [local_path2 ...]${NC}"
   exit 1
