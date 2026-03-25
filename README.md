@@ -74,7 +74,7 @@ When file sync is off in **merged** config (`file_sync_enabled` is not boolean `
 
 ## Markers
 
-Each tracked text file contains one line with **`filesync:sync`**, **`kind=master`** (in the upstream repo) or **`kind=clone`** plus **`path=`** and **`repo=`** (local copy). After **`detach`**, **`kind=detached`**. The comment wrapper matches the file type (`#`, `//`, `<!-- … -->`, `/* … */`, `--`, etc.); optional per-row **`marker_style`** in `files.json` overrides inference. Plain **`.json`** cannot carry comments—see [docs/configuration.md](docs/configuration.md).
+Each tracked text file contains one line with **`filesync`**, **`kind=master`** (in the upstream repo) or **`kind=clone`** plus **`path=`** and **`repo=`** (local copy). After **`detach`**, **`kind=detached`**. The comment wrapper matches the file type (`#`, `//`, `<!-- … -->`, `/* … */`, `--`, etc.); optional per-row **`marker_style`** in `files.json` overrides inference. Plain **`.json`** cannot carry comments—see [docs/configuration.md](docs/configuration.md).
 
 **`sync`** options (see [docs/configuration.md](docs/configuration.md) for details): **`--dry-run`**, **`--force`** (overwrite locals that lack the clone marker), **`--all`** (consider every row except detached unless **`--include-detached`**), **`--include-status=a,b`** (comma-separated extra `sync_status` values to include), **`--include-detached`**.
 

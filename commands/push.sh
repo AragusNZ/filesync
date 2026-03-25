@@ -67,7 +67,7 @@ push_one() {
   TMP_MASTER="$(mktemp)"
   if ! render_master_marker_file "$FULL_LOCAL_PATH" "$TMP_MASTER" "$MARKER_STYLE"; then
     rm -f "$TMP_MASTER"
-    echo -e "${RED}Error: Local file must include a filesync:sync marker.${NC}"
+    echo -e "${RED}Error: Local file must include a filesync marker.${NC}"
     return 1
   fi
 

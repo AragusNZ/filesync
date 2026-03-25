@@ -10,7 +10,7 @@ source "${ROOT}/lib/markers.sh"
 
 td="${LIB_TEST_TMP}"
 
-if filesync_marker_parse_line "# filesync:sync kind=master path=p"; then
+if filesync_marker_parse_line "# filesync kind=master path=p"; then
 	if [[ "${FILESYNC_M_STYLE}" == "line_hash" && "${FILESYNC_M_INNER}" == *kind=master* ]]; then
 		ok "marker_parse_line hash"
 	else
@@ -19,29 +19,29 @@ if filesync_marker_parse_line "# filesync:sync kind=master path=p"; then
 else
 	bad "marker_parse_line hash failed"
 fi
-if filesync_marker_parse_line '<!-- filesync:sync kind=clone repo=r -->'; then
+if filesync_marker_parse_line '<!-- filesync kind=clone repo=r -->'; then
 	if [[ "${FILESYNC_M_STYLE}" == "html" ]]; then ok "marker_parse_line html"; else bad "html style ${FILESYNC_M_STYLE}"; fi
 else
 	bad "marker_parse_line html failed"
 fi
-if filesync_marker_parse_line '/* filesync:sync kind=master */'; then
+if filesync_marker_parse_line '/* filesync kind=master */'; then
 	if [[ "${FILESYNC_M_STYLE}" == "block_c" ]]; then ok "marker_parse_line block_c"; else bad "block_c style ${FILESYNC_M_STYLE}"; fi
 else
 	bad "marker_parse_line block_c failed"
 fi
-if filesync_marker_parse_line '// filesync:sync kind=clone'; then
+if filesync_marker_parse_line '// filesync kind=clone'; then
 	if [[ "${FILESYNC_M_STYLE}" == "line_slash" ]]; then ok "marker_parse_line line_slash"; else bad "line_slash style ${FILESYNC_M_STYLE}"; fi
 else
 	bad "marker_parse_line line_slash failed"
 fi
-if filesync_marker_parse_line '-- filesync:sync kind=clone'; then
+if filesync_marker_parse_line '-- filesync kind=clone'; then
 	if [[ "${FILESYNC_M_STYLE}" == "line_dash" ]]; then ok "marker_parse_line line_dash"; else bad "line_dash style ${FILESYNC_M_STYLE}"; fi
 else
 	bad "marker_parse_line line_dash failed"
 fi
 
-fmt="$(filesync_marker_format_line "line_slash" "filesync:sync kind=x")"
-if [[ "${fmt}" == "// filesync:sync kind=x" ]]; then ok "marker_format_line slash"; else bad "format slash"; fi
+fmt="$(filesync_marker_format_line "line_slash" "filesync kind=x")"
+if [[ "${fmt}" == "// filesync kind=x" ]]; then ok "marker_format_line slash"; else bad "format slash"; fi
 fmt="$(filesync_marker_format_line "line_hash" "inner")"
 if [[ "${fmt}" == "# inner" ]]; then ok "marker_format_line hash"; else bad "format hash"; fi
 fmt="$(filesync_marker_format_line "line_dash" "inner")"
@@ -55,10 +55,10 @@ if [[ "${fmt}" == "# inner" ]]; then ok "marker_format_line fallback hash"; else
 
 mf="${td}/m.txt"
 echo "x" >"${mf}"
-echo "# filesync:sync kind=clone path=tools/x repo=origin" >>"${mf}"
+echo "# filesync kind=clone path=tools/x repo=origin" >>"${mf}"
 out="${td}/out.txt"
 if render_master_marker_file "${mf}" "${out}"; then
-	if grep -qE 'filesync:sync kind=master([[:space:]]|$)' "${out}"; then
+	if grep -qE 'filesync kind=master([[:space:]]|$)' "${out}"; then
 		ok "render_master_marker_file (from clone)"
 	else
 		bad "master marker output"
@@ -67,7 +67,7 @@ else
 	bad "render_master_marker_file failed"
 fi
 
-echo "# filesync:sync kind=master path=z" >"${mf}"
+echo "# filesync kind=master path=z" >"${mf}"
 if render_master_marker_file "${mf}" "${out}" && cmp -s "${mf}" "${out}"; then
 	ok "render_master_marker_file (already master copies)"
 else
@@ -82,7 +82,7 @@ else
 fi
 
 det_out="${td}/det_out.txt"
-echo "// filesync:sync kind=clone path=a repo=b" >"${mf}"
+echo "// filesync kind=clone path=a repo=b" >"${mf}"
 if render_detached_marker_file "${mf}" "${det_out}" "a" "b" && grep -qE 'kind=detached' "${det_out}"; then
 	ok "render_detached_marker_file"
 else
@@ -91,40 +91,40 @@ fi
 
 xf="${td}/transform.txt"
 echo "before" >"${xf}"
-echo "# filesync:sync kind=master" >>"${xf}"
+echo "# filesync kind=master" >>"${xf}"
 echo "after" >>"${xf}"
 tout="${td}/transform.out.txt"
-if filesync_marker_transform_file "${xf}" "${tout}" "filesync:sync kind=clone path=x repo=y" "${xf}" && grep -q 'kind=clone path=x' "${tout}"; then
+if filesync_marker_transform_file "${xf}" "${tout}" "filesync kind=clone path=x repo=y" "${xf}" && grep -q 'kind=clone path=x' "${tout}"; then
 	ok "marker_transform_file"
 else
 	bad "marker_transform_file"
 fi
 
-echo "# filesync:sync kind=master" >"${mf}"
+echo "# filesync kind=master" >"${mf}"
 if has_any_file_sync_marker "${mf}" && has_master_file_sync_marker "${mf}" && ! has_clone_file_sync_marker "${mf}"; then ok "has_any / has_master / not clone"; else bad "has_any/has_master"; fi
-echo "# filesync:sync kind=clone detached=true" >"${mf}"
+echo "# filesync kind=clone detached=true" >"${mf}"
 if has_detached_clone_file_sync_marker "${mf}" && has_clone_file_sync_marker "${mf}"; then ok "has_detached_clone"; else bad "has_detached_clone"; fi
 
-echo "# filesync:sync kind=clone repo=r" >"${mf}"
+echo "# filesync kind=clone repo=r" >"${mf}"
 if replace_clone_with_detached_marker "${mf}" && grep -q 'detached=true' "${mf}" && grep -qE 'kind=clone' "${mf}"; then
 	ok "replace_clone_with_detached_marker"
 else
 	bad "replace_clone_with_detached_marker"
 fi
 
-echo "# filesync:sync kind=clone path=p repo=old" >"${mf}"
+echo "# filesync kind=clone path=p repo=old" >"${mf}"
 if filesync_marker_rename_repo_in_file "${mf}" "old" "new" && grep -qF 'repo=new' "${mf}" && ! grep -qF 'repo=old' "${mf}"; then
 	ok "marker_rename_repo_in_file clone"
 else
 	bad "marker_rename_repo_in_file clone"
 fi
-echo "<!-- filesync:sync kind=detached path=x repo=origin -->" >"${mf}"
+echo "<!-- filesync kind=detached path=x repo=origin -->" >"${mf}"
 if filesync_marker_rename_repo_in_file "${mf}" "origin" "upstream" && grep -qF 'repo=upstream' "${mf}"; then
 	ok "marker_rename_repo_in_file html detached"
 else
 	bad "marker_rename_repo_in_file html"
 fi
-echo "# filesync:sync kind=master" >"${mf}"
+echo "# filesync kind=master" >"${mf}"
 if filesync_marker_rename_repo_in_file "${mf}" "origin" "upstream"; then
 	bad "marker_rename_repo_in_file should skip master"
 else
@@ -133,7 +133,7 @@ fi
 
 unset FILESYNC_M_STYLE
 if [[ "$(filesync_marker_effective_style "x.js" "")" == "line_slash" ]]; then ok "marker_effective_style from path"; else bad "effective_style path"; fi
-if filesync_marker_parse_line "# filesync:sync kind=x"; then
+if filesync_marker_parse_line "# filesync kind=x"; then
 	est="$(filesync_marker_effective_style "x.js" "")"
 	if [[ "${est}" == "line_hash" ]]; then ok "marker_effective_style from parse"; else bad "effective_style parse got ${est}"; fi
 else
@@ -143,17 +143,17 @@ fi
 strip="${td}/strip.txt"
 {
 	echo "keep"
-	echo "# filesync:sync kind=master"
+	echo "# filesync kind=master"
 	echo "tail"
 } >"${mf}"
 strip_file_sync_marker_lines "${mf}" "${strip}"
-if grep -q 'filesync:sync' "${strip}"; then
+if grep -q 'filesync' "${strip}"; then
 	bad "strip markers left marker"
 else
 	ok "strip_file_sync_marker_lines"
 fi
 strip2="${td}/strip2.txt"
 strip_filesync_marker_lines "${mf}" "${strip2}"
-if ! grep -q 'filesync:sync' "${strip2}"; then ok "strip_filesync_marker_lines alias"; else bad "strip alias"; fi
+if ! grep -q 'filesync' "${strip2}"; then ok "strip_filesync_marker_lines alias"; else bad "strip alias"; fi
 
 if [[ "${fail}" -ne 0 ]]; then exit 1; fi

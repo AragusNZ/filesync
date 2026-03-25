@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Shared filesync marker helpers (sourced; no set -e at top level).
-# Inner payload format: filesync:sync kind=master|clone|detached [path=...] [repo=...] [detached=true on kind=clone]
+# Inner payload format: filesync kind=master|clone|detached [path=...] [repo=...] [detached=true on kind=clone]
 
 # shellcheck source=/dev/null
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/marker-style.sh"
@@ -11,7 +11,7 @@ filesync_marker_parse_line() {
   local line="${1:-}"
   line="${line//$'\r'/}"
   line="${line#"${line%%[![:space:]]*}"}"
-  [[ "$line" == *"filesync:sync"* ]] || return 1
+  [[ "$line" == *"filesync kind="* ]] || return 1
 
   local rest="$line" body
 
@@ -20,7 +20,7 @@ filesync_marker_parse_line() {
     rest="${rest%-->*}"
     rest="${rest#"${rest%%[![:space:]]*}"}"
     rest="${rest%"${rest##*[![:space:]]}"}"
-    if [[ "$rest" == *"filesync:sync"* ]]; then
+    if [[ "$rest" == *"filesync kind="* ]]; then
       FILESYNC_M_STYLE=html
       FILESYNC_M_INNER="$rest"
       return 0
@@ -33,7 +33,7 @@ filesync_marker_parse_line() {
     body="${body%\*/}"
     body="${body#"${body%%[![:space:]]*}"}"
     body="${body%"${body##*[![:space:]]}"}"
-    if [[ "$body" == *"filesync:sync"* ]]; then
+    if [[ "$body" == *"filesync kind="* ]]; then
       FILESYNC_M_STYLE=block_c
       FILESYNC_M_INNER="$body"
       return 0
@@ -44,7 +44,7 @@ filesync_marker_parse_line() {
   if [[ "$rest" == "//"* ]]; then
     body="${rest#//}"
     body="${body#"${body%%[![:space:]]*}"}"
-    if [[ "$body" == *"filesync:sync"* ]]; then
+    if [[ "$body" == *"filesync kind="* ]]; then
       FILESYNC_M_STYLE=line_slash
       FILESYNC_M_INNER="$body"
       return 0
@@ -55,7 +55,7 @@ filesync_marker_parse_line() {
   if [[ "$rest" == "#"* ]]; then
     body="${rest#\#}"
     body="${body#"${body%%[![:space:]]*}"}"
-    if [[ "$body" == *"filesync:sync"* ]]; then
+    if [[ "$body" == *"filesync kind="* ]]; then
       FILESYNC_M_STYLE=line_hash
       FILESYNC_M_INNER="$body"
       return 0
@@ -66,7 +66,7 @@ filesync_marker_parse_line() {
   if [[ "$rest" == "--"* ]]; then
     body="${rest#--}"
     body="${body#"${body%%[![:space:]]*}"}"
-    if [[ "$body" == *"filesync:sync"* ]]; then
+    if [[ "$body" == *"filesync kind="* ]]; then
       FILESYNC_M_STYLE=line_dash
       FILESYNC_M_INNER="$body"
       return 0
@@ -101,7 +101,7 @@ filesync_marker_effective_style() {
   fi
 }
 
-# Replace repo=old_name with repo=new_name in the first filesync:sync marker (clone/detached).
+# Replace repo=old_name with repo=new_name in the first filesync marker (clone/detached).
 # Returns 0 if the file was rewritten, 1 if skipped (missing file, no marker, no matching repo token).
 filesync_marker_rename_repo_in_file() {
   local file_path="${1:?}" old_name="${2:?}" new_name="${3:?}"
@@ -111,7 +111,7 @@ filesync_marker_rename_repo_in_file() {
   # Loop stdin is $file_path; writes go only to $tmp, then mv — not a read+write race on one fd.
   # shellcheck disable=SC2094
   while IFS= read -r line || [[ -n "$line" ]]; do
-    if [[ $did -eq 0 && "$line" == *"filesync:sync"* ]]; then
+    if [[ $did -eq 0 && "$line" == *"filesync kind="* ]]; then
       if filesync_marker_parse_line "$line"; then
         did=1
         new_inner=""
@@ -145,7 +145,7 @@ filesync_marker_transform_file() {
   local did=0 line st
   : >"$output_file"
   while IFS= read -r line || [[ -n "$line" ]]; do
-    if [[ $did -eq 0 && "$line" == *"filesync:sync"* ]]; then
+    if [[ $did -eq 0 && "$line" == *"filesync kind="* ]]; then
       if filesync_marker_parse_line "$line"; then
         st=$(filesync_marker_effective_style "$file_hint" "$ov")
         line="$(filesync_marker_format_line "$st" "$new_inner")"
@@ -158,22 +158,22 @@ filesync_marker_transform_file() {
 }
 
 has_any_file_sync_marker() {
-  grep -q "filesync:sync" "$1"
+  grep -q "filesync kind=" "$1"
 }
 
 has_master_file_sync_marker() {
   local f="$1"
-  grep -q "filesync:sync" "$f" && grep -qE 'kind=master([[:space:]]|$)' "$f"
+  grep -q "filesync kind=" "$f" && grep -qE 'kind=master([[:space:]]|$)' "$f"
 }
 
 has_clone_file_sync_marker() {
   local f="$1"
-  grep -q "filesync:sync" "$f" && grep -qE 'kind=clone([[:space:]]|$)' "$f"
+  grep -q "filesync kind=" "$f" && grep -qE 'kind=clone([[:space:]]|$)' "$f"
 }
 
 has_detached_clone_file_sync_marker() {
   local f="$1"
-  grep -q "filesync:sync" "$f" && grep -q 'detached=true' "$f" && grep -qE 'kind=clone([[:space:]]|$)' "$f"
+  grep -q "filesync kind=" "$f" && grep -q 'detached=true' "$f" && grep -qE 'kind=clone([[:space:]]|$)' "$f"
 }
 
 # Mark an on-disk clone while keeping kind=clone (legacy helper; unused by default flow).
@@ -189,7 +189,7 @@ replace_clone_with_detached_marker() {
   tmp="$(mktemp)"
   hint="$file"
   while IFS= read -r line || [[ -n "$line" ]]; do
-    if [[ $did -eq 0 && "$line" == *"filesync:sync"* ]]; then
+    if [[ $did -eq 0 && "$line" == *"filesync kind="* ]]; then
       if filesync_marker_parse_line "$line"; then
         new_inner="${FILESYNC_M_INNER} detached=true"
         new_inner="${new_inner//  / }"
@@ -212,7 +212,7 @@ render_master_marker_file() {
   local hint="${input_file}"
 
   if has_clone_file_sync_marker "$input_file"; then
-    filesync_marker_transform_file "$input_file" "$output_file" "filesync:sync kind=master" "$hint" "$style_ov"
+    filesync_marker_transform_file "$input_file" "$output_file" "filesync kind=master" "$hint" "$style_ov"
     return 0
   fi
 
@@ -222,7 +222,7 @@ render_master_marker_file() {
   fi
 
   if has_any_file_sync_marker "$input_file"; then
-    filesync_marker_transform_file "$input_file" "$output_file" "filesync:sync kind=master" "$hint" "$style_ov"
+    filesync_marker_transform_file "$input_file" "$output_file" "filesync kind=master" "$hint" "$style_ov"
     return 0
   fi
 
@@ -234,7 +234,7 @@ render_clone_from_master_file() {
   local master_repo_path="$2"
   local repo_name="$3"
   local output_file="$4"
-  local inner="filesync:sync kind=clone path=${master_repo_path} repo=${repo_name}"
+  local inner="filesync kind=clone path=${master_repo_path} repo=${repo_name}"
 
   filesync_marker_transform_file "$master_file" "$output_file" "$inner" "$master_file"
 }
@@ -246,10 +246,10 @@ render_detached_marker_file() {
   local repo_file_path="${3:-}"
   local repo_name="${4:-}"
   local style_ov="${5:-}"
-  local inner="filesync:sync kind=detached"
+  local inner="filesync kind=detached"
 
   if [[ -n "$repo_file_path" && -n "$repo_name" ]]; then
-    inner="filesync:sync kind=detached path=${repo_file_path} repo=${repo_name}"
+    inner="filesync kind=detached path=${repo_file_path} repo=${repo_name}"
   fi
 
   if has_any_file_sync_marker "$input_file"; then
@@ -263,7 +263,7 @@ render_detached_marker_file() {
 strip_file_sync_marker_lines() {
   local input_file="$1"
   local output_file="$2"
-  awk 'index($0, "filesync:sync") == 0 { print }' "$input_file" >"$output_file"
+  awk 'index($0, "filesync kind=") == 0 { print }' "$input_file" >"$output_file"
 }
 
 # Alias for clarity (same implementation).

@@ -37,7 +37,7 @@ Optional **`marker_style`** per row overrides comment wrapping for that path whe
 
 ### Sync markers (text files)
 
-Each synced copy carries a single-line **marker** containing the substring **`filesync:sync`** and a **`kind=`** field:
+Each synced copy carries a single-line **marker** containing the substring **`filesync`** and a **`kind=`** field:
 
 - **`kind=master`** — file in the upstream repo (source of truth).
 - **`kind=clone`** — coupled local copy; includes **`path=…`** (repo-relative path) and **`repo=…`** (repo name).
@@ -74,7 +74,7 @@ Internally, commands build a **temporary** JSON file (merged top-level config + 
 
 ## Repo metadata (`edit-repo`)
 
-**`filesync edit-repo <repo_name>`** updates **`repos.json`**. Pass any of **`--rename=new_name`**, **`--path=...`**, **`--url=...`**, **`--branch=...`** (at least one required). Renaming a repo rewrites **`repo_name`** on every row in **`files.json`** that referenced the old name, and updates the **`repo=`** field in the first **`filesync:sync`** marker on each affected local file (clone or detached copies). Use **`--branch=`** to change the configured branch.
+**`filesync edit-repo <repo_name>`** updates **`repos.json`**. Pass any of **`--rename=new_name`**, **`--path=...`**, **`--url=...`**, **`--branch=...`** (at least one required). Renaming a repo rewrites **`repo_name`** on every row in **`files.json`** that referenced the old name, and updates the **`repo=`** field in the first **`filesync`** marker on each affected local file (clone or detached copies). Use **`--branch=`** to change the configured branch.
 
 ## `check` / `sync` / `list-repos` / `list-files` filters
 
@@ -88,12 +88,12 @@ Internally, commands build a **temporary** JSON file (merged top-level config + 
 By default, **`sync`** only processes rows whose **`sync_status`** is empty/unset or **`sync_required`**. Rows with **`sync_status: detached`** are skipped unless **`--include-detached`** is set.
 
 - **`--dry-run`**: report what would be copied; do not write files or update `files.json`.
-- **`--force`**: if the local file exists but lacks the **`filesync:sync kind=clone`** marker, sync anyway (default is to skip those paths).
+- **`--force`**: if the local file exists but lacks the **`filesync kind=clone`** marker, sync anyway (default is to skip those paths).
 - **`--all`**: include every row that passes repo/file filters and is not detached (unless **`--include-detached`**); still requires master/clone marker rules unless **`--force`** applies to clone-less locals.
 - **`--include-status=a,b`**: comma-separated list of additional **`sync_status`** values to treat as eligible (whitespace around tokens is stripped).
 - **`--include-detached`**: allow rows with **`sync_status: detached`** to be synced.
 
-Master files must contain **`filesync:sync kind=master`** or the row is skipped (with a warning), regardless of other flags.
+Master files must contain **`filesync kind=master`** or the row is skipped (with a warning), regardless of other flags.
 
 ## Dependencies
 

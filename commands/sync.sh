@@ -166,7 +166,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
   fi
 
   if ! has_master_file_sync_marker "$FULL_MASTER_PATH" 2>/dev/null; then
-    echo -e "${YELLOW}⚠ $LOCAL_PATH: Skipped (source file missing filesync:sync kind=master marker)${NC}"
+    echo -e "${YELLOW}⚠ $LOCAL_PATH: Skipped (source file missing filesync kind=master marker)${NC}"
     SKIPPED=$((SKIPPED + 1))
     continue
   fi
@@ -174,7 +174,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
   if [[ -f "$FULL_LOCAL_PATH" ]]; then
     if ! has_clone_file_sync_marker "$FULL_LOCAL_PATH" 2>/dev/null; then
       if [[ "$FORCE" != true ]]; then
-        echo -e "${YELLOW}⚠ $LOCAL_PATH: Skipped (missing filesync:sync kind=clone marker, use --force)${NC}"
+        echo -e "${YELLOW}⚠ $LOCAL_PATH: Skipped (missing filesync kind=clone marker, use --force)${NC}"
         SKIPPED=$((SKIPPED + 1))
         continue
       fi
@@ -185,7 +185,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
     EXPECTED_TMP=$(mktemp)
     if ! render_clone_from_master_file "$FULL_MASTER_PATH" "$REPO_FILE_PATH" "$REPO_NAME" "$EXPECTED_TMP"; then
       rm -f "$EXPECTED_TMP"
-      filesync_error "${LOCAL_PATH}: could not render clone from master ${REPO_NAME}/${REPO_FILE_PATH} (master file missing or unparsable filesync:sync marker)"
+      filesync_error "${LOCAL_PATH}: could not render clone from master ${REPO_NAME}/${REPO_FILE_PATH} (master file missing or unparsable filesync marker)"
       FAILED=$((FAILED + 1))
       continue
     fi
@@ -209,7 +209,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
   else
     mkdir -p "$(dirname "$FULL_LOCAL_PATH")"
     if ! render_clone_from_master_file "$FULL_MASTER_PATH" "$REPO_FILE_PATH" "$REPO_NAME" "$FULL_LOCAL_PATH"; then
-      filesync_error "${LOCAL_PATH}: could not render clone from master ${REPO_NAME}/${REPO_FILE_PATH} (master file missing or unparsable filesync:sync marker)"
+      filesync_error "${LOCAL_PATH}: could not render clone from master ${REPO_NAME}/${REPO_FILE_PATH} (master file missing or unparsable filesync marker)"
       FAILED=$((FAILED + 1))
       continue
     fi

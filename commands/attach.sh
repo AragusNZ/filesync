@@ -73,7 +73,7 @@ attach_one() {
 
   mkdir -p "$(dirname "$full")"
   if ! render_clone_from_master_file "$full_master" "$repo_file_path" "$repo_name" "$full"; then
-    filesync_error "${local_path}: could not render clone from master ${repo_name}/${repo_file_path} (master file missing or unparsable filesync:sync marker)"
+    filesync_error "${local_path}: could not render clone from master ${repo_name}/${repo_file_path} (master file missing or unparsable filesync marker)"
     return 1
   fi
   echo -e "${GREEN}Re-coupled from master:${NC} $local_path"

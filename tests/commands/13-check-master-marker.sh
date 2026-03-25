@@ -10,7 +10,7 @@ mkdir -p "${master}/tools"
 printf '%s\n' 'plain master no marker' >"${master}/tools/plain.txt"
 mkdir -p "${proj}/tools"
 {
-	printf '%s\n' '# filesync:sync kind=clone path=tools/plain.txt repo=origin'
+	printf '%s\n' '# filesync kind=clone path=tools/plain.txt repo=origin'
 	printf '%s\n' 'local body'
 } >"${proj}/tools/plain.txt"
 

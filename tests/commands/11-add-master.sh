@@ -44,7 +44,7 @@ jq -n \
 	cd "${p}"
 	{
 		echo "promote-body"
-		echo "# filesync:sync kind=clone path=tools/promoted.txt repo=origin"
+		echo "# filesync kind=clone path=tools/promoted.txt repo=origin"
 	} >to_promote.txt
 	filesync add-master origin to_promote.txt:tools/promoted.txt
 	[[ -f "${master}/tools/promoted.txt" ]] || die "add-master should write master file"

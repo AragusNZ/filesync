@@ -191,7 +191,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
   fi
 
   if ! has_clone_file_sync_marker "$FULL_LOCAL_PATH" 2>/dev/null; then
-    echo -e "$(col_st error_no_clone_marker)${YELLOW}⚠${NC} ${WHITE}$LOCAL_PATH: Missing filesync:sync kind=clone marker${NC}"
+    echo -e "$(col_st error_no_clone_marker)${YELLOW}⚠${NC} ${WHITE}$LOCAL_PATH: Missing filesync kind=clone marker${NC}"
     BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
     append_patch "$(jq -nc \
       --argjson idx "$i" \
@@ -211,7 +211,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
   EXPECTED_TMP=$(mktemp)
   if ! render_clone_from_master_file "$FULL_MASTER_PATH" "$REPO_FILE_PATH" "$REPO_NAME" "$EXPECTED_TMP"; then
     rm -f "$EXPECTED_TMP"
-    filesync_error "${LOCAL_PATH}: could not render clone from master ${REPO_NAME}/${REPO_FILE_PATH} (master file missing or unparsable filesync:sync marker)"
+    filesync_error "${LOCAL_PATH}: could not render clone from master ${REPO_NAME}/${REPO_FILE_PATH} (master file missing or unparsable filesync marker)"
     BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
     append_patch "$(jq -nc \
       --argjson idx "$i" \

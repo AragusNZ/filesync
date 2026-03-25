@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Remove mapping from .filesync/files.json; strip filesync:sync marker lines from file.
+# Remove mapping from .filesync/files.json; strip filesync marker lines from file.
 
 set -euo pipefail
 

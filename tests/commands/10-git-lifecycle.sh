@@ -15,7 +15,7 @@ mkdir -p "${master}"
 	mkdir -p tools
 	{
 		echo "content-v1"
-		echo "# filesync:sync kind=master"
+		echo "# filesync kind=master"
 	} >tools/demo.txt
 	git add tools/demo.txt
 	git commit -q -m init
@@ -35,7 +35,7 @@ mkdir -p "${proj}"
 	[[ ! -f tools/demo.txt ]] || die "dry-run must not create local file"
 	filesync sync
 	[[ -f tools/demo.txt ]] || die "sync should create local file"
-	grep -q 'filesync:sync kind=clone' tools/demo.txt || die "local should be clone"
+	grep -q 'filesync kind=clone' tools/demo.txt || die "local should be clone"
 	filesync check >/dev/null || die "check after sync"
 	echo "local-edit" >>tools/demo.txt
 	filesync check >/dev/null || die "check after local edit"
@@ -43,15 +43,15 @@ mkdir -p "${proj}"
 	grep -q 'local-edit' "${master}/tools/demo.txt" || die "push should update master"
 	filesync detach tools/demo.txt
 	jq -e '.[] | select(.local_path=="tools/demo.txt") | .sync_status == "detached"' ".filesync/files.json" >/dev/null || die "detach status"
-	grep -q 'filesync:sync kind=detached' tools/demo.txt || die "detach marker"
+	grep -q 'filesync kind=detached' tools/demo.txt || die "detach marker"
 	filesync attach tools/demo.txt
 	jq -e '.[] | select(.local_path=="tools/demo.txt") | .sync_status == "synced"' ".filesync/files.json" >/dev/null || die "attach + check should leave synced"
-	grep -q 'filesync:sync kind=clone' tools/demo.txt || die "attach clone marker"
+	grep -q 'filesync kind=clone' tools/demo.txt || die "attach clone marker"
 	filesync check >/dev/null || die "check after attach"
 	mkdir -p "${master}/public"
 	{
 		echo '<!DOCTYPE html><html>'
-		echo '<!-- filesync:sync kind=master -->'
+		echo '<!-- filesync kind=master -->'
 		echo '</html>'
 	} >"${master}/public/page.html"
 	(
@@ -62,12 +62,12 @@ mkdir -p "${proj}"
 	filesync add-file origin public/page.html
 	filesync sync
 	[[ -f public/page.html ]] || die "sync html"
-	grep -qF '<!-- filesync:sync kind=clone' public/page.html || die "html clone marker"
+	grep -qF '<!-- filesync kind=clone' public/page.html || die "html clone marker"
 	filesync check --file=page.html >/dev/null || die "check html"
 	filesync rm public/page.html
 	{
 		echo "extra-body"
-		echo "# filesync:sync kind=master"
+		echo "# filesync kind=master"
 	} >"${master}/tools/extra.txt"
 	(
 		cd "${master}"
