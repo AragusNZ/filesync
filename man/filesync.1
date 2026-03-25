@@ -310,9 +310,15 @@ The local file is written (or overwritten) with content rendered from the master
 .B kind=clone
 marker.
 .B \-\-also=
-mirrors rows into sibling projects'
-.B .filesync/
-trees.
+mirrors the mapping into other initialized projects. Each value is a repo name from the current project's
+.B repos.json
+whose
+.B path
+points at a sibling project root containing its own
+.BR .filesync/ .
+For each sibling project, filesync uses that project's configuration (including
+.BR path_mode )
+and writes/overwrites the clone file under that sibling project's root.
 .TP
 .B add-master
 Also
@@ -323,6 +329,15 @@ Promote local files into the master repo and add mappings. Omit
 .IB : path_in_repo
 when the master path matches
 .IR local_path .
+With
+.BR \-\-also= ,
+filesync mirrors mapping rows into sibling projects but initializes those mirrored rows as
+.B sync_required
+so each project can run
+.B check
+or
+.B sync
+to validate timestamps and status in its own context.
 .TP
 .B push
 Also

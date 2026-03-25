@@ -38,6 +38,8 @@ filesync_command_init() {
   # shellcheck source=/dev/null
   source "$FILESYNC_PKG_ROOT/lib/paths.sh"
   # shellcheck source=/dev/null
+  source "$FILESYNC_PKG_ROOT/lib/project-context.sh"
+  # shellcheck source=/dev/null
   source "$FILESYNC_PKG_ROOT/lib/file-filter.sh"
   # shellcheck source=/dev/null
   source "$FILESYNC_PKG_ROOT/lib/json-state.sh"

@@ -70,6 +70,8 @@ Primary subcommands: `init`, `enable`, `disable`, `progress`, `show-progress`, `
 
 **`check`**, **`sync`**, **`list-repos`**, and **`list-files`** accept optional **`--repo=name`**. **`check`**, **`sync`**, and **`list-files`** also accept **`--file=fragment`**: substring match on `local_path` or `repo_file_path` (case-sensitive). **`check`** also accepts **`--status=a,b,...`** (same token rules as `sync`/`list-files`) and matches against each row's current cached `sync_status` before re-checking selected rows. Combine filters to narrow scope.
 
+**`add-file`** and **`add-master`** support **`--also=repo1,repo2`** to mirror mappings into sibling projects. Each value is a repo name from the current project's `.filesync/repos.json` whose configured `path` points at another initialized project root (a directory containing its own `.filesync/`).
+
 When file sync is off in **merged** config (`file_sync_enabled` is not boolean `true` — e.g. after **`filesync disable`**, or `enabled: false` normalized from `config.json`), **`check`** and **`sync`** print a message and exit **0** without doing work.
 
 ## Markers

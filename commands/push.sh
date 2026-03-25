@@ -61,10 +61,10 @@ push_one() {
     return 1
   fi
 
-  local REPO_PATH
-  REPO_PATH=$(jq -r --arg n "$REPO_NAME" '.[] | select(.name == $n) | .path // ""' "$FILESYNC_REPOS_FILE" | head -1)
-  if [[ -z "$REPO_PATH" || "$REPO_PATH" == "null" ]]; then
-    echo -e "${RED}Error: Repo '$REPO_NAME' has no local path.${NC}" >&2
+  local REPO_DIR
+  REPO_DIR="$(filesync_project_resolve_repo_dir "$PROJECT_ROOT" "$REPO_NAME")"
+  if [[ -z "$REPO_DIR" ]]; then
+    echo -e "${RED}Error: Repo '$REPO_NAME' has no resolvable local path.${NC}" >&2
     return 1
   fi
 
@@ -79,7 +79,7 @@ push_one() {
     return 1
   fi
 
-  local FULL_MASTER_PATH="$PROJECT_ROOT/$REPO_PATH/$REPO_FILE_PATH"
+  local FULL_MASTER_PATH="$REPO_DIR/$REPO_FILE_PATH"
   mkdir -p "$(dirname "$FULL_MASTER_PATH")"
   cp "$TMP_MASTER" "$FULL_MASTER_PATH"
   rm -f "$TMP_MASTER"

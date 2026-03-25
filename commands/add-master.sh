@@ -64,13 +64,14 @@ if ! jq -e --arg n "$TARGET_REPO" 'any(.name == $n)' "$FILESYNC_REPOS_FILE" &>/d
   exit 1
 fi
 
-TARGET_REPO_PATH=$(jq -r --arg n "$TARGET_REPO" '.[] | select(.name == $n) | .path // ""' "$FILESYNC_REPOS_FILE" | head -1)
-if [[ -z "$TARGET_REPO_PATH" || "$TARGET_REPO_PATH" == "null" ]]; then
-  echo -e "${RED}Error: Target repo '$TARGET_REPO' has no local path.${NC}" >&2
+# shellcheck disable=SC2153  # PROJECT_ROOT is set by filesync_command_init.
+TARGET_REPO_DIR="$(filesync_project_resolve_repo_dir "$PROJECT_ROOT" "$TARGET_REPO")"
+if [[ -z "$TARGET_REPO_DIR" ]]; then
+  echo -e "${RED}Error: Target repo '$TARGET_REPO' has no resolvable local path.${NC}" >&2
   exit 1
 fi
 
-TARGET_FS="$PROJECT_ROOT/$TARGET_REPO_PATH/.filesync"
+TARGET_FS="$TARGET_REPO_DIR/.filesync"
 if [[ ! -f "$TARGET_FS/$FILESYNC_FILES_NAME" || ! -f "$TARGET_FS/$FILESYNC_REPOS_NAME" ]]; then
   echo -e "${RED}Error: Target project must have .filesync/$FILESYNC_FILES_NAME and $FILESYNC_REPOS_NAME: $TARGET_FS${NC}" >&2
   exit 1
@@ -108,9 +109,9 @@ done
 for extra_repo in "${TARGET_REPOS[@]}"; do
   jq -e --arg n "$extra_repo" 'any(.name == $n)' "$FILESYNC_REPOS_FILE" &>/dev/null || {
     echo -e "${RED}Error: Extra repo '$extra_repo' not in repos.${NC}" >&2; exit 1; }
-  erp=$(jq -r --arg n "$extra_repo" '.[] | select(.name == $n) | .path // ""' "$FILESYNC_REPOS_FILE" | head -1)
-  [[ -n "$erp" && "$erp" != "null" ]] || { echo -e "${RED}Error: Extra repo '$extra_repo' has no path.${NC}" >&2; exit 1; }
-  efs="$PROJECT_ROOT/$erp/.filesync"
+  extra_project_root="$(filesync_resolve_also_project_root "$PROJECT_ROOT" "$FILESYNC_REPOS_FILE" "$extra_repo" "$PATH_MODE")"
+  [[ -n "$extra_project_root" ]] || { echo -e "${RED}Error: Extra repo '$extra_repo' has no resolvable local path.${NC}" >&2; exit 1; }
+  efs="$extra_project_root/.filesync"
   [[ -f "$efs/$FILESYNC_FILES_NAME" && -f "$efs/$FILESYNC_REPOS_NAME" ]] || {
     echo -e "${RED}Error: Missing $efs/$FILESYNC_FILES_NAME for --also=$extra_repo${NC}" >&2; exit 1; }
   for i in "${!LOCAL_PATHS[@]}"; do
@@ -125,22 +126,36 @@ cleanup_am() {
 }
 trap cleanup_am EXIT
 
-append_minimal_then_synced() {
+append_row() {
   local files_path="$1"
   local repos_path="$2"
   local local_path="$3"
   local target_repo_file_path="$4"
-  local full_target_master_path="$5"
+  local sync_status_val="$5"
   local label="$6"
+  local project_root="${7:-}"
+  local full_target_master_path="${8:-}"
 
   local new_entry
   new_entry=$(jq -n \
     --arg repo "$TARGET_REPO" \
     --arg repo_path "$target_repo_file_path" \
     --arg local "$local_path" \
-    '{repo_name: $repo, repo_file_path: $repo_path, local_path: $local}')
+    --arg st "$sync_status_val" \
+    '{
+      repo_name: $repo,
+      repo_file_path: $repo_path,
+      local_path: $local,
+      sync_status: $st,
+      last_sync_at: null,
+      last_check_at: null,
+      repo_file_modified_at: null,
+      local_file_modified_at: null
+    }')
   filesync_files_append_entry "$files_path" "$repos_path" "$TARGET_REPO" "$new_entry" || return 1
-  filesync_write_file_row "$files_path" "$PROJECT_ROOT" "$local_path" "$full_target_master_path" "synced"
+  if [[ "$sync_status_val" == "synced" ]]; then
+    filesync_write_file_row "$files_path" "$project_root" "$local_path" "$full_target_master_path" "synced"
+  fi
   echo -e "${GREEN}Added mapping ($label):${NC} repo=$TARGET_REPO local_path=$local_path" >&2
 }
 
@@ -158,7 +173,7 @@ for i in "${!LOCAL_PATHS[@]}"; do
     exit 1
   fi
 
-  full_target_master_path="$PROJECT_ROOT/$TARGET_REPO_PATH/$target_repo_file_path"
+  full_target_master_path="$TARGET_REPO_DIR/$target_repo_file_path"
   mkdir -p "$(dirname "$full_target_master_path")"
   cp "$TMP_MASTER" "$full_target_master_path"
   echo -e "${GREEN}Promoted to master:${NC} $target_repo_file_path" >&2
@@ -169,13 +184,14 @@ for i in "${!LOCAL_PATHS[@]}"; do
   cp "$TMP_CLONE" "$full_local_path"
   echo -e "${GREEN}Updated local clone:${NC} $local_path" >&2
 
-  append_minimal_then_synced "$FILESYNC_FILES_FILE" "$FILESYNC_REPOS_FILE" "$local_path" "$target_repo_file_path" "$full_target_master_path" "current" || filesync_die "add-master failed (see messages above)"
+  append_row "$FILESYNC_FILES_FILE" "$FILESYNC_REPOS_FILE" "$local_path" "$target_repo_file_path" "synced" "current" "$PROJECT_ROOT" "$full_target_master_path" \
+    || filesync_die "add-master failed (see messages above)"
 
   for extra_repo in "${TARGET_REPOS[@]}"; do
-    erp=$(jq -r --arg n "$extra_repo" '.[] | select(.name == $n) | .path // ""' "$FILESYNC_REPOS_FILE" | head -1)
-    efs="$PROJECT_ROOT/$erp/.filesync"
-    append_minimal_then_synced "$efs/$FILESYNC_FILES_NAME" "$efs/$FILESYNC_REPOS_NAME" "$local_path" "$target_repo_file_path" \
-      "$PROJECT_ROOT/$erp/$target_repo_file_path" "$extra_repo" || filesync_die "add-master failed (see messages above)"
+    extra_project_root="$(filesync_resolve_also_project_root "$PROJECT_ROOT" "$FILESYNC_REPOS_FILE" "$extra_repo" "$PATH_MODE")"
+    efs="$extra_project_root/.filesync"
+    append_row "$efs/$FILESYNC_FILES_NAME" "$efs/$FILESYNC_REPOS_NAME" "$local_path" "$target_repo_file_path" "sync_required" "$extra_repo" \
+      || filesync_die "add-master failed (see messages above)"
   done
 done
 

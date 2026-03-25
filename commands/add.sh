@@ -65,21 +65,24 @@ mapfile -t TARGET_REPOS < <(
 )
 
 add_one() {
-  local files_path="$1"
-  local repos_path="$2"
-  local repo_name="$3"
-  local repo_file_path="$4"
-  local local_path="$5"
-  local label="$6"
+  local project_root="$1"
+  local files_path="$2"
+  local repos_path="$3"
+  local path_mode="$4"
+  local repo_name="$5"
+  local repo_file_path="$6"
+  local local_path="$7"
+  local label="$8"
 
-  local repo_disk_path rmi="" lmi=""
-  repo_disk_path=$(jq -r --arg n "$repo_name" '.[] | select(.name == $n) | .path // ""' "$repos_path" | head -1)
-  if [[ -z "$repo_disk_path" || "$repo_disk_path" == "null" ]]; then
-    echo -e "${RED}Error: Repo '$repo_name' has no local path (${label}).${NC}" >&2
+  local repo_path_from_json repo_dir rmi="" lmi=""
+  repo_path_from_json=$(jq -r --arg n "$repo_name" '.[] | select(.name == $n) | .path // ""' "$repos_path" | head -1)
+  repo_dir="$(filesync_resolve_repo_path "$project_root" "$repo_path_from_json" "$path_mode")"
+  if [[ -z "$repo_dir" ]]; then
+    echo -e "${RED}Error: Repo '$repo_name' has no resolvable local path (${label}).${NC}" >&2
     return 1
   fi
 
-  local full_master="$PROJECT_ROOT/$repo_disk_path/$repo_file_path"
+  local full_master="$repo_dir/$repo_file_path"
   if [[ ! -f "$full_master" ]]; then
     echo -e "${RED}Error: Master file not in repo checkout (${label}): $repo_file_path${NC}" >&2
     return 1
@@ -101,7 +104,7 @@ add_one() {
     return 1
   fi
 
-  local full_local="$PROJECT_ROOT/$local_path"
+  local full_local="$project_root/$local_path"
   mkdir -p "$(dirname "$full_local")"
   local tmp_clone
   tmp_clone="$(mktemp)"
@@ -143,26 +146,30 @@ for target_repo in "${TARGET_REPOS[@]}"; do
     echo -e "${RED}Error: Target repo '$target_repo' is not in current repos.${NC}" >&2
     exit 1
   fi
-  target_repo_path=$(jq -r --arg n "$target_repo" '.[] | select(.name == $n) | .path // ""' "$FILESYNC_REPOS_FILE" | head -1)
-  if [[ -z "$target_repo_path" || "$target_repo_path" == "null" ]]; then
+  # shellcheck disable=SC2153  # PROJECT_ROOT and PATH_MODE are set by filesync_command_init.
+  target_project_root="$(filesync_resolve_also_project_root "$PROJECT_ROOT" "$FILESYNC_REPOS_FILE" "$target_repo" "$PATH_MODE")"
+  if [[ -z "$target_project_root" ]]; then
     echo -e "${RED}Error: Target repo '$target_repo' has no local path.${NC}" >&2
     exit 1
   fi
-  ofs="$PROJECT_ROOT/$target_repo_path/.filesync"
+  ofs="$target_project_root/.filesync"
   if [[ ! -f "$ofs/$FILESYNC_FILES_NAME" ]] || [[ ! -f "$ofs/$FILESYNC_REPOS_NAME" ]]; then
-    echo -e "${RED}Error: Expected $ofs/$FILESYNC_FILES_NAME and $FILESYNC_REPOS_NAME (create that project's .filesync data).${NC}" >&2
+    echo -e "${RED}Error: Target '$target_repo' is not an initialized filesync project: missing $ofs/$FILESYNC_FILES_NAME and/or $ofs/$FILESYNC_REPOS_NAME.${NC}" >&2
     exit 1
   fi
 done
 
 for i in "${!REPO_FILE_PATHS[@]}"; do
-  add_one "$FILESYNC_FILES_FILE" "$FILESYNC_REPOS_FILE" "$REPO_NAME" "${REPO_FILE_PATHS[$i]}" "${LOCAL_PATHS[$i]}" "current project" || filesync_die "add-file failed (see messages above)"
+  add_one "$PROJECT_ROOT" "$FILESYNC_FILES_FILE" "$FILESYNC_REPOS_FILE" "$PATH_MODE" "$REPO_NAME" "${REPO_FILE_PATHS[$i]}" "${LOCAL_PATHS[$i]}" "current project" \
+    || filesync_die "add-file failed (see messages above)"
 done
 
 for target_repo in "${TARGET_REPOS[@]}"; do
-  target_repo_path=$(jq -r --arg n "$target_repo" '.[] | select(.name == $n) | .path // ""' "$FILESYNC_REPOS_FILE" | head -1)
-  ofs="$PROJECT_ROOT/$target_repo_path/.filesync"
+  target_project_root="$(filesync_resolve_also_project_root "$PROJECT_ROOT" "$FILESYNC_REPOS_FILE" "$target_repo" "$PATH_MODE")"
+  ofs="$target_project_root/.filesync"
+  target_mode="$(filesync_project_read_path_mode "$target_project_root")"
   for i in "${!REPO_FILE_PATHS[@]}"; do
-    add_one "$ofs/$FILESYNC_FILES_NAME" "$ofs/$FILESYNC_REPOS_NAME" "$REPO_NAME" "${REPO_FILE_PATHS[$i]}" "${LOCAL_PATHS[$i]}" "project at $target_repo_path" || filesync_die "add-file failed (see messages above)"
+    add_one "$target_project_root" "$ofs/$FILESYNC_FILES_NAME" "$ofs/$FILESYNC_REPOS_NAME" "$target_mode" "$REPO_NAME" "${REPO_FILE_PATHS[$i]}" "${LOCAL_PATHS[$i]}" "project at $target_project_root" \
+      || filesync_die "add-file failed (see messages above)"
   done
 done
