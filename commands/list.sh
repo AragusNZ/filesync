@@ -104,6 +104,7 @@ case "$sub" in
   list-files|list|lf|files)
     filesync_print_list_files_heading
     filesync_print_filter_context "$REPO_FILTER" "$FILE_FRAGMENT" "$STATUS_CSV" "$INCLUDE_DETACHED" 0
+    # shellcheck disable=SC2034  # Used via nameref in filesync_counts_inc/render helpers.
     declare -A LIST_STATUS_COUNTS=()
     print_file_line() {
       file_sync_print_file_row "$1" "$2" "$3" "${4:-unset}" "${5:-}"

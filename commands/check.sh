@@ -105,6 +105,7 @@ BLOCKING_ISSUES=0
 CHECKED=0
 MARKER_WARN_ROWS=0
 UPDATED_ROWS=0
+# shellcheck disable=SC2034  # Used via nameref in filesync_counts_inc/render helpers.
 declare -A CHECK_STATUS_COUNTS=()
 
 filesync_print_check_banner
