@@ -1,7 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# Resolve install root when PREFIX/bin/filesync is a symlink (dirname "$0" would be wrong).
+_dispatch_self="${BASH_SOURCE[0]}"
+if _rp="$(readlink -f "$_dispatch_self" 2>/dev/null)"; then
+  _dispatch_self="$_rp"
+elif command -v realpath >/dev/null 2>&1 && _rp="$(realpath "$_dispatch_self" 2>/dev/null)"; then
+  _dispatch_self="$_rp"
+fi
+ROOT="$(cd "$(dirname "$_dispatch_self")/.." && pwd)"
+
+FILESYNC_VERSION="unknown"
+if [[ -r "$ROOT/share/VERSION" ]]; then
+  FILESYNC_VERSION="$(tr -d '\r\n' <"$ROOT/share/VERSION")"
+fi
+
 # shellcheck source=/dev/null
 source "$ROOT/lib/colors.sh"
 
@@ -18,6 +31,7 @@ help() {
   echo "  filesync check [--repo=name] [--file=path_fragment]"
   echo "  filesync repos [--repo=name]   # list repos"
   echo "  filesync list [--repo=name]    # list file mappings + status"
+  echo "  filesync init [directory]   # create .filesync/ here (default: cwd); establishes project root"
   echo "  filesync enable | disable"
   echo "  filesync add <repo> <path_in_repo>[:<local_path>] ... [--also=repo1,repo2]"
   echo "           # path_in_repo = file under the repo checkout; omit :local_path if project uses the same path"
@@ -30,13 +44,18 @@ help() {
   echo "  filesync repo                 # interactive add repo"
   echo "  filesync repo-edit <name> [--rename=] [--path=] [--url=] [--branch=]"
   echo "           # edit repos.json; rename updates repo_name in all files.json rows"
+  echo "  filesync update [--check] [--apply] [-y]   # newer release from GitHub (git or .deb)"
   echo "  filesync help"
   echo ""
-  echo "Config: <project>/.filesync/config.json, repos.json, files.json (see docs/configuration.md in this package)"
-  echo "Composer: vendor/bin/filesync …  or: composer exec filesync -- <args>"
+  echo "Config: discovered like git — walk up from the current directory for .filesync/"
+  echo "  (.filesync/config.json, repos.json, files.json — see docs/configuration.md)"
 }
 
 main() {
+  if [[ $# -eq 1 && ($1 == '-V' || $1 == '--version') ]]; then
+    printf '%s\n' "filesync ${FILESYNC_VERSION}"
+    exit 0
+  fi
   if [[ $# -eq 0 ]]; then
     help
     exit 0
@@ -52,6 +71,10 @@ main() {
     check)
       print_header "filesync: check"
       exec "$ROOT/commands/check.sh" "$@"
+      ;;
+    init)
+      print_header "filesync: init"
+      exec "$ROOT/commands/init.sh" "$@"
       ;;
     add)
       exec "$ROOT/commands/add.sh" "$@"
@@ -88,6 +111,9 @@ main() {
       ;;
     disable)
       exec "$ROOT/commands/enable-disable.sh" disable
+      ;;
+    update)
+      exec "$ROOT/commands/update.sh" "$@"
       ;;
     help|-h|--help)
       help

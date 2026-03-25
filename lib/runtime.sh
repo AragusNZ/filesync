@@ -48,6 +48,7 @@ filesync_command_init() {
   filesync_export_data_paths
 
   filesync_require_jq
+  filesync_require_git
 
   FILESYNC_STATE_FILE=$(mktemp)
   filesync_assemble_state_to "$FILESYNC_STATE_FILE" || exit 1

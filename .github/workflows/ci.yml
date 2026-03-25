@@ -12,19 +12,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Shellcheck
+      - name: Install CI tools
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y shellcheck
-          shellcheck -x bin/filesync commands/*.sh lib/*.sh scripts/ci-smoke-composer.sh
+          sudo apt-get install -y shellcheck dpkg-dev lintian
 
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: "8.3"
-          tools: composer:v2
+      - name: Shellcheck
+        run: shellcheck -x bin/filesync commands/*.sh lib/*.sh scripts/ci-smoke-prefix.sh scripts/build-deb.sh
 
-      - name: Composer validate
-        run: composer validate --strict
+      - name: Prefix-install smoke
+        run: bash scripts/ci-smoke-prefix.sh
 
-      - name: Path-install smoke
-        run: bash scripts/ci-smoke-composer.sh
+      - name: Build .deb and lintian
+        env:
+          VERSION: 0.0.0-ci
+        run: |
+          bash scripts/build-deb.sh
+          lintian --fail-on warning "filesync_${VERSION}_all.deb"

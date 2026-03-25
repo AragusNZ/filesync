@@ -9,3 +9,11 @@ filesync_require_jq() {
     exit 1
   fi
 }
+
+filesync_require_git() {
+  if ! command -v git &>/dev/null; then
+    # shellcheck disable=SC2154
+    echo -e "${RED}Error: git is required but not installed.${NC}" >&2
+    exit 1
+  fi
+}

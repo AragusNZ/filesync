@@ -46,7 +46,15 @@ They do **not** rewrite a single monolithic config file at the project root.
 
 1. If `FILESYNC_PROJECT_ROOT` is set: that directory is the project root; `.filesync` defaults to `$PROJECT_ROOT/.filesync` unless `FILESYNC_DIR` is set.
 2. If only `FILESYNC_DIR` is set: that path is the `.filesync` directory; project root is its parent.
-3. Otherwise: from `cwd`, walk up until a directory containing `.filesync` exists; that parent directory is the project root.
+3. Otherwise: from `cwd`, walk up until a directory `D` exists where **`D/.filesync`** is present; **`D` is the project root** (the directory that *contains* the `.filesync` directory, not its parent).
+
+### `filesync init`
+
+**`filesync init`** (optional path; default: current directory) creates **`<dir>/.filesync/`** with `config.json` (copied from package defaults), `repos.json`, and `files.json` (empty arrays). It does **not** walk parents — the directory you pass (or `cwd`) is the project root you are establishing. Other commands then find that root when your shell is under that tree (or via `FILESYNC_PROJECT_ROOT`). If **all three** JSON files already exist, `init` exits with an error; if only some exist, it creates whichever files are still missing.
+
+### Enable / disable
+
+**`filesync enable`** and **`filesync disable`** set **`file_sync_enabled`** in `.filesync/config.json` (`enable` asks for **y/N** confirmation; `disable` does not). While disabled, **`filesync check`** and **`filesync sync`** print a short message and exit with status **0** without updating or syncing files.
 
 ## Assembled state
 
@@ -62,6 +70,18 @@ Internally, commands build a **temporary** JSON file (merged top-level config + 
 - **`--file=fragment`** (**`check`** and **`sync`** only): only rows where `local_path` **or** `repo_file_path` contains the fragment (substring / “like” match). Whitespace is trimmed from the fragment; an empty value matches all rows.
 
 **`attach`**: re-couples rows with `sync_status: uncoupled` by rewriting the local file from master (clone marker), clearing `sync_status`, then running **`check`** for that repo and path so status is recomputed.
+
+## `sync` behavior and flags
+
+By default, **`sync`** only processes rows whose **`sync_status`** is empty/unset or **`sync_required`**. Rows with **`sync_status: uncoupled`** are skipped unless **`--include-uncoupled`** is set.
+
+- **`--dry-run`**: report what would be copied; do not write files or update `files.json`.
+- **`--force`**: if the local file exists but lacks the **`>> FILE-SYNC: CLONE`** marker, sync anyway (default is to skip those paths).
+- **`--all`**: include every row that passes repo/file filters and is not uncoupled (unless **`--include-uncoupled`**); still requires master/clone marker rules unless **`--force`** applies to clone-less locals.
+- **`--include-status=a,b`**: comma-separated list of additional **`sync_status`** values to treat as eligible (whitespace around tokens is stripped).
+- **`--include-uncoupled`**: allow rows with **`sync_status: uncoupled`** to be synced.
+
+Master files must contain the **`>> FILE-SYNC: MASTER`** marker or the row is skipped (with a warning), regardless of other flags.
 
 ## Dependencies
 

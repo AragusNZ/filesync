@@ -38,7 +38,7 @@ filesync_resolve_or_exit() {
   done
 
   echo "filesync: no .filesync directory found (walked up from $(pwd -P))" >&2
-  echo "Create .filesync/${FILESYNC_CONFIG_NAME}, ${FILESYNC_REPOS_NAME}, and ${FILESYNC_FILES_NAME} — see docs/configuration.md (e.g. vendor/aragusnz/filesync/docs/ when installed via Composer)" >&2
+  echo "Create .filesync/${FILESYNC_CONFIG_NAME}, ${FILESYNC_REPOS_NAME}, and ${FILESYNC_FILES_NAME} — see docs/configuration.md in the filesync repository." >&2
   exit 1
 }
 

@@ -1,0 +1,82 @@
+.TH FILESYNC 1 "March 2026" "" "User Commands"
+.SH NAME
+filesync \- map and sync files across git checkouts
+.SH SYNOPSIS
+.B filesync
+.RI [ \-V | \-\-version ]
+.br
+.B filesync
+.RI [ help | \-h | \-\-help ]
+.br
+.B filesync
+.I subcommand
+.RI [ arguments ]
+.SH DESCRIPTION
+.B filesync
+is a Bash CLI that keeps file mappings in a per-project
+.B .filesync/
+directory (configuration, repos, and file rows). It discovers the project by walking parent directories from the current working directory, similar to
+.BR git .
+.SH OPTIONS
+.TP
+.BR \-V ", " \-\-version
+Print the program version and exit.
+.TP
+.BR help ", " \-h ", " \-\-help
+Print usage and exit.
+.SH SUBCOMMANDS
+Common subcommands include
+.BR init ,
+.BR check ,
+.BR sync ,
+.BR list ,
+repo management
+.RB ( repos ", " repo ", " repo-edit ),
+and file mapping commands
+.RB ( add ", " add-master ", " push ", " attach ", " detach ", " rm ),
+and
+.B update
+to compare with upstream releases and optionally reinstall.
+Run
+.B filesync
+with no arguments for a short summary.
+.SH FILES
+.TP
+.I .filesync/config.json
+Merged over package defaults; toggles and path mode.
+.TP
+.I .filesync/repos.json
+Array of repo definitions.
+.TP
+.I .filesync/files.json
+Array of file mapping rows.
+.SH ENVIRONMENT
+.TP
+.B FILESYNC_PROJECT_ROOT
+Project root directory.
+.TP
+.B FILESYNC_DIR
+Path to the
+.B .filesync
+directory.
+.TP
+.B FILESYNC_UPDATE_REPO
+For
+.BR "filesync update" ,
+GitHub
+.I owner/repo
+(default: upstream).
+.TP
+.B FILESYNC_INSTALL_PREFIX
+For
+.BR "filesync update --apply"
+from a git checkout,
+.B PREFIX
+passed to
+.BR "make install"
+when autodetection is wrong.
+.SH SEE ALSO
+Full configuration notes are in the installed documentation or upstream
+.I docs/configuration.md .
+.SH AUTHORS
+Written by AragusNZ; see upstream repository for details.

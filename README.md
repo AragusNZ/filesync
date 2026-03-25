@@ -1,51 +1,86 @@
 # filesync
 
-Bash tooling to map and sync files across multiple git checkouts (e.g. a monorepo plus sibling service repos). State lives in the **consuming project** under `.filesync/`; this directory is the package source.
+Bash tooling to map and sync files across multiple git checkouts (e.g. a monorepo plus sibling service repos). State lives in the **consuming project** under `.filesync/`; install the CLI once on the system and run it from any directory inside that project.
 
 ## Requirements
 
 - `bash`, `jq`, `git`
+- `curl` or `wget` (for **`filesync update`**)
 
-## Installing via Composer
+## Install (system-wide)
 
-From your PHP project root:
+From a clone of this repository:
 
 ```bash
-composer require aragusnz/filesync
+sudo make install
 ```
 
-Composer installs the package under `vendor/aragusnz/filesync` and links the CLI to `vendor/bin/filesync`.
+Default prefix is `/usr/local` (`filesync` → `/usr/local/bin/filesync`, package files under `/usr/local/lib/filesync/`). The binary on `PATH` is a **symlink** to `PREFIX/lib/filesync/bin/filesync`; libraries and commands live under `PREFIX/lib/filesync/`. Override with `PREFIX`:
+
+```bash
+sudo make install PREFIX=/usr
+```
+
+Staging for packages:
+
+```bash
+make install DESTDIR=/tmp/stage PREFIX=/usr
+```
+
+Remove a non-packaged install (does not remove `.deb` packages; use `apt`/`dpkg` for those):
+
+```bash
+sudo make uninstall
+sudo make uninstall PREFIX=/usr
+```
+
+The installed `filesync --version` string comes from `share/VERSION` in the install tree. For **git tags / `.deb` builds**, [scripts/build-deb.sh](scripts/build-deb.sh) overwrites that file in the package so it matches the `VERSION` environment variable (the release workflow sets this from the tag). Bump [share/VERSION](share/VERSION) in the repository when you cut a release so tarballs and `make install` from a source tree stay aligned.
+
+### Releases
+
+GitHub Releases publish a **source tarball** (`make install` from the extracted tree) and a **`.deb`** (`Depends: bash, jq, git`) for Debian/Ubuntu. Download the `.deb` and run `sudo apt install ./filesync_*_all.deb` (or `sudo dpkg -i …`).
+
+### Updating filesync
+
+- **`filesync update`** — compares your install to the [latest GitHub release](https://github.com/AragusNZ/filesync/releases/latest) and prints upgrade steps.
+- **`filesync update --apply`** — from a **git clone**, runs `git pull` then **`sudo make install`** (default `PREFIX` is derived from the install path; override with **`FILESYNC_INSTALL_PREFIX`** if you used a custom prefix). From a **`.deb`** install, downloads the release `.deb` and runs **`sudo dpkg -i`**. Use **`-y`** to skip the confirmation prompt.
+
+Forks: set **`FILESYNC_UPDATE_REPO=owner/repo`** so the check targets your releases.
 
 ## Usage
 
-From the **project root** (a directory that contains `.filesync/`):
+Create a new project (writes `./.filesync/` in the current directory — that folder’s parent is the **project root** for this tree):
 
 ```bash
-vendor/bin/filesync check
-vendor/bin/filesync check --repo=emissions --file=HealthStatusService.php
-vendor/bin/filesync sync --file=Foo.php --dry-run
-vendor/bin/filesync list --repo=emissions
-vendor/bin/filesync list
+cd /path/to/your/project
+filesync init
 ```
 
-Using Composer’s binary resolution (same effect when `vendor/bin` is not on your `PATH`):
+From any directory under a project that contains `.filesync/` (discovery walks up toward `/`, like `git`):
 
 ```bash
-composer exec filesync -- check
-composer exec filesync -- sync --dry-run
+filesync check
+filesync check --repo=emissions --file=HealthStatusService.php
+filesync sync --file=Foo.php --dry-run
+filesync list --repo=emissions
+filesync list
 ```
 
-Optional project script (in your app’s `composer.json`): `"scripts": { "filesync": "filesync" }` — then run `composer run filesync -- check` (note `--` before arguments).
+**Development without install:** run `./bin/filesync` from this tree (or `bash /path/to/filesync/bin/filesync …`).
 
-**Direct / git checkout:** invoke `bin/filesync` from this tree (or `bash path/to/filesync/bin/filesync …`).
+Subcommands: `init`, `check`, `sync`, `list`, `repos`, `add`, `add-master`, `push`, `detach`, `attach`, `rm` (alias: `remove`), `repo`, `repo-edit`, `enable`, `disable`, `update`.
 
-Subcommands: `check`, `sync`, `list`, `repos`, `add`, `add-master`, `push`, `detach`, `attach`, `rm`, `repo`, `repo-edit`, `enable`, `disable`.
+**`check`**, **`sync`**, **`repos`**, and **`list`** accept optional **`--repo=name`**. **`check`** and **`sync`** also accept **`--file=fragment`**: substring match on `local_path` or `repo_file_path` (case-sensitive). Combine **`--repo`** and **`--file`** to scope to one repo and matching paths.
 
-**`check`**, **`sync`**, **`repos`**, and **`list`** accept optional **`--repo=name`** (repo `name`). **`check`** and **`sync`** also accept **`--file=fragment`**: substring match on `local_path` or `repo_file_path` (case-sensitive). Combine **`--repo`** and **`--file`** to scope to one repo and matching paths.
+When **`file_sync_enabled`** is false (see `filesync disable`), **`check`** and **`sync`** print a message and exit successfully without doing work.
 
-Run `vendor/bin/filesync` (or `bin/filesync`) with no arguments for a short usage line.
+**`sync`** options (see [docs/configuration.md](docs/configuration.md) for details): **`--dry-run`**, **`--force`** (overwrite locals that lack the clone marker), **`--all`** (consider every row except uncoupled unless **`--include-uncoupled`**), **`--include-status=a,b`** (comma-separated extra `sync_status` values to include), **`--include-uncoupled`**.
 
-## Layout
+If the first argument starts with `-` but is not a known subcommand, it is treated as a **`sync`** option (same as calling `sync` first).
+
+Run `filesync` with no arguments to print full help. **`filesync --version`** / **`filesync -V`** print the version; **`man filesync`** is available after install.
+
+## Layout (source / install tree)
 
 | Path | Role |
 |------|------|
@@ -53,6 +88,8 @@ Run `vendor/bin/filesync` (or `bin/filesync`) with no arguments for a short usag
 | `commands/*.sh` | One script per subcommand |
 | `lib/*.sh` | Resolve project, merge config, assemble state JSON, paths, status |
 | `share/defaults/config.default.json` | Shallow-merge defaults for `.filesync/config.json` |
+| `share/VERSION` | Single-line version for `filesync --version` |
+| `man/filesync.1` | Manual page (installed under `PREFIX/share/man/man1/`) |
 
 ## User data: `.filesync/`
 
@@ -64,16 +101,27 @@ Run `vendor/bin/filesync` (or `bin/filesync`) with no arguments for a short usag
 
 Basenames are defined in `lib/data-names.sh` if you need to change them in a fork.
 
-Discovery: walk parents from the current working directory until a directory containing `.filesync` is found; that directory’s parent is the **project root**. Overrides: `FILESYNC_PROJECT_ROOT` or `FILESYNC_DIR` (see [docs/configuration.md](docs/configuration.md)).
+Discovery: walk parents from the current working directory until a directory `D` exists where **`D/.filesync`** is present; **`D` is the project root**. Overrides: `FILESYNC_PROJECT_ROOT` or `FILESYNC_DIR` (see [docs/configuration.md](docs/configuration.md)).
 
 ## Docs
 
 - [Configuration and environment](docs/configuration.md)
 
+## Developing
+
+CI runs **`shellcheck`**, **`bash scripts/ci-smoke-prefix.sh`** (staged installs with **`PREFIX=/usr/local`** and **`PREFIX=/usr`**, then `filesync init` / `help` / `check` / `--version`), builds a **`VERSION=0.0.0-ci`** `.deb`, and runs **`lintian --fail-on warning`**. To reproduce locally:
+
+```bash
+shellcheck -x bin/filesync commands/*.sh lib/*.sh scripts/ci-smoke-prefix.sh scripts/build-deb.sh
+bash scripts/ci-smoke-prefix.sh
+VERSION=0.0.0-ci bash scripts/build-deb.sh
+lintian --fail-on warning filesync_0.0.0-ci_all.deb
+```
+
+## License
+
+See [LICENSE](LICENSE).
+
 ## Embedding
 
-This tree may be installed via Composer, or used as a nested git repo, submodule, or subtree. Point automation at `vendor/bin/filesync` (Composer) or `filesync/bin/filesync` relative to your project.
-
-## Packagist
-
-After tagging releases (e.g. `v1.0.0`), submit the repository URL at [packagist.org/packages/submit](https://packagist.org/packages/submit) and connect the Git webhook for automatic updates.
+You can keep this tree as a nested git repo, submodule, or subtree; for automation, install via `make install` or the release `.deb` so `filesync` is on `PATH`.
