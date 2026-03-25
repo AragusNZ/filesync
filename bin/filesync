@@ -19,8 +19,9 @@ fi
 source "$ROOT/lib/colors.sh"
 
 print_header() {
-  echo -e "${CYAN}$1${NC}" >&2
-  echo "------" >&2
+  echo "------------------" >&2
+  echo -e "${BOLD}${WHITE}$1${NC}" >&2
+  echo "------------------" >&2
 }
 
 help() {
@@ -71,15 +72,15 @@ main() {
 
   case "$sub" in
     sync|s)
-      print_header "filesync: sync from master"
+      print_header "FILESYNC: sync from master"
       exec "$ROOT/commands/sync.sh" "$@"
       ;;
     check|c)
-      print_header "filesync: check"
+      print_header "FILESYNC: check"
       exec "$ROOT/commands/check.sh" "$@"
       ;;
     init)
-      print_header "filesync: init"
+      print_header "FILESYNC: init"
       exec "$ROOT/commands/init.sh" "$@"
       ;;
     add-file|af|add)
@@ -135,7 +136,7 @@ main() {
       ;;
     *)
       if [[ "$sub" == -* ]]; then
-        print_header "filesync: sync from master"
+        print_header "FILESYNC: sync from master"
         exec "$ROOT/commands/sync.sh" "$sub" "$@"
       fi
       echo -e "${RED}Unknown subcommand: $sub${NC}" >&2

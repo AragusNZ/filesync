@@ -87,8 +87,8 @@ fi
 LATEST="${TAG_RAW#v}"
 DEB_URL="$(jq -r '(.assets // [])[] | select(.name | test("^filesync_.+_all\\.deb$")) | .browser_download_url' "$TMP_JSON" | head -n1)"
 
-echo -e "${CYAN}filesync version${NC}  ${WHITE}${CURRENT}${NC}  (this install)" >&2
-echo -e "${CYAN}Latest release${NC}    ${WHITE}${LATEST}${NC}  (${REPO_SLUG})" >&2
+echo -e "${BOLD}${WHITE}FILESYNC version${NC}  ${BOLD}${WHITE}${CURRENT}${NC}  (this install)" >&2
+echo -e "${BOLD}${WHITE}Latest release${NC}    ${BOLD}${WHITE}${LATEST}${NC}  (${REPO_SLUG})" >&2
 
 up_to_date=false
 if [[ "$CURRENT" == "$LATEST" ]]; then

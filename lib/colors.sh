@@ -13,6 +13,7 @@ if [[ -n "${NO_COLOR:-}" ]]; then
   CYAN=''
   MAGENTA=''
   GRAY=''
+  BOLD=''
   NC=''
 else
   # Use ANSI bytes (not the literal two-char sequence "\\033") so printf '%s' and echo without -e still colorize.
@@ -23,5 +24,6 @@ else
   CYAN=$'\033[0;36m'
   MAGENTA=$'\033[0;35m'
   GRAY=$'\033[0;90m'
+  BOLD=$'\033[1m'
   NC=$'\033[0m'
 fi

@@ -41,7 +41,7 @@ else
 fi
 
 (
-	NO_COLOR=1
+	export NO_COLOR=1
 	# shellcheck source=/dev/null
 	source "${ROOT}/lib/colors.sh"
 	# shellcheck source=/dev/null

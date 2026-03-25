@@ -13,7 +13,7 @@ filesync_warn() {
 
 filesync_info() {
   if [[ -n "${FILESYNC_VERBOSE:-}" ]]; then
-    echo -e "${CYAN}filesync:${NC} $*" >&2
+    echo -e "${WHITE}filesync:${NC} $*" >&2
   fi
 }
 

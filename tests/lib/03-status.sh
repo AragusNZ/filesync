@@ -43,7 +43,7 @@ done
 if [[ "$(file_sync_color_reset)" == *$'\033[0m'* ]]; then ok "color_reset"; else bad "color_reset"; fi
 
 (
-	NO_COLOR=1
+	export NO_COLOR=1
 	# shellcheck source=/dev/null
 	source "${ROOT}/lib/colors.sh"
 	# shellcheck source=/dev/null

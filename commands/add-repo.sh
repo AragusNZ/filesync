@@ -14,7 +14,7 @@ if [[ ! -f "$repos" ]]; then
   exit 1
 fi
 
-echo -e "${CYAN}Add a repo to .filesync/$FILESYNC_REPOS_NAME${NC}" >&2
+echo -e "${BOLD}${WHITE}Add a repo to .filesync/$FILESYNC_REPOS_NAME${NC}" >&2
 echo "" >&2
 
 read -rp "Repo name (e.g. greenlit-api): " name

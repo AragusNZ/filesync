@@ -117,7 +117,7 @@ fi
 mv "$tmp_repos" "$repos"
 mv "$tmp_files" "$files"
 
-echo -e "${GREEN}Updated repo${NC} ${CYAN}$REPO_CURRENT${NC}:" >&2
+echo -e "${GREEN}Updated repo${NC} ${WHITE}$REPO_CURRENT${NC}:" >&2
 if [[ -n "$RENAME" ]] && [[ "$RENAME" != "$REPO_CURRENT" ]]; then
   echo "  Renamed to: $RENAME (files.json repo_name and local clone/detached markers updated)" >&2
 fi

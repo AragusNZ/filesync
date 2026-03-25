@@ -8,7 +8,13 @@ source "${TESTS}/harness-lib.sh"
 # shellcheck source=/dev/null
 source "${ROOT}/lib/progress.sh"
 
-if filesync_progress_want 100; then
+# Must not rely on the outer script's stderr: interactive runs have -t 2.
+if (
+	exec 2>/dev/null
+	# shellcheck source=/dev/null
+	source "${ROOT}/lib/progress.sh"
+	filesync_progress_want 100
+); then
 	bad "want should be false without a TTY stderr"
 else
 	ok "want false when stderr is not a TTY"
