@@ -96,7 +96,7 @@ file_sync_status_color() {
     sync_required) printf '%s' $'\033[1;33m' ;;
     local_newer) printf '%s' $'\033[0;36m' ;;
     conflict) printf '%s' $'\033[0;31m' ;;
-    uncoupled) printf '%s' $'\033[0;35m' ;;
+    detached) printf '%s' $'\033[0;35m' ;;
     error_*) printf '%s' $'\033[0;31m' ;;
     *) printf '%s' $'\033[0;37m' ;;
   esac

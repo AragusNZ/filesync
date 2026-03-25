@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Re-couple an uncoupled mapping: refresh clone from master, clear status, run check for that file.
+# Re-couple a detached mapping: refresh clone from master, clear status, run check for that file.
 
 set -euo pipefail
 
@@ -38,8 +38,8 @@ attach_one() {
 
   local prior
   prior="$(jq -r --arg local "$local_path" '.[] | select(.local_path == $local) | .sync_status // ""' "$FILESYNC_FILES_FILE")"
-  if [[ "$prior" != "uncoupled" ]]; then
-    echo -e "${YELLOW}Skip:${NC} $local_path is not uncoupled (sync_status=${prior:-unset}); nothing to attach."
+  if [[ "$prior" != "detached" ]]; then
+    echo -e "${YELLOW}Skip:${NC} $local_path is not detached (sync_status=${prior:-unset}); nothing to attach."
     return 0
   fi
 

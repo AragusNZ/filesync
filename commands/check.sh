@@ -134,7 +134,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
   [[ -n "$REPO_ISO" ]] && REPO_E=$(file_sync_parse_to_epoch "$REPO_ISO")
   [[ -n "$LOCAL_ISO" ]] && LOCAL_E=$(file_sync_parse_to_epoch "$LOCAL_ISO")
 
-  if [[ "$PRIOR_STATUS" == "uncoupled" ]]; then
+  if [[ "$PRIOR_STATUS" == "detached" ]]; then
     CHECKED=$((CHECKED + 1))
     append_patch "$(jq -nc \
       --argjson idx "$i" \
@@ -144,11 +144,11 @@ for ((i=0; i<FILES_COUNT; i++)); do
       '{
         i: $idx,
         last_check_at: $now,
-        sync_status: "uncoupled",
+        sync_status: "detached",
         repo_file_modified_at: (if $rs == "" then null else $rs end),
         local_file_modified_at: (if $ls == "" then null else $ls end)
       }')"
-    printf '%b[%s]%b %s %s: uncoupled (mapping inactive)\n' "$(col_st uncoupled)" "uncoupled" "$(rst)" "${WHITE}" "$LOCAL_PATH"
+    printf '%b[%s]%b %s %s: detached (mapping inactive)\n' "$(col_st detached)" "detached" "$(rst)" "${WHITE}" "$LOCAL_PATH"
     continue
   fi
 
@@ -186,8 +186,8 @@ for ((i=0; i<FILES_COUNT; i++)); do
     continue
   fi
 
-  if ! grep -q ">> FILE-SYNC: CLONE" "$FULL_LOCAL_PATH" 2>/dev/null; then
-    echo -e "$(col_st error_no_clone_marker)${YELLOW}⚠${NC} ${WHITE}$LOCAL_PATH: Missing >> FILE-SYNC: CLONE marker${NC}"
+  if ! has_clone_file_sync_marker "$FULL_LOCAL_PATH" 2>/dev/null; then
+    echo -e "$(col_st error_no_clone_marker)${YELLOW}⚠${NC} ${WHITE}$LOCAL_PATH: Missing filesync:sync kind=clone marker${NC}"
     BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
     append_patch "$(jq -nc \
       --argjson idx "$i" \

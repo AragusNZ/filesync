@@ -46,10 +46,10 @@ fi
 
 mf="${td}/m.txt"
 echo "x" >"${mf}"
-echo "// >> FILE-SYNC: CLONE (tools/x from origin)" >>"${mf}"
+echo "# filesync:sync kind=clone path=tools/x repo=origin" >>"${mf}"
 out="${td}/out.txt"
 if render_master_marker_file "${mf}" "${out}"; then
-	if grep -q 'FILE-SYNC: MASTER' "${out}"; then
+	if grep -qE 'filesync:sync kind=master([[:space:]]|$)' "${out}"; then
 		ok "render_master_marker_file"
 	else
 		bad "master marker output"
@@ -61,15 +61,20 @@ fi
 strip="${td}/strip.txt"
 {
 	echo "keep"
-	echo "// >> FILE-SYNC: MASTER"
+	echo "# filesync:sync kind=master"
 	echo "tail"
 } >"${mf}"
 strip_file_sync_marker_lines "${mf}" "${strip}"
-if grep -q 'FILE-SYNC' "${strip}"; then
+if grep -q 'filesync:sync' "${strip}"; then
 	bad "strip markers left marker"
 else
 	ok "strip_file_sync_marker_lines"
 fi
+
+style="$(filesync_marker_style_for_path "foo.vue")"
+if [[ "${style}" == "html" ]]; then ok "marker_style vue"; else bad "vue style got ${style}"; fi
+
+if [[ "$(filesync_marker_style_resolve "x.py" "line_slash")" == "line_slash" ]]; then ok "marker_style_resolve override"; else bad "override"; fi
 
 if [[ "${fail}" -ne 0 ]]; then
 	echo "run-lib-tests.sh: failures" >&2

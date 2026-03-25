@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Remove mapping from .filesync/files.json; strip FILE-SYNC lines from file.
+# Remove mapping from .filesync/files.json; strip filesync:sync marker lines from file.
 
 set -euo pipefail
 
@@ -42,7 +42,7 @@ remove_one() {
     t="$(mktemp)"
     strip_file_sync_marker_lines "$full" "$t"
     mv "$t" "$full"
-    echo -e "${GREEN}Stripped FILE-SYNC lines:${NC} $local_path"
+    echo -e "${GREEN}Stripped filesync marker lines:${NC} $local_path"
   fi
 }
 

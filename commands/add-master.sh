@@ -150,11 +150,11 @@ for i in "${!LOCAL_PATHS[@]}"; do
   full_local_path="$PROJECT_ROOT/$local_path"
 
   if ! render_master_marker_file "$full_local_path" "$TMP_MASTER"; then
-    echo -e "${RED}Error: Local file must include a FILE-SYNC marker.${NC}"
+    echo -e "${RED}Error: Local file must include a filesync:sync marker.${NC}"
     exit 1
   fi
-  if ! grep -q ">> FILE-SYNC: MASTER" "$TMP_MASTER"; then
-    echo -e "${RED}Error: Could not produce MASTER-marked file.${NC}"
+  if ! has_master_file_sync_marker "$TMP_MASTER"; then
+    echo -e "${RED}Error: Could not produce kind=master marker.${NC}"
     exit 1
   fi
 

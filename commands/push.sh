@@ -60,10 +60,14 @@ push_one() {
     return 1
   fi
 
+  local MARKER_STYLE=""
+  MARKER_STYLE=$(jq -r --arg local "$LOCAL_PATH" '.files[] | select(.local_path == $local) | .marker_style // empty' "$CONFIG_FILE" | head -1)
+  [[ "$MARKER_STYLE" == "null" ]] && MARKER_STYLE=""
+
   TMP_MASTER="$(mktemp)"
-  if ! render_master_marker_file "$FULL_LOCAL_PATH" "$TMP_MASTER"; then
+  if ! render_master_marker_file "$FULL_LOCAL_PATH" "$TMP_MASTER" "$MARKER_STYLE"; then
     rm -f "$TMP_MASTER"
-    echo -e "${RED}Error: Local file must include a FILE-SYNC marker.${NC}"
+    echo -e "${RED}Error: Local file must include a filesync:sync marker.${NC}"
     return 1
   fi
 

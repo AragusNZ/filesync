@@ -33,6 +33,18 @@ JSON **array** of objects, for example:
 
 JSON **array** of file row objects (paths, `repo_name`, `sync_status`, marker-related fields, mtimes, etc.).
 
+Optional **`marker_style`** per row overrides comment wrapping for that path when the tool must emit a marker line without an existing comment wrapper on the line (rare). Allowed values: **`line_slash`** (`//`), **`line_hash`** (`#`), **`line_dash`** (`--`), **`block_c`** (`/* … */` on one line), **`html`** (`<!-- … -->`). If omitted, style is inferred from the file extension or basename (e.g. `Dockerfile` → hash, `.vue` / `.html` → html, `.css` → block, `.sql` → dash; unknown extension defaults to **`line_hash`**).
+
+### Sync markers (text files)
+
+Each synced copy carries a single-line **marker** containing the substring **`filesync:sync`** and a **`kind=`** field:
+
+- **`kind=master`** — file in the upstream repo (source of truth).
+- **`kind=clone`** — coupled local copy; includes **`path=…`** (repo-relative path) and **`repo=…`** (repo name).
+- **`kind=detached`** — local file after **`detach`**; optional **`path=`** / **`repo=`** for context.
+
+The tool rewrites the first marker line when syncing or changing coupling; the **comment style** around that payload matches the source file (or `marker_style` / extension rules above). Standard **`.json`** does not allow comments; use a commented dialect (e.g. JSONC) and map extension/basename, or avoid markers inside strict JSON.
+
 ### Writes
 
 Commands such as `check` update:
@@ -69,19 +81,19 @@ Internally, commands build a **temporary** JSON file (merged top-level config + 
 - **`--repo=name`**: for **`check`**, **`sync`**, and **`list`**, only rows (or repos) where `repo_name` equals this name. For **`repos`**, show only that repo’s entry.
 - **`--file=fragment`** (**`check`** and **`sync`** only): only rows where `local_path` **or** `repo_file_path` contains the fragment (substring / “like” match). Whitespace is trimmed from the fragment; an empty value matches all rows.
 
-**`attach`**: re-couples rows with `sync_status: uncoupled` by rewriting the local file from master (clone marker), clearing `sync_status`, then running **`check`** for that repo and path so status is recomputed.
+**`attach`**: re-couples rows with `sync_status: detached` by rewriting the local file from master (clone marker), clearing `sync_status`, then running **`check`** for that repo and path so status is recomputed.
 
 ## `sync` behavior and flags
 
-By default, **`sync`** only processes rows whose **`sync_status`** is empty/unset or **`sync_required`**. Rows with **`sync_status: uncoupled`** are skipped unless **`--include-uncoupled`** is set.
+By default, **`sync`** only processes rows whose **`sync_status`** is empty/unset or **`sync_required`**. Rows with **`sync_status: detached`** are skipped unless **`--include-detached`** is set.
 
 - **`--dry-run`**: report what would be copied; do not write files or update `files.json`.
-- **`--force`**: if the local file exists but lacks the **`>> FILE-SYNC: CLONE`** marker, sync anyway (default is to skip those paths).
-- **`--all`**: include every row that passes repo/file filters and is not uncoupled (unless **`--include-uncoupled`**); still requires master/clone marker rules unless **`--force`** applies to clone-less locals.
+- **`--force`**: if the local file exists but lacks the **`filesync:sync kind=clone`** marker, sync anyway (default is to skip those paths).
+- **`--all`**: include every row that passes repo/file filters and is not detached (unless **`--include-detached`**); still requires master/clone marker rules unless **`--force`** applies to clone-less locals.
 - **`--include-status=a,b`**: comma-separated list of additional **`sync_status`** values to treat as eligible (whitespace around tokens is stripped).
-- **`--include-uncoupled`**: allow rows with **`sync_status: uncoupled`** to be synced.
+- **`--include-detached`**: allow rows with **`sync_status: detached`** to be synced.
 
-Master files must contain the **`>> FILE-SYNC: MASTER`** marker or the row is skipped (with a warning), regardless of other flags.
+Master files must contain **`filesync:sync kind=master`** or the row is skipped (with a warning), regardless of other flags.
 
 ## Dependencies
 

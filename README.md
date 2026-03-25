@@ -60,9 +60,9 @@ From any directory under a project that contains `.filesync/` (discovery walks u
 
 ```bash
 filesync check
-filesync check --repo=emissions --file=HealthStatusService.php
-filesync sync --file=Foo.php --dry-run
-filesync list --repo=emissions
+filesync check --repo=api --file=src/types.ts
+filesync sync --file=lib/config.py --dry-run
+filesync list --repo=api
 filesync list
 ```
 
@@ -74,7 +74,11 @@ Subcommands: `init`, `check`, `sync`, `list`, `repos`, `add`, `add-master`, `pus
 
 When **`file_sync_enabled`** is false (see `filesync disable`), **`check`** and **`sync`** print a message and exit successfully without doing work.
 
-**`sync`** options (see [docs/configuration.md](docs/configuration.md) for details): **`--dry-run`**, **`--force`** (overwrite locals that lack the clone marker), **`--all`** (consider every row except uncoupled unless **`--include-uncoupled`**), **`--include-status=a,b`** (comma-separated extra `sync_status` values to include), **`--include-uncoupled`**.
+## Markers
+
+Each tracked text file contains one line with **`filesync:sync`**, **`kind=master`** (in the upstream repo) or **`kind=clone`** plus **`path=`** and **`repo=`** (local copy). After **`detach`**, **`kind=detached`**. The comment wrapper matches the file type (`#`, `//`, `<!-- … -->`, `/* … */`, `--`, etc.); optional per-row **`marker_style`** in `files.json` overrides inference. Plain **`.json`** cannot carry comments—see [docs/configuration.md](docs/configuration.md).
+
+**`sync`** options (see [docs/configuration.md](docs/configuration.md) for details): **`--dry-run`**, **`--force`** (overwrite locals that lack the clone marker), **`--all`** (consider every row except detached unless **`--include-detached`**), **`--include-status=a,b`** (comma-separated extra `sync_status` values to include), **`--include-detached`**.
 
 If the first argument starts with `-` but is not a known subcommand, it is treated as a **`sync`** option (same as calling `sync` first).
 

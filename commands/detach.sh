@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Keep mapping; set uncoupled + UNCOUPLED marker on disk.
+# Keep mapping; set detached status + detached marker on disk.
 
 set -euo pipefail
 
@@ -38,7 +38,7 @@ detach_one() {
   repo_name="$(jq -r --arg local "$local_path" '.[] | select(.local_path == $local) | .repo_name // ""' "$FILESYNC_FILES_FILE")"
 
   jq --arg local "$local_path" \
-    'map(if .local_path == $local then . + {sync_status: "uncoupled"} else . end)' \
+    'map(if .local_path == $local then . + {sync_status: "detached"} else . end)' \
     "$FILESYNC_FILES_FILE" > "${FILESYNC_FILES_FILE}.tmp"
   mv "${FILESYNC_FILES_FILE}.tmp" "$FILESYNC_FILES_FILE"
   echo -e "${GREEN}Detached:${NC} local_path=$local_path"
@@ -46,7 +46,10 @@ detach_one() {
   if [[ -f "$full" ]]; then
     local t
     t="$(mktemp)"
-    if render_uncoupled_marker_file "$full" "$t" "$repo_file_path" "$repo_name"; then
+    local marker_style=""
+    marker_style="$(jq -r --arg local "$local_path" '.[] | select(.local_path == $local) | .marker_style // empty' "$FILESYNC_FILES_FILE" | head -1)"
+    [[ "$marker_style" == "null" ]] && marker_style=""
+    if render_detached_marker_file "$full" "$t" "$repo_file_path" "$repo_name" "$marker_style"; then
       cp "$t" "$full"
       echo -e "${GREEN}Updated marker:${NC} $local_path"
     else

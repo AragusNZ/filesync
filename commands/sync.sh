@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Sync from master repos into project (updates .filesync/files.json rows).
-# Usage: sync.sh [--repo=name] [--file=path_fragment] [--dry-run] [--force] [--all] [--include-status=a,b] [--include-uncoupled]
+# Usage: sync.sh [--repo=name] [--file=path_fragment] [--dry-run] [--force] [--all] [--include-status=a,b] [--include-detached]
 # Path fragment: substring match on local_path or repo_file_path (after optional --repo filter).
 
 set -euo pipefail
@@ -16,7 +16,7 @@ DRY_RUN=false
 FORCE=false
 SYNC_ALL=false
 INCLUDE_STATUS_EXTRA=""
-INCLUDE_UNCOUPLED=false
+INCLUDE_DETACHED=false
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -24,7 +24,7 @@ while [[ $# -gt 0 ]]; do
     --force) FORCE=true; shift ;;
     --all) SYNC_ALL=true; shift ;;
     --include-status=*) INCLUDE_STATUS_EXTRA="${1#*=}"; shift ;;
-    --include-uncoupled) INCLUDE_UNCOUPLED=true; shift ;;
+    --include-detached) INCLUDE_DETACHED=true; shift ;;
     --repo=*)
       REPO_FILTER="${1#*=}"
       shift
@@ -47,8 +47,8 @@ done
 sync_entry_allowed() {
   local status="${1:-}"
   [[ "$status" == "null" ]] && status=""
-  if [[ "$status" == "uncoupled" ]]; then
-    [[ "$INCLUDE_UNCOUPLED" == true ]] && return 0
+  if [[ "$status" == "detached" ]]; then
+    [[ "$INCLUDE_DETACHED" == true ]] && return 0
     return 1
   fi
   if [[ "$SYNC_ALL" == true ]]; then
@@ -162,16 +162,16 @@ for ((i=0; i<FILES_COUNT; i++)); do
     continue
   fi
 
-  if ! grep -q ">> FILE-SYNC: MASTER" "$FULL_MASTER_PATH" 2>/dev/null; then
-    echo -e "${YELLOW}⚠ $LOCAL_PATH: Skipped (source file missing >> FILE-SYNC: MASTER marker)${NC}"
+  if ! has_master_file_sync_marker "$FULL_MASTER_PATH" 2>/dev/null; then
+    echo -e "${YELLOW}⚠ $LOCAL_PATH: Skipped (source file missing filesync:sync kind=master marker)${NC}"
     SKIPPED=$((SKIPPED + 1))
     continue
   fi
 
   if [[ -f "$FULL_LOCAL_PATH" ]]; then
-    if ! grep -q ">> FILE-SYNC: CLONE" "$FULL_LOCAL_PATH" 2>/dev/null; then
+    if ! has_clone_file_sync_marker "$FULL_LOCAL_PATH" 2>/dev/null; then
       if [[ "$FORCE" != true ]]; then
-        echo -e "${YELLOW}⚠ $LOCAL_PATH: Skipped (missing >> FILE-SYNC: CLONE marker, use --force)${NC}"
+        echo -e "${YELLOW}⚠ $LOCAL_PATH: Skipped (missing filesync:sync kind=clone marker, use --force)${NC}"
         SKIPPED=$((SKIPPED + 1))
         continue
       fi
