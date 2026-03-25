@@ -31,6 +31,8 @@ filesync_progress_begin() {
     bar | percent) ;;
     *) FILESYNC_PROGRESS_STYLE=percent ;;
   esac
+  # Prime stderr so the first stdout row can sit after "[   0% ]" (same as later lines).
+  filesync_progress_update 0
 }
 
 # Emit progress text only (no TTY controls); for tests and reuse.
@@ -48,13 +50,16 @@ filesync_progress_format_line() {
 
 _filesync_progress_format_percent() {
   local current="${1:?}" total="${2:?}"
-  local pct=$((current * 100 / total))
-  if ((current >= total)); then
+  local pct=0
+  if ((current <= 0)); then
+    pct=0
+  elif ((current >= total)); then
     pct=100
-  elif ((current > 0 && pct == 0)); then
-    pct=1
+  else
+    pct=$((current * 100 / total))
+    ((pct == 0)) && pct=1
   fi
-  # Fixed 8-column token so width does not vary by digit count (1–100).
+  # Fixed 8-column token so width does not vary by digit count (0–100).
   printf '[ %3d%% ]' "$pct"
 }
 
@@ -74,7 +79,7 @@ _filesync_progress_format_bar() {
   printf '[%s] %d/%d' "$bar" "$current" "$total"
 }
 
-# Args: current (1-based index)
+# Args: current — items finished so far (0 before any row, then 1..total).
 filesync_progress_update() {
   [[ "${FILESYNC_PROGRESS_ACTIVE:-0}" -eq 1 ]] || return 0
   [[ -t 2 ]] || return 0

@@ -97,37 +97,35 @@ filesync_print_filter_context "$REPO_FILTER" "$FILE_FRAGMENT" "" false 0
 echo "" >&2
 
 PATCH_LINES_FILE=$(mktemp)
+CHECK_ROWS_TSV=$(mktemp)
 
 cleanup_verify_exit() {
   # shellcheck disable=SC2317
   filesync_progress_end || true
   # shellcheck disable=SC2317
-  rm -f "${PATCH_LINES_FILE:-}" "${FILESYNC_STATE_FILE:-}"
+  rm -f "${PATCH_LINES_FILE:-}" "${CHECK_ROWS_TSV:-}" "${FILESYNC_STATE_FILE:-}"
   # shellcheck disable=SC2317
   rm -rf "${FILESYNC_CLONED_TEMP_DIRS[@]:-}"
 }
 trap cleanup_verify_exit EXIT
 
-FILES_COUNT=$(jq '.files | length' "$CONFIG_FILE")
+filesync_config_file_rows_tsv_to "$CHECK_ROWS_TSV" "$CONFIG_FILE" "$REPO_FILTER" "$FILE_FRAGMENT"
+FILES_WORK_COUNT=$(wc -l < "$CHECK_ROWS_TSV")
+FILES_WORK_COUNT="${FILES_WORK_COUNT//[[:space:]]/}"
 
-if filesync_progress_want "$FILES_COUNT"; then
-  filesync_progress_begin "$FILES_COUNT"
+if filesync_progress_want "$FILES_WORK_COUNT"; then
+  filesync_progress_begin "$FILES_WORK_COUNT"
 fi
 
+CHECK_ROW_PROGRESS=0
 filesync_check_iter_progress() {
   if [[ "${FILESYNC_PROGRESS_ACTIVE:-0}" -eq 1 ]]; then
-    filesync_progress_update "$((i + 1))"
+    CHECK_ROW_PROGRESS=$((CHECK_ROW_PROGRESS + 1))
+    filesync_progress_update "$CHECK_ROW_PROGRESS"
   fi
 }
 
-for ((i=0; i<FILES_COUNT; i++)); do
-  set +e
-  REPO_NAME=$(jq -r ".files[$i].repo_name" "$CONFIG_FILE" 2>/dev/null)
-  LOCAL_PATH=$(jq -r ".files[$i].local_path" "$CONFIG_FILE" 2>/dev/null)
-  REPO_FILE_PATH=$(jq -r ".files[$i].repo_file_path" "$CONFIG_FILE" 2>/dev/null)
-  PRIOR_STATUS=$(jq -r ".files[$i].sync_status // \"\"" "$CONFIG_FILE" 2>/dev/null)
-  LAST_SYNC_RAW=$(jq -r ".files[$i].last_sync_at // empty" "$CONFIG_FILE" 2>/dev/null)
-  set -e
+while IFS=$'\t' read -r i REPO_NAME LOCAL_PATH REPO_FILE_PATH PRIOR_STATUS LAST_SYNC_RAW; do
 
   NOW_ISO=$(file_sync_now_iso)
   NOW_E=$(file_sync_now_epoch)
@@ -319,7 +317,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
   file_sync_print_file_row "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH" "$STATUS" "$(check_marker_warnings_csv)"
 
   filesync_check_iter_progress
-done
+done < "$CHECK_ROWS_TSV"
 
 filesync_progress_end
 

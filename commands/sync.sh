@@ -69,12 +69,13 @@ sync_entry_allowed() {
 # shellcheck disable=SC2034
 declare -A FILESYNC_REPO_DIR_CACHE
 declare -a FILESYNC_CLONED_TEMP_DIRS
+SYNC_ROWS_TSV=""
 
 cleanup_sync_exit() {
   # shellcheck disable=SC2317
   filesync_progress_end || true
   # shellcheck disable=SC2317
-  rm -f "${FILESYNC_STATE_FILE:-}"
+  rm -f "${FILESYNC_STATE_FILE:-}" "${SYNC_ROWS_TSV:-}"
   # shellcheck disable=SC2317
   rm -rf "${FILESYNC_CLONED_TEMP_DIRS[@]:-}"
 }
@@ -103,26 +104,24 @@ filesync_print_filter_context "$REPO_FILTER" "$FILE_FRAGMENT" "$STATUS_CSV" "$IN
 filesync_print_sync_showall_banner "$SHOWALL"
 echo "" >&2
 
-FILES_COUNT=$(jq '.files | length' "$CONFIG_FILE")
+SYNC_ROWS_TSV=$(mktemp)
+filesync_config_file_rows_tsv_to "$SYNC_ROWS_TSV" "$CONFIG_FILE" "$REPO_FILTER" "$FILE_FRAGMENT"
+FILES_WORK_COUNT=$(wc -l < "$SYNC_ROWS_TSV")
+FILES_WORK_COUNT="${FILES_WORK_COUNT//[[:space:]]/}"
 
-if filesync_progress_want "$FILES_COUNT"; then
-  filesync_progress_begin "$FILES_COUNT"
+if filesync_progress_want "$FILES_WORK_COUNT"; then
+  filesync_progress_begin "$FILES_WORK_COUNT"
 fi
 
+SYNC_ROW_PROGRESS=0
 filesync_sync_iter_progress() {
   if [[ "${FILESYNC_PROGRESS_ACTIVE:-0}" -eq 1 ]]; then
-    filesync_progress_update "$((i + 1))"
+    SYNC_ROW_PROGRESS=$((SYNC_ROW_PROGRESS + 1))
+    filesync_progress_update "$SYNC_ROW_PROGRESS"
   fi
 }
 
-for ((i=0; i<FILES_COUNT; i++)); do
-  set +e
-  REPO_NAME=$(jq -r ".files[$i].repo_name" "$CONFIG_FILE" 2>/dev/null)
-  LOCAL_PATH=$(jq -r ".files[$i].local_path" "$CONFIG_FILE" 2>/dev/null)
-  REPO_FILE_PATH=$(jq -r ".files[$i].repo_file_path" "$CONFIG_FILE" 2>/dev/null)
-  ROW_STATUS=$(jq -r ".files[$i].sync_status // \"\"" "$CONFIG_FILE" 2>/dev/null)
-  set -e
-
+while IFS=$'\t' read -r i REPO_NAME LOCAL_PATH REPO_FILE_PATH ROW_STATUS _last_sync_unused; do
   if [[ -z "$REPO_NAME" ]] || [[ "$REPO_NAME" == "null" ]]; then
     filesync_print_config_error_invalid_repo_name "$i"
     FAILED=$((FAILED + 1))
@@ -130,15 +129,6 @@ for ((i=0; i<FILES_COUNT; i++)); do
     continue
   fi
 
-  if [[ -n "$REPO_FILTER" ]] && [[ "$REPO_NAME" != "$REPO_FILTER" ]]; then
-    filesync_sync_iter_progress
-    continue
-  fi
-
-  if ! filesync_file_matches_fragment "$FILE_FRAGMENT" "$LOCAL_PATH" "$REPO_FILE_PATH"; then
-    filesync_sync_iter_progress
-    continue
-  fi
   FILE_PATH_MATCHES=$((FILE_PATH_MATCHES + 1))
 
   if [[ -z "$LOCAL_PATH" ]] || [[ "$LOCAL_PATH" == "null" ]]; then
@@ -236,7 +226,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
   SYNCED=$((SYNCED + 1))
 
   filesync_sync_iter_progress
-done
+done < "$SYNC_ROWS_TSV"
 
 filesync_progress_end
 

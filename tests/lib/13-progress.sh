@@ -48,6 +48,13 @@ else
 	bad "unexpected format_line full: $line2"
 fi
 
+linepz="$(filesync_progress_format_line 0 460)"
+if [[ "$linepz" == '[   0% ]' ]]; then
+	ok "format_line start (percent)"
+else
+	bad "unexpected format_line percent zero: $linepz"
+fi
+
 linep="$(COLUMNS=60 filesync_progress_format_line 5 10)"
 if [[ "$linep" == '[  50% ]' ]]; then
 	ok "format_line mid (percent)"
