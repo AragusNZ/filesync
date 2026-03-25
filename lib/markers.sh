@@ -176,34 +176,6 @@ has_detached_clone_file_sync_marker() {
   grep -q "filesync kind=" "$f" && grep -q 'detached=true' "$f" && grep -qE 'kind=clone([[:space:]]|$)' "$f"
 }
 
-# Mark an on-disk clone while keeping kind=clone (legacy helper; unused by default flow).
-replace_clone_with_detached_marker() {
-  local file="$1"
-  if ! has_clone_file_sync_marker "$file"; then
-    return 1
-  fi
-  if has_detached_clone_file_sync_marker "$file"; then
-    return 0
-  fi
-  local tmp hint st did=0 new_inner
-  tmp="$(mktemp)"
-  hint="$file"
-  while IFS= read -r line || [[ -n "$line" ]]; do
-    if [[ $did -eq 0 && "$line" == *"filesync kind="* ]]; then
-      if filesync_marker_parse_line "$line"; then
-        new_inner="${FILESYNC_M_INNER} detached=true"
-        new_inner="${new_inner//  / }"
-        st=$(filesync_marker_effective_style "$hint" "")
-        line="$(filesync_marker_format_line "$st" "$new_inner")"
-        did=1
-      fi
-    fi
-    printf '%s\n' "$line" >>"$tmp"
-  done <"$file"
-  mv "$tmp" "$file"
-  return 0
-}
-
 # Optional 3rd arg: marker_style row override (when inner has no comment wrapper).
 render_master_marker_file() {
   local input_file="$1"

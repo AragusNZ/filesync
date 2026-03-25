@@ -8,11 +8,11 @@ All three are **JSON** files with a **`.json`** extension (`config.json`, `repos
 
 A single JSON object. It is **shallow-merged** over `share/defaults/config.default.json` (package defaults). User keys win on conflicts.
 
-- If you set `enabled` (boolean), it is normalized to `file_sync_enabled` when building runtime state.
+- Only **`file_sync_enabled`** controls whether **`check`** / **`sync`** run; obsolete keys `enabled` and `show_progress` are ignored and stripped from the merged view used at runtime.
 - **`path_mode`**: `"relative"` (default) or `"absolute"`.
   - **relative**: each repo’s `path` in `repos` is resolved under the project root.
   - **absolute**: `path` is used as a filesystem path as-is (must exist as a directory).
-- **`progress_display`**: `"percent"` (default), `"bar"`, or `"hidden"`. Controls TTY progress on stderr for long `check` / `sync` / multi-file loops when stderr is a terminal and there are at least 10 items: **percent** prints `[NNN%]`; **bar** prints the filled bracket bar and counts; **hidden** turns progress off. The legacy key **`show_progress`** (boolean or string) is still read when merging and is dropped after normalization to **`progress_display`**. Use **`filesync progress`** to show or set the value.
+- **`progress_display`**: `"percent"` (default), `"bar"`, or `"hidden"`. Controls TTY progress on stderr for long `check` / `sync` / multi-file loops when stderr is a terminal and there are at least 10 items: **percent** prints `[NNN%]`; **bar** prints the filled bracket bar and counts; **hidden** turns progress off. Use **`filesync progress`** to show or set the value.
 Avoid deep nesting in `config.json` unless you document a merge policy; the merge is **one level** (`jq` `*`).
 
 ### `repos.json`

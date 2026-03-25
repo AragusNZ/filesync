@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Assemble full state JSON (legacy tool-file-sync-config shape) for jq consumers.
+# Assemble merged top-level config plus repos and files arrays for jq consumers.
 
 # shellcheck source=/dev/null
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/data-names.sh"

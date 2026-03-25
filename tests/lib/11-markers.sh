@@ -105,13 +105,6 @@ if has_any_file_sync_marker "${mf}" && has_master_file_sync_marker "${mf}" && ! 
 echo "# filesync kind=clone detached=true" >"${mf}"
 if has_detached_clone_file_sync_marker "${mf}" && has_clone_file_sync_marker "${mf}"; then ok "has_detached_clone"; else bad "has_detached_clone"; fi
 
-echo "# filesync kind=clone repo=r" >"${mf}"
-if replace_clone_with_detached_marker "${mf}" && grep -q 'detached=true' "${mf}" && grep -qE 'kind=clone' "${mf}"; then
-	ok "replace_clone_with_detached_marker"
-else
-	bad "replace_clone_with_detached_marker"
-fi
-
 echo "# filesync kind=clone path=p repo=old" >"${mf}"
 if filesync_marker_rename_repo_in_file "${mf}" "old" "new" && grep -qF 'repo=new' "${mf}" && ! grep -qF 'repo=old' "${mf}"; then
 	ok "marker_rename_repo_in_file clone"

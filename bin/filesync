@@ -39,7 +39,7 @@ main() {
     init)
       exec "$ROOT/commands/init.sh" "$@"
       ;;
-    add-file|af|add)
+    add-file|af)
       exec "$ROOT/commands/add.sh" "$@"
       ;;
     add-master|am)
@@ -69,16 +69,16 @@ main() {
     remove-repo|rmr)
       exec "$ROOT/commands/remove-repo.sh" "$@"
       ;;
-    add-repo|ar|repo)
+    add-repo|ar)
       exec "$ROOT/commands/add-repo.sh" "$@"
       ;;
-    edit-repo|er|repo-edit)
+    edit-repo|er)
       exec "$ROOT/commands/edit-repo.sh" "$@"
       ;;
-    list-repos|repos|lr)
+    list-repos|lr)
       exec "$ROOT/commands/list.sh" list-repos "$@"
       ;;
-    list-files|list|lf|files)
+    list-files|lf)
       exec "$ROOT/commands/list.sh" list-files "$@"
       ;;
     enable)
@@ -89,12 +89,6 @@ main() {
       ;;
     progress)
       exec "$ROOT/commands/progress.sh" "$@"
-      ;;
-    show-progress)
-      exec "$ROOT/commands/progress.sh" bar
-      ;;
-    hide-progress)
-      exec "$ROOT/commands/progress.sh" hidden
       ;;
     path-mode)
       exec "$ROOT/commands/path-mode.sh" "$@"

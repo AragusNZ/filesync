@@ -118,14 +118,6 @@ draws the full bracket bar with counts on standard error;
 draws a compact
 .RI [ NNN% ]
 indicator (package default).
-.TP
-.B show-progress
-Same as
-.BR "progress bar" .
-.TP
-.B hide-progress
-Same as
-.BR "progress hidden" .
 .SS "Inspect and sync"
 .TP
 .B check
@@ -266,7 +258,7 @@ exits with failure.
 .TP
 .B list-repos
 Also
-.BR lr ", " repos .
+.BR lr .
 .RI [ \-\-repo= name ]
 List configured repos or details for one repo by name.
 .B list-repos
@@ -277,7 +269,7 @@ it does not accept
 .TP
 .B list-files
 Also
-.BR lf ", " list ", " files .
+.BR lf .
 .RI [ \-\-repo= name ]
 .RI [ \-\-file= fragment ]
 .RI [ \-\-status= list ]
@@ -304,7 +296,7 @@ for a row are summarized on the line after the status.
 .TP
 .B add-file
 Also
-.BR af ", " add .
+.BR af .
 .I repo_name path_in_repo \fR[\fI:local_path\fR] \fR...
 .RI [ \-\-mark\-master ]
 .RI [ \-\-also= repo1,repo2 ]
@@ -489,13 +481,13 @@ skips that prompt (non-interactive / scripting).
 .TP
 .B add-repo
 Also
-.BR ar ", " repo .
+.BR ar .
 Interactively add a repo definition to
 .IR repos.json .
 .TP
 .B edit-repo
 Also
-.BR er ", " repo-edit .
+.BR er .
 .I repo_name
 .RI [ \-\-rename= name ]
 .RI [ \-\-path= path ]

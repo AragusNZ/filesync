@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Usage: list.sh list-repos [--repo=name] | list.sh list-files [--repo=name] [--file=path_fragment] [--status=a,b,...] [--include-detached]
-# Dispatcher passes longform mode; repos|lr and list|lf are accepted for compatibility.
+# Dispatcher passes list-repos|list-files (or lr|lf).
 
 set -euo pipefail
 
@@ -58,34 +58,34 @@ while [[ $# -gt 0 ]]; do
 done
 
 case "$sub" in
-  list-repos|repos|lr) ;;
-  list-files|list|lf|files) ;;
+  list-repos|lr) ;;
+  list-files|lf) ;;
   *)
     echo -e "${RED}Usage: ${_list_usage_pair}${NC}" >&2
     exit 1
     ;;
 esac
 
-if [[ "$sub" == list-repos || "$sub" == repos || "$sub" == lr ]] && [[ -n "$FILE_FRAGMENT" ]]; then
+if [[ "$sub" == list-repos || "$sub" == lr ]] && [[ -n "$FILE_FRAGMENT" ]]; then
   echo -e "${RED}filesync list-repos does not accept --file${NC}" >&2
   echo "Usage: filesync list-repos [--repo=name]" >&2
   exit 1
 fi
 
-if [[ "$sub" == list-repos || "$sub" == repos || "$sub" == lr ]] && [[ -n "$STATUS_CSV" ]]; then
+if [[ "$sub" == list-repos || "$sub" == lr ]] && [[ -n "$STATUS_CSV" ]]; then
   echo -e "${RED}filesync list-repos does not accept --status${NC}" >&2
   echo "Usage: filesync list-repos [--repo=name]" >&2
   exit 1
 fi
 
-if [[ "$sub" == list-repos || "$sub" == repos || "$sub" == lr ]] && [[ "$INCLUDE_DETACHED" == true ]]; then
+if [[ "$sub" == list-repos || "$sub" == lr ]] && [[ "$INCLUDE_DETACHED" == true ]]; then
   echo -e "${RED}filesync list-repos does not accept --include-detached${NC}" >&2
   echo "Usage: filesync list-repos [--repo=name]" >&2
   exit 1
 fi
 
 case "$sub" in
-  list-repos|repos|lr)
+  list-repos|lr)
     filesync_print_section_title "Repos"
     if [[ -n "$REPO_FILTER" ]]; then
       filesync_print_filter_note "Filter: --repo=$REPO_FILTER"
@@ -101,7 +101,7 @@ case "$sub" in
       jq -r '.repos[] | "\(.name)\n  url: \(.url)\n  path: \(.path)\n  branch: \(.branch)\n"' "$CONFIG_FILE"
     fi
     ;;
-  list-files|list|lf|files)
+  list-files|lf)
     filesync_print_list_files_heading
     filesync_print_filter_context "$REPO_FILTER" "$FILE_FRAGMENT" "$STATUS_CSV" "$INCLUDE_DETACHED" 0
     # shellcheck disable=SC2034  # Used via nameref in filesync_counts_inc/render helpers.
