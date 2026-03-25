@@ -190,8 +190,9 @@ phpf="${td}/plain.php"
 } >"${phpf}"
 if prepend_master_marker_to_file "${phpf}" "tests/Feature/Site/QueueMetricsEndpointTest.php" \
 	&& sed -n '1p' "${phpf}" | grep -q '^<?php$' \
-	&& sed -n '2p' "${phpf}" | grep -qE '^// filesync kind=master$'; then
-	ok "prepend_master_marker_to_file php after open tag"
+	&& sed -n '2p' "${phpf}" | grep -qE '^[[:space:]]*$' \
+	&& sed -n '3p' "${phpf}" | grep -qE '^// filesync kind=master$'; then
+	ok "prepend_master_marker_to_file php blank line then marker"
 else
 	bad "prepend_master_marker_to_file php placement"
 fi

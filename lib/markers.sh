@@ -244,8 +244,41 @@ prepend_master_marker_to_file() {
   line="$(filesync_marker_format_line "$st" "filesync kind=master")"
   tmp="$(mktemp)"
   if filesync_marker_preserve_first_line "$file_path" "$style_hint_path" "$st"; then
-    local first_line
-    IFS= read -r first_line <"$file_path" || true
+    local first_line second_line hint_lc file_lc
+    first_line=""
+    second_line=""
+    {
+      IFS= read -r first_line || true
+      IFS= read -r second_line || true
+    } <"$file_path"
+    hint_lc="$(printf '%s' "$style_hint_path" | tr '[:upper:]' '[:lower:]')"
+    file_lc="$(printf '%s' "$file_path" | tr '[:upper:]' '[:lower:]')"
+
+    # PHP linting often expects a blank line after the opening tag.
+    if [[ "$first_line" == "<?php"* && "$st" == "line_slash" && ( "$hint_lc" == *.php || "$file_lc" == *.php ) ]]; then
+      local second_trim
+      second_trim="${second_line//$'\r'/}"
+      second_trim="${second_trim#"${second_trim%%[![:space:]]*}"}"
+      second_trim="${second_trim%"${second_trim##*[![:space:]]}"}"
+      {
+        printf '%s\n' "$first_line"
+        if [[ -z "$second_trim" ]]; then
+          printf '\n'
+          printf '%s\n' "$line"
+          tail -n +3 "$file_path"
+        else
+          printf '\n'
+          printf '%s\n' "$line"
+          tail -n +2 "$file_path"
+        fi
+      } >"$tmp" || {
+        rm -f "$tmp"
+        return 1
+      }
+      mv "$tmp" "$file_path"
+      return 0
+    fi
+
     {
       printf '%s\n' "$first_line"
       printf '%s\n' "$line"
