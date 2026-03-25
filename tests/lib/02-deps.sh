@@ -8,6 +8,8 @@ source "${TESTS}/harness-lib.sh"
 # shellcheck source=/dev/null
 source "${ROOT}/lib/colors.sh"
 # shellcheck source=/dev/null
+source "${ROOT}/lib/log.sh"
+# shellcheck source=/dev/null
 source "${ROOT}/lib/deps.sh"
 
 if filesync_require_jq; then ok "require_jq"; else bad "require_jq"; fi

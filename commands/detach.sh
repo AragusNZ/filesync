@@ -60,5 +60,5 @@ detach_one() {
 }
 
 for lp in "${LOCAL_PATHS[@]}"; do
-  detach_one "$lp" || exit 1
+  detach_one "$lp" || filesync_die "detach failed for one or more paths (see messages above)"
 done

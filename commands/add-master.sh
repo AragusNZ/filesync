@@ -102,7 +102,7 @@ for i in "${!LOCAL_PATHS[@]}"; do
 done
 
 for i in "${!LOCAL_PATHS[@]}"; do
-  validate_can_add "$FILESYNC_FILES_FILE" "$FILESYNC_REPOS_FILE" "current" "${LOCAL_PATHS[$i]}" || exit 1
+  validate_can_add "$FILESYNC_FILES_FILE" "$FILESYNC_REPOS_FILE" "current" "${LOCAL_PATHS[$i]}" || filesync_die "add-master validation failed (see messages above)"
 done
 
 for extra_repo in "${TARGET_REPOS[@]}"; do
@@ -114,7 +114,7 @@ for extra_repo in "${TARGET_REPOS[@]}"; do
   [[ -f "$efs/$FILESYNC_FILES_NAME" && -f "$efs/$FILESYNC_REPOS_NAME" ]] || {
     echo -e "${RED}Error: Missing $efs/$FILESYNC_FILES_NAME for --also=$extra_repo${NC}"; exit 1; }
   for i in "${!LOCAL_PATHS[@]}"; do
-    validate_can_add "$efs/$FILESYNC_FILES_NAME" "$efs/$FILESYNC_REPOS_NAME" "$extra_repo" "${LOCAL_PATHS[$i]}" || exit 1
+    validate_can_add "$efs/$FILESYNC_FILES_NAME" "$efs/$FILESYNC_REPOS_NAME" "$extra_repo" "${LOCAL_PATHS[$i]}" || filesync_die "add-master validation failed (see messages above)"
   done
 done
 
@@ -163,17 +163,19 @@ for i in "${!LOCAL_PATHS[@]}"; do
   cp "$TMP_MASTER" "$full_target_master_path"
   echo -e "${GREEN}Promoted to master:${NC} $target_repo_file_path"
 
-  render_clone_from_master_file "$TMP_MASTER" "$target_repo_file_path" "$TARGET_REPO" "$TMP_CLONE"
+  if ! render_clone_from_master_file "$TMP_MASTER" "$target_repo_file_path" "$TARGET_REPO" "$TMP_CLONE"; then
+    filesync_die "${local_path}: could not render clone preview from promoted master (unexpected; report a bug if this persists)"
+  fi
   cp "$TMP_CLONE" "$full_local_path"
   echo -e "${GREEN}Updated local clone:${NC} $local_path"
 
-  append_minimal_then_synced "$FILESYNC_FILES_FILE" "$FILESYNC_REPOS_FILE" "$local_path" "$target_repo_file_path" "$full_target_master_path" "current" || exit 1
+  append_minimal_then_synced "$FILESYNC_FILES_FILE" "$FILESYNC_REPOS_FILE" "$local_path" "$target_repo_file_path" "$full_target_master_path" "current" || filesync_die "add-master failed (see messages above)"
 
   for extra_repo in "${TARGET_REPOS[@]}"; do
     erp=$(jq -r --arg n "$extra_repo" '.[] | select(.name == $n) | .path // ""' "$FILESYNC_REPOS_FILE" | head -1)
     efs="$PROJECT_ROOT/$erp/.filesync"
     append_minimal_then_synced "$efs/$FILESYNC_FILES_NAME" "$efs/$FILESYNC_REPOS_NAME" "$local_path" "$target_repo_file_path" \
-      "$PROJECT_ROOT/$erp/$target_repo_file_path" "$extra_repo" || exit 1
+      "$PROJECT_ROOT/$erp/$target_repo_file_path" "$extra_repo" || filesync_die "add-master failed (see messages above)"
   done
 done
 

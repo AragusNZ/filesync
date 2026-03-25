@@ -12,7 +12,16 @@ filesync_assemble_state_to() {
   local tmpd merged_file
   tmpd="$(mktemp -d)"
   merged_file="$tmpd/cfg.json"
-  filesync_merged_top_level_config > "$merged_file"
+  if ! filesync_merged_top_level_config > "$merged_file"; then
+    rm -rf "$tmpd"
+    echo "filesync: could not merge default and user configuration (check .filesync/config.json and share/defaults/config.default.json)" >&2
+    return 1
+  fi
+  if ! jq -e . "$merged_file" &>/dev/null; then
+    rm -rf "$tmpd"
+    echo "filesync: merged top-level configuration is not valid JSON (check .filesync/config.json)" >&2
+    return 1
+  fi
 
   if ! jq -e 'type == "array"' "${FILESYNC_DIR}/${FILESYNC_REPOS_NAME}" &>/dev/null; then
     rm -rf "$tmpd"
@@ -27,17 +36,25 @@ filesync_assemble_state_to() {
 
   # slurpfile wraps file contents as array of JSON values; one object -> [0] is the object; one array -> [0] is the array
   if [[ -n "$out" ]]; then
-    jq -n \
+    if ! jq -n \
       --slurpfile cfg "$merged_file" \
       --slurpfile repos "${FILESYNC_DIR}/${FILESYNC_REPOS_NAME}" \
       --slurpfile files "${FILESYNC_DIR}/${FILESYNC_FILES_NAME}" \
-      '$cfg[0] * {repos: $repos[0], files: $files[0]}' > "$out"
+      '$cfg[0] * {repos: $repos[0], files: $files[0]}' > "$out"; then
+      rm -rf "$tmpd"
+      echo "filesync: could not assemble project state (check JSON in .filesync/repos.json, .filesync/files.json, and config merge)" >&2
+      return 1
+    fi
   else
-    jq -n \
+    if ! jq -n \
       --slurpfile cfg "$merged_file" \
       --slurpfile repos "${FILESYNC_DIR}/${FILESYNC_REPOS_NAME}" \
       --slurpfile files "${FILESYNC_DIR}/${FILESYNC_FILES_NAME}" \
-      '$cfg[0] * {repos: $repos[0], files: $files[0]}'
+      '$cfg[0] * {repos: $repos[0], files: $files[0]}'; then
+      rm -rf "$tmpd"
+      echo "filesync: could not assemble project state (check JSON in .filesync/repos.json, .filesync/files.json, and config merge)" >&2
+      return 1
+    fi
   fi
   rm -rf "$tmpd"
 }

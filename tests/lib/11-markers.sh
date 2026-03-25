@@ -112,6 +112,25 @@ else
 	bad "replace_clone_with_detached_marker"
 fi
 
+echo "# filesync:sync kind=clone path=p repo=old" >"${mf}"
+if filesync_marker_rename_repo_in_file "${mf}" "old" "new" && grep -qF 'repo=new' "${mf}" && ! grep -qF 'repo=old' "${mf}"; then
+	ok "marker_rename_repo_in_file clone"
+else
+	bad "marker_rename_repo_in_file clone"
+fi
+echo "<!-- filesync:sync kind=detached path=x repo=origin -->" >"${mf}"
+if filesync_marker_rename_repo_in_file "${mf}" "origin" "upstream" && grep -qF 'repo=upstream' "${mf}"; then
+	ok "marker_rename_repo_in_file html detached"
+else
+	bad "marker_rename_repo_in_file html"
+fi
+echo "# filesync:sync kind=master" >"${mf}"
+if filesync_marker_rename_repo_in_file "${mf}" "origin" "upstream"; then
+	bad "marker_rename_repo_in_file should skip master"
+else
+	ok "marker_rename_repo_in_file skips master"
+fi
+
 unset FILESYNC_M_STYLE
 if [[ "$(filesync_marker_effective_style "x.js" "")" == "line_slash" ]]; then ok "marker_effective_style from path"; else bad "effective_style path"; fi
 if filesync_marker_parse_line "# filesync:sync kind=x"; then

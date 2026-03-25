@@ -81,6 +81,7 @@ mkdir -p "${proj}"
 	[[ "$(jq '. | length' .filesync/files.json)" -eq 1 ]] || die "rm should leave one row"
 	filesync edit-repo origin --rename=upstream
 	jq -e '.[] | select(.local_path=="tools/demo.txt") | .repo_name == "upstream"' ".filesync/files.json" >/dev/null || die "edit-repo rename files.json"
+	grep -qF 'repo=upstream' tools/demo.txt || die "edit-repo rename updates clone marker repo="
 	_ru="$(filesync list-repos --repo=upstream 2>&1)" || die "list-repos upstream"
 	[[ "${_ru}" == *upstream* ]] || die "list-repos filter upstream"
 	_sda="$(filesync sync --dry-run --all 2>&1)" || die "sync --all dry-run exit"

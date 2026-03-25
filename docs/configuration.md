@@ -74,7 +74,7 @@ Internally, commands build a **temporary** JSON file (merged top-level config + 
 
 ## Repo metadata (`edit-repo`)
 
-**`filesync edit-repo <repo_name>`** updates **`repos.json`**. Pass any of **`--rename=new_name`**, **`--path=...`**, **`--url=...`**, **`--branch=...`** (at least one required). Renaming a repo rewrites **`repo_name`** on every row in **`files.json`** that referenced the old name. Use **`--branch=`** to change the configured branch.
+**`filesync edit-repo <repo_name>`** updates **`repos.json`**. Pass any of **`--rename=new_name`**, **`--path=...`**, **`--url=...`**, **`--branch=...`** (at least one required). Renaming a repo rewrites **`repo_name`** on every row in **`files.json`** that referenced the old name, and updates the **`repo=`** field in the first **`filesync:sync`** marker on each affected local file (clone or detached copies). Use **`--branch=`** to change the configured branch.
 
 ## `check` / `sync` / `list-repos` / `list-files` filters
 

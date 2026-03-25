@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CLI: filesync edit-repo — update repos.json; optional rename updates repo_name in every files.json row.
+# CLI: filesync edit-repo — update repos.json; optional rename updates repo_name in files.json and repo= in local markers.
 
 set -euo pipefail
 
@@ -106,12 +106,20 @@ else
   cp "$files" "$tmp_files"
 fi
 
+if [[ -n "$RENAME" ]] && [[ "$RENAME" != "$REPO_CURRENT" ]]; then
+  while IFS= read -r _lp || [[ -n "${_lp:-}" ]]; do
+    [[ -z "$_lp" || "$_lp" == "null" ]] && continue
+    _full="${PROJECT_ROOT}/${_lp}"
+    filesync_marker_rename_repo_in_file "$_full" "$REPO_CURRENT" "$RENAME" || true
+  done < <(jq -r --arg c "$REPO_CURRENT" '.[] | select(.repo_name == $c) | .local_path' "$files")
+fi
+
 mv "$tmp_repos" "$repos"
 mv "$tmp_files" "$files"
 
 echo -e "${GREEN}Updated repo${NC} ${CYAN}$REPO_CURRENT${NC}:"
 if [[ -n "$RENAME" ]] && [[ "$RENAME" != "$REPO_CURRENT" ]]; then
-  echo "  Renamed to: $RENAME (all matching files.json repo_name values updated)"
+  echo "  Renamed to: $RENAME (files.json repo_name and local clone/detached markers updated)"
 fi
 [[ -n "$PATH_NEW" ]] && echo "  path: $PATH_NEW"
 [[ -n "$URL_NEW" ]] && echo "  url: $URL_NEW"

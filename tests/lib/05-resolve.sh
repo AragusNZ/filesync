@@ -6,7 +6,6 @@ TESTS="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${TESTS}/harness-lib.sh"
 : "${fail:=0}"
 # shellcheck source=/dev/null
-source "${ROOT}/lib/data-names.sh"
 # shellcheck source=/dev/null
 source "${ROOT}/lib/resolve.sh"
 

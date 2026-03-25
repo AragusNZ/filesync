@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 # Discover .filesync directory and project root.
 
+_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/data-names.sh"
+source "${_LIB_DIR}/data-names.sh"
+# shellcheck source=/dev/null
+source "${_LIB_DIR}/colors.sh"
+# shellcheck source=/dev/null
+source "${_LIB_DIR}/log.sh"
 
 # Optional overrides: FILESYNC_DIR, FILESYNC_PROJECT_ROOT
 
@@ -12,7 +17,7 @@ filesync_resolve_or_exit() {
     FILESYNC_DIR="${FILESYNC_DIR:-$PROJECT_ROOT/.filesync}"
     export PROJECT_ROOT FILESYNC_DIR
     if [[ ! -d "$FILESYNC_DIR" ]]; then
-      echo "filesync: directory not found: $FILESYNC_DIR (FILESYNC_PROJECT_ROOT=$PROJECT_ROOT)" >&2
+      filesync_error "directory not found: $FILESYNC_DIR (FILESYNC_PROJECT_ROOT=$PROJECT_ROOT)"
       exit 1
     fi
     return 0
@@ -37,15 +42,15 @@ filesync_resolve_or_exit() {
     dir="$(dirname "$dir")"
   done
 
-  echo "filesync: no .filesync directory found (walked up from $(pwd -P))" >&2
-  echo "Create .filesync/${FILESYNC_CONFIG_NAME}, ${FILESYNC_REPOS_NAME}, and ${FILESYNC_FILES_NAME} — see docs/configuration.md in the filesync repository." >&2
+  filesync_error "no .filesync directory found (walked up from $(pwd -P))"
+  filesync_error "create .filesync/${FILESYNC_CONFIG_NAME}, ${FILESYNC_REPOS_NAME}, and ${FILESYNC_FILES_NAME} — see docs/configuration.md in the filesync repository."
   exit 1
 }
 
 filesync_require_files() {
   local missing=0
-  [[ -f "${FILESYNC_DIR}/${FILESYNC_REPOS_NAME}" ]] || { echo "filesync: missing ${FILESYNC_DIR}/${FILESYNC_REPOS_NAME}" >&2; missing=1; }
-  [[ -f "${FILESYNC_DIR}/${FILESYNC_FILES_NAME}" ]] || { echo "filesync: missing ${FILESYNC_DIR}/${FILESYNC_FILES_NAME}" >&2; missing=1; }
+  [[ -f "${FILESYNC_DIR}/${FILESYNC_REPOS_NAME}" ]] || { filesync_error "missing ${FILESYNC_DIR}/${FILESYNC_REPOS_NAME}"; missing=1; }
+  [[ -f "${FILESYNC_DIR}/${FILESYNC_FILES_NAME}" ]] || { filesync_error "missing ${FILESYNC_DIR}/${FILESYNC_FILES_NAME}"; missing=1; }
   if [[ "$missing" -eq 1 ]]; then
     exit 1
   fi

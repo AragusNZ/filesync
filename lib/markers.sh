@@ -101,6 +101,43 @@ filesync_marker_effective_style() {
   fi
 }
 
+# Replace repo=old_name with repo=new_name in the first filesync:sync marker (clone/detached).
+# Returns 0 if the file was rewritten, 1 if skipped (missing file, no marker, no matching repo token).
+filesync_marker_rename_repo_in_file() {
+  local file_path="${1:?}" old_name="${2:?}" new_name="${3:?}"
+  [[ -f "$file_path" ]] || return 1
+  local tmp st line new_inner tok did=0 changed=0
+  tmp="$(mktemp)"
+  # Loop stdin is $file_path; writes go only to $tmp, then mv — not a read+write race on one fd.
+  # shellcheck disable=SC2094
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ $did -eq 0 && "$line" == *"filesync:sync"* ]]; then
+      if filesync_marker_parse_line "$line"; then
+        did=1
+        new_inner=""
+        for tok in $FILESYNC_M_INNER; do
+          if [[ "$tok" == "repo=${old_name}" ]]; then
+            tok="repo=${new_name}"
+            changed=1
+          fi
+          new_inner="${new_inner:+$new_inner }${tok}"
+        done
+        if [[ $changed -eq 1 ]]; then
+          st=$(filesync_marker_effective_style "$file_path" "")
+          line="$(filesync_marker_format_line "$st" "$new_inner")"
+        fi
+      fi
+    fi
+    printf '%s\n' "$line" >>"$tmp"
+  done <"$file_path"
+  if [[ $changed -ne 1 ]]; then
+    rm -f "$tmp"
+    return 1
+  fi
+  mv "$tmp" "$file_path"
+  return 0
+}
+
 # Args: input output new_inner file_hint [marker_style_override]
 filesync_marker_transform_file() {
   local input_file="${1:?}" output_file="${2:?}" new_inner="${3:?}" file_hint="${4:?}"

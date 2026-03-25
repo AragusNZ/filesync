@@ -122,13 +122,13 @@ for target_repo in "${TARGET_REPOS[@]}"; do
 done
 
 for i in "${!REPO_FILE_PATHS[@]}"; do
-  add_one "$FILESYNC_FILES_FILE" "$FILESYNC_REPOS_FILE" "$REPO_NAME" "${REPO_FILE_PATHS[$i]}" "${LOCAL_PATHS[$i]}" "current project" || exit 1
+  add_one "$FILESYNC_FILES_FILE" "$FILESYNC_REPOS_FILE" "$REPO_NAME" "${REPO_FILE_PATHS[$i]}" "${LOCAL_PATHS[$i]}" "current project" || filesync_die "add-file failed (see messages above)"
 done
 
 for target_repo in "${TARGET_REPOS[@]}"; do
   target_repo_path=$(jq -r --arg n "$target_repo" '.[] | select(.name == $n) | .path // ""' "$FILESYNC_REPOS_FILE" | head -1)
   ofs="$PROJECT_ROOT/$target_repo_path/.filesync"
   for i in "${!REPO_FILE_PATHS[@]}"; do
-    add_one "$ofs/$FILESYNC_FILES_NAME" "$ofs/$FILESYNC_REPOS_NAME" "$REPO_NAME" "${REPO_FILE_PATHS[$i]}" "${LOCAL_PATHS[$i]}" "project at $target_repo_path" || exit 1
+    add_one "$ofs/$FILESYNC_FILES_NAME" "$ofs/$FILESYNC_REPOS_NAME" "$REPO_NAME" "${REPO_FILE_PATHS[$i]}" "${LOCAL_PATHS[$i]}" "project at $target_repo_path" || filesync_die "add-file failed (see messages above)"
   done
 done

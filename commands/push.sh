@@ -82,5 +82,5 @@ push_one() {
 }
 
 for lp in "${LOCAL_PATHS[@]}"; do
-  push_one "$lp" || exit 1
+  push_one "$lp" || filesync_die "push failed for one or more paths (see messages above)"
 done

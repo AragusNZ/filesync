@@ -47,5 +47,5 @@ remove_one() {
 }
 
 for lp in "${LOCAL_PATHS[@]}"; do
-  remove_one "$lp" || exit 1
+  remove_one "$lp" || filesync_die "remove failed for one or more paths (see messages above)"
 done

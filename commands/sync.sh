@@ -183,7 +183,12 @@ for ((i=0; i<FILES_COUNT; i++)); do
 
   if [[ -f "$FULL_LOCAL_PATH" ]]; then
     EXPECTED_TMP=$(mktemp)
-    render_clone_from_master_file "$FULL_MASTER_PATH" "$REPO_FILE_PATH" "$REPO_NAME" "$EXPECTED_TMP"
+    if ! render_clone_from_master_file "$FULL_MASTER_PATH" "$REPO_FILE_PATH" "$REPO_NAME" "$EXPECTED_TMP"; then
+      rm -f "$EXPECTED_TMP"
+      filesync_error "${LOCAL_PATH}: could not render clone from master ${REPO_NAME}/${REPO_FILE_PATH} (master file missing or unparsable filesync:sync marker)"
+      FAILED=$((FAILED + 1))
+      continue
+    fi
     set +e
     diff -q "$EXPECTED_TMP" "$FULL_LOCAL_PATH" >/dev/null 2>&1
     DIFF_RESULT=$?
@@ -203,7 +208,11 @@ for ((i=0; i<FILES_COUNT; i++)); do
     echo -e "${YELLOW}→ $LOCAL_PATH: Would sync from $REPO_NAME/$REPO_FILE_PATH${NC}"
   else
     mkdir -p "$(dirname "$FULL_LOCAL_PATH")"
-    render_clone_from_master_file "$FULL_MASTER_PATH" "$REPO_FILE_PATH" "$REPO_NAME" "$FULL_LOCAL_PATH"
+    if ! render_clone_from_master_file "$FULL_MASTER_PATH" "$REPO_FILE_PATH" "$REPO_NAME" "$FULL_LOCAL_PATH"; then
+      filesync_error "${LOCAL_PATH}: could not render clone from master ${REPO_NAME}/${REPO_FILE_PATH} (master file missing or unparsable filesync:sync marker)"
+      FAILED=$((FAILED + 1))
+      continue
+    fi
     echo -e "${GREEN}✓ $LOCAL_PATH: Synced${NC}"
     filesync_write_file_row "$FILESYNC_FILES_FILE" "$PROJECT_ROOT" "$LOCAL_PATH" "$FULL_MASTER_PATH" "synced"
   fi
@@ -218,6 +227,7 @@ fi
 if [[ $FAILED -gt 0 ]]; then
   echo ""
   echo -e "${RED}Failed: $FAILED${NC} ${WHITE}| Synced: $SYNCED | Already in sync: $ALREADY_SYNCED | Skipped: $SKIPPED | Status-filtered: $STATUS_SKIPPED${NC}"
+  filesync_error "exiting with status 1 because $FAILED file(s) failed to sync."
   exit 1
 elif [[ "$DRY_RUN" == true ]]; then
   echo ""

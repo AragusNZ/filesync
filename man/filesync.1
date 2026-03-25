@@ -214,7 +214,9 @@ Edit a repo entry. Renaming updates
 .I repo_name
 in every
 .I files.json
-row.
+row and the
+.B repo=
+token in local clone/detached sync markers for those rows.
 .SS "Self-update"
 .TP
 .B update
@@ -272,6 +274,36 @@ from a git checkout,
 passed to
 .BR "make install"
 when autodetection is wrong.
+.TP
+.B FILESYNC_VERBOSE
+When set to a non-empty value, enables extra informational messages on standard error for commands that support it.
+.TP
+.B FILESYNC_DEBUG
+When set to a non-empty value, commands that use the standard runtime print a short debug line on standard error when a command fails under
+.BR "set -e"
+(errtrace).
+.SH "EXIT STATUS"
+.TP
+.B 0
+Success, or
+.B check
+/
+.B sync
+completed with nothing blocking (or file sync is disabled and the command exits after notice).
+.TP
+.B 1
+Failure: missing dependencies, invalid or missing configuration, usage errors, or
+.B check
+/
+.B sync
+completed with blocking issues or failures. Messages on standard error are prefixed with
+.B filesync:
+where applicable.
+.TP
+.B 2
+Some invocations (e.g. test harnesses or
+.BR "filesync update" )
+may use exit status 2 for invalid options; see the relevant subcommand documentation.
 .SH SEE ALSO
 Extended configuration and environment notes live in
 .I docs/configuration.md

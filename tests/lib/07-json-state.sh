@@ -33,6 +33,19 @@ else
 fi
 printf '%s\n' '[]' >"${FILESYNC_DIR}/repos.json"
 
+printf '{ not-valid-json' >"${FILESYNC_DIR}/config.json"
+_asm_err=""
+if _asm_err=$(filesync_assemble_state_to "${td}/bad-merge.json" 2>&1); then
+	bad "assemble_state should reject invalid config.json"
+else
+	if [[ "${_asm_err}" == *filesync:* ]]; then
+		ok "assemble_state invalid config stderr"
+	else
+		bad "assemble_state invalid config missing filesync prefix: ${_asm_err}"
+	fi
+fi
+printf '%s\n' '{}' >"${FILESYNC_DIR}/config.json"
+
 filesync_export_data_paths
 if [[ "${FILESYNC_REPOS_FILE}" == "${FILESYNC_DIR}/repos.json" ]]; then ok "export_data_paths"; else bad "export_data_paths"; fi
 

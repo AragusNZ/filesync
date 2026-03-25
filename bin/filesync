@@ -19,9 +19,8 @@ fi
 source "$ROOT/lib/colors.sh"
 
 print_header() {
-  echo -e "${CYAN}=============================================${NC}"
   echo -e "${CYAN}$1${NC}"
-  echo -e "${CYAN}=============================================${NC}"
+  echo "------"
 }
 
 help() {

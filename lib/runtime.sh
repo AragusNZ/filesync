@@ -9,12 +9,15 @@ filesync_command_init_lite() {
   # shellcheck source=/dev/null
   source "$FILESYNC_PKG_ROOT/lib/colors.sh"
   # shellcheck source=/dev/null
+  source "$FILESYNC_PKG_ROOT/lib/log.sh"
+  # shellcheck source=/dev/null
   source "$FILESYNC_PKG_ROOT/lib/deps.sh"
   # shellcheck source=/dev/null
   source "$FILESYNC_PKG_ROOT/lib/resolve.sh"
 
   filesync_resolve_or_exit
   filesync_require_jq
+  filesync_log_enable_debug
 }
 
 filesync_command_init() {
@@ -24,6 +27,8 @@ filesync_command_init() {
 
   # shellcheck source=/dev/null
   source "$FILESYNC_PKG_ROOT/lib/colors.sh"
+  # shellcheck source=/dev/null
+  source "$FILESYNC_PKG_ROOT/lib/log.sh"
   # shellcheck source=/dev/null
   source "$FILESYNC_PKG_ROOT/lib/deps.sh"
   # shellcheck source=/dev/null
@@ -49,9 +54,10 @@ filesync_command_init() {
 
   filesync_require_jq
   filesync_require_git
+  filesync_log_enable_debug
 
   FILESYNC_STATE_FILE=$(mktemp)
-  filesync_assemble_state_to "$FILESYNC_STATE_FILE" || exit 1
+  filesync_assemble_state_to "$FILESYNC_STATE_FILE" || filesync_die "could not load project configuration (see messages above)"
 
   CONFIG_FILE="$FILESYNC_STATE_FILE"
   export CONFIG_FILE FILESYNC_STATE_FILE PROJECT_ROOT FILESYNC_DIR \

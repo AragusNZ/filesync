@@ -209,7 +209,25 @@ for ((i=0; i<FILES_COUNT; i++)); do
   fi
 
   EXPECTED_TMP=$(mktemp)
-  render_clone_from_master_file "$FULL_MASTER_PATH" "$REPO_FILE_PATH" "$REPO_NAME" "$EXPECTED_TMP"
+  if ! render_clone_from_master_file "$FULL_MASTER_PATH" "$REPO_FILE_PATH" "$REPO_NAME" "$EXPECTED_TMP"; then
+    rm -f "$EXPECTED_TMP"
+    filesync_error "${LOCAL_PATH}: could not render clone from master ${REPO_NAME}/${REPO_FILE_PATH} (master file missing or unparsable filesync:sync marker)"
+    BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
+    append_patch "$(jq -nc \
+      --argjson idx "$i" \
+      --arg now "$NOW_ISO" \
+      --arg rs "${REPO_ISO:-}" \
+      --arg ls "${LOCAL_ISO:-}" \
+      '{
+        i: $idx,
+        last_check_at: $now,
+        sync_status: "error_master_marker",
+        repo_file_modified_at: (if $rs == "" then null else $rs end),
+        local_file_modified_at: (if $ls == "" then null else $ls end)
+      }')"
+    printf '%b[%s]%b %s%s\n' "$(col_st error_master_marker)" "error_master_marker" "$(rst)" "${WHITE}" "$LOCAL_PATH"
+    continue
+  fi
   set +e
   diff -q "$EXPECTED_TMP" "$FULL_LOCAL_PATH" >/dev/null 2>&1
   DIFF_RESULT=$?
@@ -264,6 +282,7 @@ if [[ -n "$FILE_FRAGMENT" ]] && [[ "$CHECKED" -eq 0 ]]; then
 fi
 if [[ $BLOCKING_ISSUES -gt 0 ]]; then
   echo -e "${RED}Check completed with $BLOCKING_ISSUES blocking issue(s).${NC} ${WHITE}Rows updated: $CHECKED${NC}"
+  filesync_error "exiting with status 1 because of $BLOCKING_ISSUES blocking issue(s)."
   exit 1
 fi
 

@@ -72,12 +72,15 @@ attach_one() {
   mv "${FILESYNC_FILES_FILE}.tmp" "$FILESYNC_FILES_FILE"
 
   mkdir -p "$(dirname "$full")"
-  render_clone_from_master_file "$full_master" "$repo_file_path" "$repo_name" "$full"
+  if ! render_clone_from_master_file "$full_master" "$repo_file_path" "$repo_name" "$full"; then
+    filesync_error "${local_path}: could not render clone from master ${repo_name}/${repo_file_path} (master file missing or unparsable filesync:sync marker)"
+    return 1
+  fi
   echo -e "${GREEN}Re-coupled from master:${NC} $local_path"
 
   bash "$_CMD_ROOT/check.sh" --repo="$repo_name" --file="$local_path"
 }
 
 for lp in "${LOCAL_PATHS[@]}"; do
-  attach_one "$lp" || exit 1
+  attach_one "$lp" || filesync_die "attach failed for one or more paths (see messages above)"
 done

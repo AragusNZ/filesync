@@ -9,6 +9,8 @@ FILESYNC_PKG_ROOT="$(cd "${_CMD_ROOT}/.." && pwd)"
 # shellcheck source=/dev/null
 source "${FILESYNC_PKG_ROOT}/lib/colors.sh"
 # shellcheck source=/dev/null
+source "${FILESYNC_PKG_ROOT}/lib/log.sh"
+# shellcheck source=/dev/null
 source "${FILESYNC_PKG_ROOT}/lib/deps.sh"
 
 filesync_require_jq

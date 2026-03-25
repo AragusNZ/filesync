@@ -33,7 +33,7 @@ if [[ "${pe}" =~ ^[0-9]+$ ]] && [[ "${pe}" -gt 1000000000 ]]; then ok "parse_to_
 iso0="$(file_sync_epoch_to_iso 0)"
 if [[ "${iso0}" == 1970-01-01* ]]; then ok "epoch_to_iso unix epoch"; else bad "epoch_to_iso got ${iso0}"; fi
 
-for _st in synced sync_required local_newer conflict detached error_x unknown; do
+for _st in synced sync_required local_newer conflict detached error_x error_master_marker unknown; do
 	if [[ "$(file_sync_status_color "${_st}")" != *$'\033'* ]]; then bad "status_color ${_st}"; break; fi
 done
 [[ "${fail}" -eq 0 ]] && ok "status_color variants emit ansi"
