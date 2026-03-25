@@ -54,4 +54,7 @@ mkdir -p "${proj}"
 		die "--force sync should replace file from master"
 	fi
 	grep -q '^v1$' tools/x.txt || die "local file should match master content"
+	_out_none="$(filesync sync --status=conflict --file=x.txt 2>&1)" || true
+	[[ "${_out_none}" == *"Nothing to sync (1 already in sync, 1 status-skipped)"* ]] \
+		|| die "status-filtered synced rows should contribute to already in sync summary"
 )

@@ -147,6 +147,11 @@ while IFS=$'\t' read -r i REPO_NAME LOCAL_PATH REPO_FILE_PATH ROW_STATUS _last_s
 
   if ! sync_entry_allowed "$ROW_STATUS"; then
     file_sync_print_sync_skip_line "⊘" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH" "not selected; status=${ROW_STATUS:-unset}"
+    # Rows previously checked as synced are still "already in sync" even if
+    # excluded by the current status selection.
+    if [[ "${ROW_STATUS:-}" == "synced" ]]; then
+      ALREADY_SYNCED=$((ALREADY_SYNCED + 1))
+    fi
     STATUS_SKIPPED=$((STATUS_SKIPPED + 1))
     filesync_sync_iter_progress
     continue
