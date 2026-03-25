@@ -95,6 +95,18 @@ under the project root;
 uses
 .B path
 as a filesystem directory as-is.
+.TP
+.B show-progress
+Set
+.I show_progress
+to true in
+.BR .filesync/config.json
+(merged default is true).
+.TP
+.B hide-progress
+Set
+.I show_progress
+to false so long file loops do not draw TTY progress on standard error.
 .SS "Inspect and sync"
 .TP
 .B check
@@ -135,6 +147,13 @@ those situations are not fatal on their own.
 If the master file cannot be rendered, the row is
 .I error_master_marker
 but the command exits successfully unless other blocking issues exist.
+When standard error is a terminal,
+.I show_progress
+in merged config is true (see
+.BR show-progress " / " hide-progress ),
+and at least 10 rows are in the configuration,
+.B check
+may draw a scanning progress bar on standard error; per-row lines go to standard output, so the bar may jump between lines on some terminals.
 .TP
 .B sync
 Also
@@ -180,6 +199,15 @@ for any status whose name starts with
 prints planned work without writing files or status.
 .B \-\-force
 overwrites a local file that lacks a clone marker.
+When no
+.B \-\-status
+filter is given,
+.B \-\-force
+also selects
+.I local_newer
+and
+.I conflict
+rows so master replaces the local copy.
 .B \-\-showall
 prints a per-file line for rows that are already in sync with master; by default those lines are omitted (counts in the summary still include them).
 Coupled sync requires a master marker on the repo file.
@@ -190,6 +218,9 @@ layout as
 and end with a bracketed outcome
 .RI ( e.g. "\fB[Synced]\fR", "\fB[Already in sync]\fR", "\fB[Dry-run]\fR" ).
 Rows skipped by status filter or marker rules are printed in gray.
+Like
+.BR check ,
+a TTY progress bar on standard error may appear when scanning many rows; per-file sync lines go to standard output, so the bar may not stay fixed on one line.
 .TP
 .B list-repos
 Also
@@ -354,7 +385,9 @@ skips the confirmation prompt before apply.
 .SH FILES
 .TP
 .I .filesync/config.json
-Merged over package defaults; toggles and path mode.
+Merged over package defaults; toggles, path mode, and
+.I show_progress
+for TTY bars on long loops.
 .TP
 .I .filesync/repos.json
 Array of repo definitions.
@@ -382,6 +415,12 @@ when autodetection is wrong.
 .TP
 .B FILESYNC_VERBOSE
 When set to a non-empty value, enables extra informational messages on standard error for commands that support it.
+.TP
+.B FILESYNC_NO_PROGRESS
+When set to
+.BR 1 ,
+progress bars are not drawn on standard error (overrides
+.IR show_progress ).
 .TP
 .B NO_COLOR
 When set to a non-empty value, disables ANSI color in terminal output.

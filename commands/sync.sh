@@ -11,6 +11,8 @@ source "$_CMD_ROOT/../lib/runtime.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/cli-banner.sh"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/progress.sh"
 
 REPO_FILTER=""
 FILE_FRAGMENT=""
@@ -54,6 +56,10 @@ sync_entry_allowed() {
       [[ "$INCLUDE_DETACHED" == true ]] && return 0
       return 1
     fi
+    # --force: pull from master even when check reported local_newer / conflict.
+    if [[ "$FORCE" == true ]]; then
+      [[ "$status" == "local_newer" || "$status" == "conflict" ]] && return 0
+    fi
     [[ -z "$status" ]] || [[ "$status" == "sync_required" ]] && return 0
     return 1
   fi
@@ -65,6 +71,8 @@ declare -A FILESYNC_REPO_DIR_CACHE
 declare -a FILESYNC_CLONED_TEMP_DIRS
 
 cleanup_sync_exit() {
+  # shellcheck disable=SC2317
+  filesync_progress_end || true
   # shellcheck disable=SC2317
   rm -f "${FILESYNC_STATE_FILE:-}"
   # shellcheck disable=SC2317
@@ -91,11 +99,21 @@ STATUS_SKIPPED=0
 FILE_PATH_MATCHES=0
 
 filesync_print_sync_banner
-filesync_print_filter_context "$REPO_FILTER" "$FILE_FRAGMENT" "$STATUS_CSV" "$INCLUDE_DETACHED" 1
+filesync_print_filter_context "$REPO_FILTER" "$FILE_FRAGMENT" "$STATUS_CSV" "$INCLUDE_DETACHED" 1 "$FORCE"
 filesync_print_sync_showall_banner "$SHOWALL"
 echo "" >&2
 
 FILES_COUNT=$(jq '.files | length' "$CONFIG_FILE")
+
+if filesync_progress_want "$FILES_COUNT"; then
+  filesync_progress_begin "$FILES_COUNT"
+fi
+
+filesync_sync_iter_progress() {
+  if [[ "${FILESYNC_PROGRESS_ACTIVE:-0}" -eq 1 ]]; then
+    filesync_progress_update "$((i + 1))"
+  fi
+}
 
 for ((i=0; i<FILES_COUNT; i++)); do
   set +e
@@ -108,14 +126,17 @@ for ((i=0; i<FILES_COUNT; i++)); do
   if [[ -z "$REPO_NAME" ]] || [[ "$REPO_NAME" == "null" ]]; then
     filesync_print_config_error_invalid_repo_name "$i"
     FAILED=$((FAILED + 1))
+    filesync_sync_iter_progress
     continue
   fi
 
   if [[ -n "$REPO_FILTER" ]] && [[ "$REPO_NAME" != "$REPO_FILTER" ]]; then
+    filesync_sync_iter_progress
     continue
   fi
 
   if ! filesync_file_matches_fragment "$FILE_FRAGMENT" "$LOCAL_PATH" "$REPO_FILE_PATH"; then
+    filesync_sync_iter_progress
     continue
   fi
   FILE_PATH_MATCHES=$((FILE_PATH_MATCHES + 1))
@@ -123,23 +144,26 @@ for ((i=0; i<FILES_COUNT; i++)); do
   if [[ -z "$LOCAL_PATH" ]] || [[ "$LOCAL_PATH" == "null" ]]; then
     filesync_print_config_error_invalid_local_path "$i"
     FAILED=$((FAILED + 1))
+    filesync_sync_iter_progress
     continue
   fi
 
   if [[ -z "$REPO_FILE_PATH" ]] || [[ "$REPO_FILE_PATH" == "null" ]]; then
     filesync_print_config_error_invalid_repo_file_path "$LOCAL_PATH"
     FAILED=$((FAILED + 1))
+    filesync_sync_iter_progress
     continue
   fi
 
   if ! sync_entry_allowed "$ROW_STATUS"; then
     file_sync_print_sync_skip_line "⊘" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH" "not selected; status=${ROW_STATUS:-unset}"
     STATUS_SKIPPED=$((STATUS_SKIPPED + 1))
+    filesync_sync_iter_progress
     continue
   fi
 
   REPO_ROOT=""
-  REPO_ROOT=$(filesync_get_repo_dir "$REPO_NAME") || { FAILED=$((FAILED + 1)); continue; }
+  REPO_ROOT=$(filesync_get_repo_dir "$REPO_NAME") || { FAILED=$((FAILED + 1)); filesync_sync_iter_progress; continue; }
 
   FULL_LOCAL_PATH="$PROJECT_ROOT/$LOCAL_PATH"
   FULL_MASTER_PATH="$REPO_ROOT/$REPO_FILE_PATH"
@@ -147,12 +171,14 @@ for ((i=0; i<FILES_COUNT; i++)); do
   if [[ ! -f "$FULL_MASTER_PATH" ]]; then
     file_sync_print_sync_action_line "${RED}✗${NC}" "${RED}" "source missing" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
     FAILED=$((FAILED + 1))
+    filesync_sync_iter_progress
     continue
   fi
 
   if ! has_master_file_sync_marker "$FULL_MASTER_PATH" 2>/dev/null; then
     file_sync_print_sync_skip_line "⚠" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH" "no master marker"
     SKIPPED=$((SKIPPED + 1))
+    filesync_sync_iter_progress
     continue
   fi
 
@@ -161,6 +187,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
       if [[ "$FORCE" != true ]]; then
         file_sync_print_sync_skip_line "⚠" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH" "no clone marker (--force to overwrite)"
         SKIPPED=$((SKIPPED + 1))
+        filesync_sync_iter_progress
         continue
       fi
     fi
@@ -173,6 +200,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
       file_sync_print_sync_action_line "${RED}✗${NC}" "${RED}" "could not render" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
       filesync_error "${LOCAL_PATH}: could not render clone from master ${REPO_NAME}/${REPO_FILE_PATH} (master file missing or unparsable filesync marker)"
       FAILED=$((FAILED + 1))
+      filesync_sync_iter_progress
       continue
     fi
     set +e
@@ -186,6 +214,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
       if [[ "$DRY_RUN" != true ]]; then
         filesync_write_file_row "$FILESYNC_FILES_FILE" "$PROJECT_ROOT" "$LOCAL_PATH" "$FULL_MASTER_PATH" "synced"
       fi
+      filesync_sync_iter_progress
       continue
     fi
   fi
@@ -198,13 +227,18 @@ for ((i=0; i<FILES_COUNT; i++)); do
       file_sync_print_sync_action_line "${RED}✗${NC}" "${RED}" "could not render" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
       filesync_error "${LOCAL_PATH}: could not render clone from master ${REPO_NAME}/${REPO_FILE_PATH} (master file missing or unparsable filesync marker)"
       FAILED=$((FAILED + 1))
+      filesync_sync_iter_progress
       continue
     fi
     file_sync_print_sync_action_line "${GREEN}✓${NC}" "${GREEN}" "synced" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
     filesync_write_file_row "$FILESYNC_FILES_FILE" "$PROJECT_ROOT" "$LOCAL_PATH" "$FULL_MASTER_PATH" "synced"
   fi
   SYNCED=$((SYNCED + 1))
+
+  filesync_sync_iter_progress
 done
+
+filesync_progress_end
 
 if [[ -n "$FILE_FRAGMENT" ]] && [[ "$FILE_PATH_MATCHES" -eq 0 ]]; then
   echo "" >&2

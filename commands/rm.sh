@@ -7,8 +7,10 @@ _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/progress.sh"
 
-trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
+trap 'filesync_progress_end || true; rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
 if [[ $# -lt 1 ]]; then
   echo -e "${RED}Usage: filesync rm|remove <local_path1> [local_path2 ...]${NC}" >&2
@@ -23,6 +25,12 @@ for arg in "$@"; do
   SEEN_LOCAL_PATHS["$arg"]=1
   LOCAL_PATHS+=("$arg")
 done
+
+_rpaths=${#LOCAL_PATHS[@]}
+if filesync_progress_want "$_rpaths"; then
+  filesync_progress_begin "$_rpaths"
+fi
+_rpi=0
 
 remove_one() {
   local local_path="$1"
@@ -48,4 +56,10 @@ remove_one() {
 
 for lp in "${LOCAL_PATHS[@]}"; do
   remove_one "$lp" || filesync_die "remove failed for one or more paths (see messages above)"
+  _rpi=$((_rpi + 1))
+  if [[ "${FILESYNC_PROGRESS_ACTIVE:-0}" -eq 1 ]]; then
+    filesync_progress_update "$_rpi"
+  fi
 done
+
+filesync_progress_end

@@ -11,6 +11,8 @@ source "$_CMD_ROOT/../lib/runtime.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/cli-banner.sh"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/progress.sh"
 
 col_st() { file_sync_status_color "$1"; }
 
@@ -98,6 +100,8 @@ PATCH_LINES_FILE=$(mktemp)
 
 cleanup_verify_exit() {
   # shellcheck disable=SC2317
+  filesync_progress_end || true
+  # shellcheck disable=SC2317
   rm -f "${PATCH_LINES_FILE:-}" "${FILESYNC_STATE_FILE:-}"
   # shellcheck disable=SC2317
   rm -rf "${FILESYNC_CLONED_TEMP_DIRS[@]:-}"
@@ -105,6 +109,16 @@ cleanup_verify_exit() {
 trap cleanup_verify_exit EXIT
 
 FILES_COUNT=$(jq '.files | length' "$CONFIG_FILE")
+
+if filesync_progress_want "$FILES_COUNT"; then
+  filesync_progress_begin "$FILES_COUNT"
+fi
+
+filesync_check_iter_progress() {
+  if [[ "${FILESYNC_PROGRESS_ACTIVE:-0}" -eq 1 ]]; then
+    filesync_progress_update "$((i + 1))"
+  fi
+}
 
 for ((i=0; i<FILES_COUNT; i++)); do
   set +e
@@ -122,14 +136,17 @@ for ((i=0; i<FILES_COUNT; i++)); do
     filesync_print_config_error_invalid_repo_name "$i"
     BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
     append_patch "$(jq -nc --argjson idx "$i" --arg now "$NOW_ISO" --argjson cw '[]' '{i: $idx, last_check_at: $now, sync_status: "error_invalid_repo", check_marker_warnings: $cw}')"
+    filesync_check_iter_progress
     continue
   fi
 
   if [[ -n "$REPO_FILTER" ]] && [[ "$REPO_NAME" != "$REPO_FILTER" ]]; then
+    filesync_check_iter_progress
     continue
   fi
 
   if ! filesync_file_matches_fragment "$FILE_FRAGMENT" "$LOCAL_PATH" "$REPO_FILE_PATH"; then
+    filesync_check_iter_progress
     continue
   fi
 
@@ -137,6 +154,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
     filesync_print_config_error_invalid_local_path "$i"
     BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
     append_patch "$(jq -nc --argjson idx "$i" --arg now "$NOW_ISO" --argjson cw '[]' '{i: $idx, last_check_at: $now, sync_status: "error_invalid_local_path", check_marker_warnings: $cw}')"
+    filesync_check_iter_progress
     continue
   fi
 
@@ -144,6 +162,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
     filesync_print_config_error_invalid_repo_file_path "$LOCAL_PATH"
     BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
     append_patch "$(jq -nc --argjson idx "$i" --arg now "$NOW_ISO" --argjson cw '[]' '{i: $idx, last_check_at: $now, sync_status: "error_invalid_repo_path", check_marker_warnings: $cw}')"
+    filesync_check_iter_progress
     continue
   fi
 
@@ -152,6 +171,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
     echo -e "${RED}✗${NC} ${WHITE}$LOCAL_PATH: Could not resolve repo $REPO_NAME${NC}" >&2
     BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
     append_patch "$(jq -nc --argjson idx "$i" --arg now "$NOW_ISO" --argjson cw '[]' '{i: $idx, last_check_at: $now, sync_status: "error_repo_unavailable", check_marker_warnings: $cw}')"
+    filesync_check_iter_progress
     continue
   fi
 
@@ -189,6 +209,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
         check_marker_warnings: $cw
       }')"
     file_sync_print_file_row "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH" "detached" ""
+    filesync_check_iter_progress
     continue
   fi
 
@@ -208,6 +229,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
         local_file_modified_at: (if $ls == "" then null else $ls end),
         check_marker_warnings: $cw
       }')"
+    filesync_check_iter_progress
     continue
   fi
 
@@ -227,6 +249,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
         local_file_modified_at: null,
         check_marker_warnings: $cw
       }')"
+    filesync_check_iter_progress
     continue
   fi
 
@@ -254,6 +277,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
         check_marker_warnings: $cw
       }')"
     file_sync_print_file_row "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH" "error_master_marker" "$(check_marker_warnings_csv)"
+    filesync_check_iter_progress
     continue
   fi
   set +e
@@ -293,7 +317,11 @@ for ((i=0; i<FILES_COUNT; i++)); do
   fi
 
   file_sync_print_file_row "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH" "$STATUS" "$(check_marker_warnings_csv)"
+
+  filesync_check_iter_progress
 done
+
+filesync_progress_end
 
 ROOT_NOW=$(file_sync_now_iso)
 

@@ -1,4 +1,5 @@
 {
   "file_sync_enabled": true,
-  "path_mode": "relative"
+  "path_mode": "relative",
+  "show_progress": true
 }

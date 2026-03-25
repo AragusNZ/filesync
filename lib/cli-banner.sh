@@ -16,10 +16,10 @@ filesync_print_check_banner() {
   echo -e "${CYAN}Checking synced files (updating .filesync)...${NC}" >&2
 }
 
-# Args: repo_filter file_fragment status_csv include_detached [is_sync]
+# Args: repo_filter file_fragment status_csv include_detached [is_sync] [force]
 # When is_sync is 1 and status_csv is empty, prints sync default status mode line.
 filesync_print_filter_context() {
-  local repo="${1:-}" frag="${2:-}" status_csv="${3:-}" inc_det="${4:-false}" is_sync="${5:-0}"
+  local repo="${1:-}" frag="${2:-}" status_csv="${3:-}" inc_det="${4:-false}" is_sync="${5:-0}" force="${6:-false}"
   if [[ -n "$repo" ]]; then
     echo -e "${CYAN}Filter: --repo=$repo${NC}" >&2
   fi
@@ -30,6 +30,9 @@ filesync_print_filter_context() {
     echo -e "${CYAN}Filter: --status=${status_csv}${NC}" >&2
   elif [[ "$is_sync" == 1 ]]; then
     echo -e "${CYAN}Mode: unset or sync_required only (use ${YELLOW}--status=a,b,...${CYAN} to include other statuses)${NC}" >&2
+    if [[ "$force" == true ]]; then
+      echo -e "${CYAN}Also: ${YELLOW}--force${CYAN} additionally selects local_newer and conflict (overwrite from master)${NC}" >&2
+    fi
   fi
   if [[ "$inc_det" == true ]]; then
     echo -e "${CYAN}Also: --include-detached${NC}" >&2

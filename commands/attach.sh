@@ -7,8 +7,10 @@ _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/progress.sh"
 
-trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
+trap 'filesync_progress_end || true; rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
 # Populated by lib/repo-resolve.sh (sourced via runtime with shellcheck source=/dev/null).
 # shellcheck disable=SC2034
@@ -29,6 +31,12 @@ for arg in "$@"; do
   SEEN_LOCAL_PATHS["$arg"]=1
   LOCAL_PATHS+=("$arg")
 done
+
+_apaths=${#LOCAL_PATHS[@]}
+if filesync_progress_want "$_apaths"; then
+  filesync_progress_begin "$_apaths"
+fi
+_api=0
 
 attach_one() {
   local local_path="$1"
@@ -83,4 +91,10 @@ attach_one() {
 
 for lp in "${LOCAL_PATHS[@]}"; do
   attach_one "$lp" || filesync_die "attach failed for one or more paths (see messages above)"
+  _api=$((_api + 1))
+  if [[ "${FILESYNC_PROGRESS_ACTIVE:-0}" -eq 1 ]]; then
+    filesync_progress_update "$_api"
+  fi
 done
+
+filesync_progress_end

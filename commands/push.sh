@@ -7,8 +7,10 @@ _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/progress.sh"
 
-trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
+trap 'filesync_progress_end || true; rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
 if [[ $# -lt 1 ]]; then
   echo -e "${RED}Usage: filesync push <local_path1> [local_path2 ...]${NC}" >&2
@@ -23,6 +25,12 @@ for arg in "$@"; do
   SEEN_LOCAL_PATHS["$arg"]=1
   LOCAL_PATHS+=("$arg")
 done
+
+_ppaths=${#LOCAL_PATHS[@]}
+if filesync_progress_want "$_ppaths"; then
+  filesync_progress_begin "$_ppaths"
+fi
+_ppi=0
 
 push_one() {
   local LOCAL_PATH="$1"
@@ -83,4 +91,10 @@ push_one() {
 
 for lp in "${LOCAL_PATHS[@]}"; do
   push_one "$lp" || filesync_die "push failed for one or more paths (see messages above)"
+  _ppi=$((_ppi + 1))
+  if [[ "${FILESYNC_PROGRESS_ACTIVE:-0}" -eq 1 ]]; then
+    filesync_progress_update "$_ppi"
+  fi
 done
+
+filesync_progress_end

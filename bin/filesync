@@ -28,6 +28,7 @@ help() {
   echo ""
   echo "  filesync init [directory]   # create .filesync/ here (default: cwd); establishes project root"
   echo "  filesync en|enable | dis|disable"
+  echo "  filesync show-progress | hide-progress   # TTY progress bars on long loops (config show_progress)"
   echo "  filesync pm|path-mode [relative|absolute]   # show or set repo path resolution mode"
   echo "  filesync s|sync [--repo=name] [--file=path_fragment] [--dry-run|--force|--showall|--status=a,b,...|--include-detached|...]"
   echo "  filesync c|check [--repo=name] [--file=path_fragment]"
@@ -116,6 +117,12 @@ main() {
       ;;
     disable|dis)
       exec "$ROOT/commands/enable-disable.sh" disable
+      ;;
+    show-progress)
+      exec "$ROOT/commands/toggle-progress.sh" show
+      ;;
+    hide-progress)
+      exec "$ROOT/commands/toggle-progress.sh" hide
       ;;
     path-mode|pm)
       exec "$ROOT/commands/path-mode.sh" "$@"

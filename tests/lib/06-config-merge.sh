@@ -16,7 +16,7 @@ echo '{"path_mode":"absolute"}' >"${FILESYNC_DIR}/${FILESYNC_CONFIG_NAME}"
 # shellcheck source=/dev/null
 source "${ROOT}/lib/config-merge.sh"
 merged="$(filesync_merged_top_level_config)"
-if echo "${merged}" | jq -e '.path_mode == "absolute" and .file_sync_enabled == true' >/dev/null; then
+if echo "${merged}" | jq -e '.path_mode == "absolute" and .file_sync_enabled == true and .show_progress == true' >/dev/null; then
 	ok "merged config user overrides default"
 else
 	bad "merged config: ${merged}"
