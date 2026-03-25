@@ -70,7 +70,7 @@ filesync list
 
 Subcommands: `init`, `check`, `sync`, `list`, `repos`, `add`, `add-master`, `push`, `detach`, `attach`, `rm` (alias: `remove`), `repo`, `repo-edit`, `enable`, `disable`, `update`.
 
-**`check`**, **`sync`**, **`repos`**, and **`list`** accept optional **`--repo=name`**. **`check`** and **`sync`** also accept **`--file=fragment`**: substring match on `local_path` or `repo_file_path` (case-sensitive). Combine **`--repo`** and **`--file`** to scope to one repo and matching paths.
+**`check`**, **`sync`**, **`repos`**, and **`list`** accept optional **`--repo=name`**. **`check`**, **`sync`**, and **`list`** also accept **`--file=fragment`**: substring match on `local_path` or `repo_file_path` (case-sensitive). Combine **`--repo`** and **`--file`** to scope to one repo and matching paths.
 
 When **`file_sync_enabled`** is false (see `filesync disable`), **`check`** and **`sync`** print a message and exit successfully without doing work.
 

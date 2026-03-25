@@ -30,7 +30,7 @@ help() {
   echo "  filesync sync [--repo=name] [--file=path_fragment] [--dry-run|--force|--all|...]"
   echo "  filesync check [--repo=name] [--file=path_fragment]"
   echo "  filesync repos [--repo=name]   # list repos"
-  echo "  filesync list [--repo=name]    # list file mappings + status"
+  echo "  filesync list [--repo=name] [--file=path_fragment]  # list file mappings + status"
   echo "  filesync init [directory]   # create .filesync/ here (default: cwd); establishes project root"
   echo "  filesync enable | disable"
   echo "  filesync add <repo> <path_in_repo>[:<local_path>] ... [--also=repo1,repo2]"

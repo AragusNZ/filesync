@@ -118,6 +118,12 @@ case_repos_list() {
 		if filesync repos --repo=nosuchrepo 2>/dev/null; then
 			die "repos --repo missing should fail"
 		fi
+		if filesync repos --file=x 2>/dev/null; then
+			die "repos --file should fail"
+		fi
+		if ! filesync list --file=nomatch 2>/dev/null; then
+			die "list --file with zero rows should succeed"
+		fi
 	)
 }
 
@@ -167,6 +173,8 @@ case_git_lifecycle() {
 			--arg url "file://${master}" \
 			'[{"name":"origin","path":"../git-master","url":$url,"branch":"main"}]' >".filesync/repos.json"
 		filesync add origin tools/demo.txt
+		_ll="$(filesync list --file=demo.txt 2>&1)" || die "list --file exit"
+		[[ "${_ll}" == *tools/demo.txt* ]] || die "list --file should show matching row"
 		_dr="$(filesync sync --dry-run 2>&1)" || die "sync --dry-run exit"
 		[[ "${_dr}" == *"Would sync"* ]] || die "dry-run should mention Would sync"
 		[[ ! -f tools/demo.txt ]] || die "dry-run must not create local file"

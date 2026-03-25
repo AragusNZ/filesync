@@ -40,6 +40,22 @@ to compare with upstream releases and optionally reinstall.
 Run
 .B filesync
 with no arguments for a short summary.
+.PP
+.BR check ,
+.BR sync ,
+and
+.BR list
+accept optional
+.BI \-\-repo= name
+and
+.BI \-\-file= fragment
+filters (substring match on
+.I local_path
+or
+.IR repo_file_path ).
+.B repos
+accepts only
+.BR \-\-repo= .
 .SH FILES
 .TP
 .I .filesync/config.json

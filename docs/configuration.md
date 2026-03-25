@@ -79,7 +79,7 @@ Internally, commands build a **temporary** JSON file (merged top-level config + 
 ## `check` / `sync` / `repos` / `list` filters
 
 - **`--repo=name`**: for **`check`**, **`sync`**, and **`list`**, only rows (or repos) where `repo_name` equals this name. For **`repos`**, show only that repo’s entry.
-- **`--file=fragment`** (**`check`** and **`sync`** only): only rows where `local_path` **or** `repo_file_path` contains the fragment (substring / “like” match). Whitespace is trimmed from the fragment; an empty value matches all rows.
+- **`--file=fragment`**: for **`check`**, **`sync`**, and **`list`**, only rows where `local_path` **or** `repo_file_path` contains the fragment (substring / “like” match). Whitespace is trimmed from the fragment; an empty value matches all rows. Not valid for **`repos`**.
 
 **`attach`**: re-couples rows with `sync_status: detached` by rewriting the local file from master (clone marker), clearing `sync_status`, then running **`check`** for that repo and path so status is recomputed.
 
