@@ -2,9 +2,19 @@
 # Print CLI usage summary. Dispatched as: filesync | filesync help | -h | --help
 set -euo pipefail
 
+_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=/dev/null
+source "$_ROOT/lib/colors.sh"
+
 _w=22
-_hr() { printf '  %-*s  %s\n' "$_w" "$1" "$2"; }
-_hm() { printf '%*s%s\n' $((2 + _w + 2)) '' "$1"; }
+# $1 command, $2 description (line 1), $3 optional args / signature (line 2, gray)
+_hcd() {
+  local cmd="$1" desc="$2" args="${3-}"
+  printf '  %-*s  %s\n' "$_w" "$cmd" "$desc"
+  if [[ -n "$args" ]]; then
+    printf '%*s%s%s%s\n' $((2 + _w + 2)) '' "$GRAY" "$args" "$NC"
+  fi
+}
 
 echo 'Usage:  filesync [-V | --version]'
 echo '       filesync [help | -h | --help]'
@@ -14,48 +24,43 @@ echo ''
 echo 'Map and sync files across git checkouts (.filesync/ per project).'
 echo ''
 echo 'Project setup:'
-_hr 'init' '[directory] Create .filesync/ (default: cwd); establishes project root'
-_hr 'enable' 'Turn file sync on in merged config'
-_hr 'disable' 'Turn file sync off in merged config'
-_hr 'path-mode' '[relative|absolute] Show or set repo path resolution mode'
-_hr 'progress' '[hidden|bar|percent] TTY progress on long loops (default percent)'
+_hcd 'init' 'Create .filesync/ (default: cwd); establishes project root' '[directory]'
+_hcd 'enable' 'Turn file sync on in merged config' ''
+_hcd 'disable' 'Turn file sync off in merged config' ''
+_hcd 'path-mode' 'Show or set repo path resolution mode' '[relative|absolute]'
+_hcd 'progress' 'TTY progress on long loops (default percent)' '[hidden|bar|percent]'
 echo ''
 echo 'Inspect and sync:'
-_hr 'check (c)' '[--repo=] [--file=] [--status=] Verify mappings; refresh row status'
-_hr 'sync (s)' '[--repo=] [--file=] [--dry-run] [--force] [--showall] [--status=] [--include-detached|…]'
-_hm 'Copy from masters into the project; update files.json'
-_hr 'list-repos (lr)' '[--repo=] List configured repos'
-_hr 'list-files (lf)' '[--repo=] [--file=] [--status=] [--include-detached] List mappings'
+_hcd 'check (c)' 'Verify mappings; refresh row status' '[--repo=] [--file=] [--status=]'
+_hcd 'sync (s)' 'Copy from masters into the project; update files.json' '[--repo=] [--file=] [--dry-run] [--force] [--showall] [--status=] [--include-detached|…]'
+_hcd 'list-repos (lr)' 'List configured repos' '[--repo=]'
+_hcd 'list-files (lf)' 'List mappings' '[--repo=] [--file=] [--status=] [--include-detached]'
 echo ''
 echo 'Mappings and repos:'
-_hr 'add-file (af)' '<repo> <path_in_repo>[:<local_path>] … [--mark-master] [--also=…]'
-_hm 'Track from repo checkout; path_in_repo is under the repo; omit :local if same path'
-_hr 'add-master (am)' '<repo> <local_path>[:<path_in_repo>] … [--also=…]'
-_hm 'Promote local file to master; omit :path_in_repo if it matches local_path'
-_hr 'add-clone (ac)' '<target_repo> <master_path>[:<local_path>] … [--also=…]'
-_hm 'Clone from kind=master in this project into sibling(s); fails if target exists'
-_hr 'push' '[--all] [<local_path> …] Push local content to linked master paths'
-_hr 'detach-file (ddf)' '<local_path> … Set detached status and kind=detached marker'
-_hr 'attach-file (daf)' '<local_path> … Re-couple detached rows; check each'
-_hr 'detach-repo (ddr)' '<repo_name> Detach every mapping for that repo'
-_hr 'attach-repo (dar)' '<repo_name> Attach every mapping for that repo'
-_hr 'remove-file (rmf)' '<local_path> … Drop row; strip clone/detached marker; keep master'
-_hr 'remove-repo (rmr)' '<repo_name> [-y|--yes] Drop repo (prompts if file mappings remain; -y/--yes skips prompt)'
-_hr 'add-repo (ar)' 'Interactively add a repo'
-_hr 'edit-repo (er)' '<name> [--rename=] [--path=] [--url=] [--branch=]'
-_hm 'Rename updates repo_name in all files.json rows and marker lines'
+_hcd 'add-file (af)' 'Track from repo checkout; path_in_repo is under the repo; omit :local if same path' '<repo> <path_in_repo>[:<local_path>] … [--mark-master] [--also=…]'
+_hcd 'add-master (am)' 'Promote local file to master; omit :path_in_repo if it matches local_path' '<repo> <local_path>[:<path_in_repo>] … [--also=…]'
+_hcd 'add-clone (ac)' 'Clone from kind=master in this project into sibling(s); fails if target exists' '<target_repo> <master_path>[:<local_path>] … [--also=…]'
+_hcd 'push' 'Push local content to linked master paths' '[--all] [<local_path> …]'
+_hcd 'detach-file (ddf)' 'Set detached status and kind=detached marker' '<local_path> …'
+_hcd 'attach-file (daf)' 'Re-couple detached rows; check each' '<local_path> …'
+_hcd 'detach-repo (ddr)' 'Detach every mapping for that repo' '<repo_name>'
+_hcd 'attach-repo (dar)' 'Attach every mapping for that repo' '<repo_name>'
+_hcd 'remove-file (rmf)' 'Drop row; strip clone/detached marker; keep master' '<local_path> …'
+_hcd 'remove-repo (rmr)' 'Drop repo (prompts if file mappings remain; -y/--yes skips prompt)' '<repo_name> [-y|--yes]'
+_hcd 'add-repo (ar)' 'Interactively add a repo' ''
+_hcd 'edit-repo (er)' 'Rename updates repo_name in all files.json rows and marker lines' '<name> [--rename=] [--path=] [--url=] [--branch=]'
 echo ''
 echo 'Self-update:'
-_hr 'update' '[-y|--yes] Check GitHub for newer release; prompt to install if available (git or .deb)'
+_hcd 'update' 'Check GitHub for newer release; prompt to install if available (git or .deb)' '[-y|--yes]'
 echo ''
 echo 'Help:'
-_hr 'help' 'Print this summary (-h, --help)'
+_hcd 'help' 'Print this usage summary.' 'Top-level: filesync -h | filesync --help | filesync help'
 echo ''
 echo 'Status filters (sync, check, list-files; --status= comma-separated, OR):'
-_hm 'Special tokens: unset (empty field), all (non-detached unless --include-detached), error (any error_*), detached.'
-_hm 'Default sync (no --status=): unset, sync_required, error_missing_local; detached skipped unless --include-detached.'
-_hm 'With --force: also local_newer and conflict. Other tokens: synced, conflict, detached, error_* (see man page).'
+echo '  Special tokens: unset (empty field), all (non-detached unless --include-detached), error (any error_*), detached.'
+echo '  Default sync (no --status=): unset, sync_required, error_missing_local; detached skipped unless --include-detached.'
+echo '  With --force: also local_newer and conflict. Other tokens: synced, conflict, detached, error_* (see man page).'
 echo ''
 echo 'Config:'
-_hm 'Discovered like git: walk up from cwd for .filesync/ (config.json, repos.json, files.json).'
-_hm 'See docs/configuration.md'
+echo '  Discovered like git: walk up from cwd for .filesync/ (config.json, repos.json, files.json).'
+echo '  See docs/configuration.md'
