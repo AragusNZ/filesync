@@ -28,23 +28,29 @@ help() {
   echo ""
   echo "  filesync init [directory]   # create .filesync/ here (default: cwd); establishes project root"
   echo "  filesync en|enable | dis|disable"
-  echo "  filesync s|sync [--repo=name] [--file=path_fragment] [--dry-run|--force|--all|...]"
+  echo "  filesync pm|path-mode [relative|absolute]   # show or set repo path resolution mode"
+  echo "  filesync s|sync [--repo=name] [--file=path_fragment] [--dry-run|--force|--status=a,b,...|--include-detached|...]"
   echo "  filesync c|check [--repo=name] [--file=path_fragment]"
   echo "  filesync lr|repos|list-repos [--repo=name]   # list repos"
-  echo "  filesync lf|files|list-files [--repo=name] [--file=path_fragment]  # list file mappings + status"
-  echo "  filesync af|add-file <repo> <path_in_repo>[:<local_path>] ... [--also=repo1,repo2]"
+  echo "  filesync lf|files|list-files [--repo=name] [--file=path_fragment] [--status=a,b,...] [--include-detached]"
+  echo "  filesync af|add-file <repo> <path_in_repo>[:<local_path>] ... [--mark-master] [--also=repo1,repo2]"
   echo "           # path_in_repo = file under the repo checkout; omit :local_path if project uses the same path"
   echo "  filesync am|add-master <repo> <local_path>[:<path_in_repo>] ... [--also=...]"
   echo "           # promote local file to master; omit :path_in_repo if master path matches local_path"
   echo "  filesync p|push <local_path> [local_path ...]"
   echo "  filesync dd|detach <local_path> [local_path ...]"
   echo "  filesync da|attach <local_path> [local_path ...]   # re-couple detached rows + check each"
-  echo "  filesync rm|remove <local_path> [local_path ...]"
+  echo "  filesync rm|remove <local_path> [local_path ...]   # drop row; strip clone/detached marker, keep master"
   echo "  filesync ar|add-repo                 # interactive add repo"
   echo "  filesync er|edit-repo <name> [--rename=] [--path=] [--url=] [--branch=]"
   echo "           # edit repos.json; rename updates repo_name in all files.json rows"
   echo "  filesync update [--check] [--apply] [-y]   # newer release from GitHub (git or .deb)"
   echo "  filesync help"
+  echo ""
+  echo "  sync / list-files --status= uses comma-separated tokens (OR). Special: unset (empty field),"
+  echo "    all (non-detached only), error (any error_* status). Token detached matches detached rows;"
+  echo "    --include-detached also lets all (and sync default) include detached. Default sync: unset+sync_required."
+  echo "    Other values: synced sync_required local_newer conflict detached; error_* from check (see docs)."
   echo ""
   echo "Config: discovered like git — walk up from the current directory for .filesync/"
   echo "  (.filesync/config.json, repos.json, files.json — see docs/configuration.md)"
@@ -110,6 +116,9 @@ main() {
       ;;
     disable|dis)
       exec "$ROOT/commands/enable-disable.sh" disable
+      ;;
+    path-mode|pm)
+      exec "$ROOT/commands/path-mode.sh" "$@"
       ;;
     update)
       exec "$ROOT/commands/update.sh" "$@"

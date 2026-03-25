@@ -62,4 +62,24 @@ else
 	bad "write_file_row"
 fi
 
+# --status CSV matching (sync / list-files)
+_m() { file_sync_status_matches_csv "$1" "$2" && echo y || echo n; }
+
+[[ "$(_m "" "unset")" == y ]] || bad "csv unset matches empty"
+[[ "$(_m "" "synced")" == n ]] || bad "csv synced does not match empty"
+[[ "$(_m "synced" "synced")" == y ]] || bad "csv exact synced"
+[[ "$(_m "synced" "unset,sync_required")" == n ]] || bad "csv no match"
+[[ "$(_m "sync_required" "unset,sync_required")" == y ]] || bad "csv sync_required"
+[[ "$(_m "detached" "all")" == n ]] || bad "all excludes detached"
+_m3() { file_sync_status_matches_csv "$1" "$2" true && echo y || echo n; }
+[[ "$(_m3 "detached" "all")" == y ]] || bad "all includes detached with include_detached"
+[[ "$(_m "detached" "all,detached")" == y ]] || bad "all,detached lists detached explicitly"
+[[ "$(_m "detached" "detached")" == y ]] || bad "detached literal token"
+[[ "$(_m "synced" "all")" == y ]] || bad "all matches synced"
+[[ "$(_m "error_x" "all")" == y ]] || bad "all matches error status"
+[[ "$(_m "error_invalid_repo" "error")" == y ]] || bad "error matches error_*"
+[[ "$(_m "synced" "error")" == n ]] || bad "error excludes non-error"
+[[ "$(_m "detached" "error")" == n ]] || bad "error excludes detached"
+[[ "${fail}" -eq 0 ]] && ok "status_matches_csv"
+
 if [[ "${fail}" -ne 0 ]]; then exit 1; fi

@@ -66,7 +66,7 @@ filesync list-files
 
 **Development without install:** run `./bin/filesync` from this tree (or `bash /path/to/filesync/bin/filesync …`).
 
-Primary subcommands: `init`, `enable`, `disable`, `sync`, `check`, `list-repos`, `list-files`, `add-file`, `add-master`, `push`, `detach`, `attach`, `remove`, `add-repo`, `edit-repo`, `update`. Shorter aliases (`s`, `c`, `lr`, `lf`, `files`, `af`, `am`, `p`, `dd`, `da`, `ar`, `er`, `en`, `dis`, …) are listed in the built-in help — run **`filesync`** with no arguments. Legacy names `repos`, `list`, `add`, `repo`, and `repo-edit` are still accepted.
+Primary subcommands: `init`, `enable`, `disable`, `path-mode`, `sync`, `check`, `list-repos`, `list-files`, `add-file`, `add-master`, `push`, `detach`, `attach`, `remove`, `add-repo`, `edit-repo`, `update`. Shorter aliases (`s`, `c`, `lr`, `lf`, `files`, `af`, `am`, `p`, `dd`, `da`, `ar`, `er`, `en`, `dis`, `pm`, …) are listed in the built-in help — run **`filesync`** with no arguments. Legacy names `repos`, `list`, `add`, `repo`, and `repo-edit` are still accepted.
 
 **`check`**, **`sync`**, **`list-repos`**, and **`list-files`** accept optional **`--repo=name`**. **`check`**, **`sync`**, and **`list-files`** also accept **`--file=fragment`**: substring match on `local_path` or `repo_file_path` (case-sensitive). Combine **`--repo`** and **`--file`** to scope to one repo and matching paths.
 
@@ -76,7 +76,7 @@ When file sync is off in **merged** config (`file_sync_enabled` is not boolean `
 
 Each tracked text file contains one line with **`filesync`**, **`kind=master`** (in the upstream repo) or **`kind=clone`** plus **`path=`** and **`repo=`** (local copy). After **`detach`**, **`kind=detached`**. The comment wrapper matches the file type (`#`, `//`, `<!-- … -->`, `/* … */`, `--`, etc.); optional per-row **`marker_style`** in `files.json` overrides inference. Plain **`.json`** cannot carry comments—see [docs/configuration.md](docs/configuration.md).
 
-**`sync`** options (see [docs/configuration.md](docs/configuration.md) for details): **`--dry-run`**, **`--force`** (overwrite locals that lack the clone marker), **`--all`** (consider every row except detached unless **`--include-detached`**), **`--include-status=a,b`** (comma-separated extra `sync_status` values to include), **`--include-detached`**.
+**`sync`** / **`list-files`** status filter **`--status=a,b,...`** (see [docs/configuration.md](docs/configuration.md)): same tokens for both; **`all`** is every status except **`detached`** unless **`--include-detached`** or **`detached`** is listed; **`error`** matches any **`error_*`**; **`unset`** is empty status. **`sync`** default (no **`--status`**) is **`unset`** + **`sync_required`**; add **`--include-detached`** to allow **`detached`** there too. **`sync`** also supports **`--dry-run`**, **`--force`** (overwrite locals that lack the clone marker).
 
 If the first argument starts with `-` but is not a known subcommand, it is treated as a **`sync`** option (same as calling `sync` first).
 

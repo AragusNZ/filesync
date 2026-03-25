@@ -89,6 +89,53 @@ file_sync_compute_status() {
   echo "synced"
 }
 
+# Match .sync_status (or empty) against --status= CSV from sync / list-files.
+# Optional third arg: include_detached true/false — when token "all" matches, detached rows
+# are included only if include_detached is true or token "detached" also appears in the CSV.
+# Comma-separated tokens (whitespace trimmed). OR across tokens.
+#   unset  — row has no sync_status / empty
+#   all    — any non-detached status (or detached if $3 is true)
+#   error  — any status whose name starts with error_
+#   other  — exact string match (e.g. sync_required, synced, detached)
+file_sync_status_matches_csv() {
+  local status="${1:-}"
+  local csv="$2"
+  local inc_det="${3:-false}"
+  [[ "$status" == "null" ]] && status=""
+
+  local tok
+  local -a raw_toks
+  IFS=',' read -ra raw_toks <<< "$csv"
+
+  local has_all=false
+  for tok in "${raw_toks[@]}"; do
+    tok="${tok//[[:space:]]/}"
+    [[ -z "$tok" ]] && continue
+    [[ "$tok" == "all" ]] && has_all=true
+  done
+
+  if [[ "$has_all" == true ]]; then
+    if [[ "$status" != "detached" ]]; then
+      return 0
+    fi
+    [[ "$inc_det" == true ]] && return 0
+  fi
+
+  for tok in "${raw_toks[@]}"; do
+    tok="${tok//[[:space:]]/}"
+    [[ -z "$tok" || "$tok" == "all" ]] && continue
+    if [[ "$tok" == "error" ]]; then
+      [[ "$status" == error_* ]] && return 0
+      continue
+    fi
+    if [[ "$tok" == "unset" && -z "$status" ]]; then
+      return 0
+    fi
+    [[ "$tok" == "$status" ]] && return 0
+  done
+  return 1
+}
+
 file_sync_status_color() {
   local st="$1"
   case "$st" in

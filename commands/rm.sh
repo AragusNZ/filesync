@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Remove mapping from .filesync/files.json; strip filesync marker lines from file.
+# Remove mapping from .filesync/files.json; strip clone/detached marker from local file (keep kind=master).
 
 set -euo pipefail
 
@@ -40,9 +40,9 @@ remove_one() {
   if [[ -f "$full" ]]; then
     local t
     t="$(mktemp)"
-    strip_file_sync_marker_lines "$full" "$t"
+    strip_non_master_filesync_marker_lines "$full" "$t"
     mv "$t" "$full"
-    echo -e "${GREEN}Stripped filesync marker lines:${NC} $local_path"
+    echo -e "${GREEN}Removed local filesync marker (left kind=master if present):${NC} $local_path"
   fi
 }
 

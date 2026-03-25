@@ -12,33 +12,32 @@ filesync_command_init "${BASH_SOURCE[0]}"
 
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
-if [[ $# -lt 2 ]]; then
-  echo -e "${RED}Usage: filesync add-file <repo_name> <path_in_repo> ... [--also=repo1,repo2]${NC}"
-  exit 1
-fi
-
-REPO_NAME="$1"
+MARK_MASTER=false
 TARGET_REPOS_RAW=""
-declare -a POSITIONAL=()
-declare -a REPO_FILE_PATHS=()
-declare -a LOCAL_PATHS=()
+declare -a POSITIONAL_RAW=()
 
-shift
 for arg in "$@"; do
   if [[ "$arg" == --also=* ]]; then
     TARGET_REPOS_RAW="${arg#--also=}"
+  elif [[ "$arg" == --mark-master ]]; then
+    MARK_MASTER=true
   elif [[ "$arg" == --* ]]; then
     echo -e "${RED}Error: Unknown option '$arg'.${NC}"
     exit 1
   else
-    POSITIONAL+=("$arg")
+    POSITIONAL_RAW+=("$arg")
   fi
 done
 
-if [[ ${#POSITIONAL[@]} -eq 0 ]]; then
-  echo -e "${RED}Error: At least one repo file path is required.${NC}"
+if [[ ${#POSITIONAL_RAW[@]} -lt 2 ]]; then
+  echo -e "${RED}Usage: filesync add-file <repo_name> <path_in_repo> ... [--mark-master] [--also=repo1,repo2]${NC}"
   exit 1
 fi
+
+REPO_NAME="${POSITIONAL_RAW[0]}"
+declare -a POSITIONAL=("${POSITIONAL_RAW[@]:1}")
+declare -a REPO_FILE_PATHS=()
+declare -a LOCAL_PATHS=()
 
 for token in "${POSITIONAL[@]}"; do
   if [[ "$token" == *":"* ]]; then
@@ -75,12 +74,47 @@ add_one() {
 
   local repo_disk_path rmi="" lmi=""
   repo_disk_path=$(jq -r --arg n "$repo_name" '.[] | select(.name == $n) | .path // ""' "$repos_path" | head -1)
-  if [[ -n "$repo_disk_path" && "$repo_disk_path" != "null" ]]; then
-    local full_master="$PROJECT_ROOT/$repo_disk_path/$repo_file_path"
-    [[ -f "$full_master" ]] && rmi=$(file_sync_mtime_iso "$full_master")
+  if [[ -z "$repo_disk_path" || "$repo_disk_path" == "null" ]]; then
+    echo -e "${RED}Error: Repo '$repo_name' has no local path (${label}).${NC}"
+    return 1
   fi
+
+  local full_master="$PROJECT_ROOT/$repo_disk_path/$repo_file_path"
+  if [[ ! -f "$full_master" ]]; then
+    echo -e "${RED}Error: Master file not in repo checkout (${label}): $repo_file_path${NC}"
+    return 1
+  fi
+
+  if has_master_file_sync_marker "$full_master"; then
+    :
+  elif has_any_file_sync_marker "$full_master"; then
+    echo -e "${RED}Error: Master file has a filesync marker that is not kind=master: $repo_file_path${NC}"
+    return 1
+  elif [[ "$MARK_MASTER" == true ]]; then
+    if ! prepend_master_marker_to_file "$full_master" "$repo_file_path"; then
+      echo -e "${RED}Error: Could not prepend kind=master marker to: $repo_file_path${NC}"
+      return 1
+    fi
+    echo -e "${GREEN}Prepended kind=master to master copy:${NC} $repo_file_path"
+  else
+    echo -e "${RED}Error: Master file has no kind=master marker: $repo_file_path (use --mark-master to add one)${NC}"
+    return 1
+  fi
+
   local full_local="$PROJECT_ROOT/$local_path"
-  [[ -f "$full_local" ]] && lmi=$(file_sync_mtime_iso "$full_local")
+  mkdir -p "$(dirname "$full_local")"
+  local tmp_clone
+  tmp_clone="$(mktemp)"
+  if ! render_clone_from_master_file "$full_master" "$repo_file_path" "$repo_name" "$tmp_clone"; then
+    rm -f "$tmp_clone"
+    echo -e "${RED}Error: Could not render clone from master: $repo_file_path${NC}"
+    return 1
+  fi
+  cp "$tmp_clone" "$full_local"
+  rm -f "$tmp_clone"
+
+  rmi=$(file_sync_mtime_iso "$full_master")
+  lmi=$(file_sync_mtime_iso "$full_local")
 
   local new_entry
   new_entry=$(jq -n \

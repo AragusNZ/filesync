@@ -229,6 +229,27 @@ render_master_marker_file() {
   return 1
 }
 
+# Prepend a kind=master marker as the first line. Fails if the file is missing
+# or already contains any filesync marker. style_hint_path drives comment style
+# (extension map) when not inferrable from an existing marker line.
+prepend_master_marker_to_file() {
+  local file_path="${1:?}"
+  local style_hint_path="${2:-$file_path}"
+  [[ -f "$file_path" ]] || return 1
+  if has_any_file_sync_marker "$file_path"; then
+    return 1
+  fi
+  local st line tmp
+  st=$(filesync_marker_style_resolve "$style_hint_path" "")
+  line="$(filesync_marker_format_line "$st" "filesync kind=master")"
+  tmp="$(mktemp)"
+  { printf '%s\n' "$line"; cat -- "$file_path"; } >"$tmp" || {
+    rm -f "$tmp"
+    return 1
+  }
+  mv "$tmp" "$file_path"
+}
+
 render_clone_from_master_file() {
   local master_file="$1"
   local master_repo_path="$2"
@@ -264,6 +285,23 @@ strip_file_sync_marker_lines() {
   local input_file="$1"
   local output_file="$2"
   awk 'index($0, "filesync kind=") == 0 { print }' "$input_file" >"$output_file"
+}
+
+# Like strip_file_sync_marker_lines, but keeps lines whose first marker payload is kind=master
+# (e.g. when the local path is the same file as the repo master, or a shared master copy).
+strip_non_master_filesync_marker_lines() {
+  local input_file="$1"
+  local output_file="$2"
+  : >"$output_file"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ "$line" == *"filesync kind="* ]]; then
+      if filesync_marker_parse_line "$line" && grep -qE 'kind=master([[:space:]]|$)' <<< "$FILESYNC_M_INNER"; then
+        printf '%s\n' "$line" >>"$output_file"
+      fi
+    else
+      printf '%s\n' "$line" >>"$output_file"
+    fi
+  done <"$input_file"
 }
 
 # Alias for clarity (same implementation).

@@ -52,8 +52,38 @@ append_patch() {
   echo "$1" >> "$PATCH_LINES_FILE"
 }
 
+# JSON array of strings for jq --argjson (empty -> []).
+check_marker_warn_codes_json() {
+  if [[ ${#CHECK_MARKER_WARN_CODES[@]} -eq 0 ]]; then
+    printf '%s' '[]'
+    return
+  fi
+  printf '%s\n' "${CHECK_MARKER_WARN_CODES[@]}" | jq -R . | jq -s .
+}
+
+# Both files must exist. Sets CHECK_MARKER_WARN_CODES and prints filesync_warn lines.
+check_collect_marker_warnings() {
+  CHECK_MARKER_WARN_CODES=()
+  if has_clone_file_sync_marker "$FULL_MASTER_PATH" 2>/dev/null; then
+    CHECK_MARKER_WARN_CODES+=(master_kind_clone)
+    filesync_warn "$LOCAL_PATH: master copy has kind=clone (possible crossover; expected kind=master in repo)"
+  elif ! has_master_file_sync_marker "$FULL_MASTER_PATH" 2>/dev/null; then
+    CHECK_MARKER_WARN_CODES+=(master_no_master_marker)
+    filesync_warn "$LOCAL_PATH: master copy lacks kind=master marker"
+  fi
+  if has_master_file_sync_marker "$FULL_LOCAL_PATH" 2>/dev/null; then
+    CHECK_MARKER_WARN_CODES+=(local_kind_master)
+    filesync_warn "$LOCAL_PATH: local file has kind=master (possible crossover; expected kind=clone)"
+  fi
+  if ! has_clone_file_sync_marker "$FULL_LOCAL_PATH" 2>/dev/null; then
+    CHECK_MARKER_WARN_CODES+=(local_no_clone_marker)
+    filesync_warn "$LOCAL_PATH: local file lacks kind=clone marker"
+  fi
+}
+
 BLOCKING_ISSUES=0
 CHECKED=0
+MARKER_WARN_ROWS=0
 
 echo -e "${CYAN}Checking synced files (updating .filesync)...${NC}"
 [[ -n "$REPO_FILTER" ]] && echo -e "${CYAN}Filter: --repo=$REPO_FILTER${NC}"
@@ -87,7 +117,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
   if [[ -z "$REPO_NAME" ]] || [[ "$REPO_NAME" == "null" ]]; then
     echo -e "${RED}✗ Entry $i: Invalid repo_name in config${NC}"
     BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
-    append_patch "$(jq -nc --argjson idx "$i" --arg now "$NOW_ISO" '{i: $idx, last_check_at: $now, sync_status: "error_invalid_repo"}')"
+    append_patch "$(jq -nc --argjson idx "$i" --arg now "$NOW_ISO" --argjson cw '[]' '{i: $idx, last_check_at: $now, sync_status: "error_invalid_repo", check_marker_warnings: $cw}')"
     continue
   fi
 
@@ -102,14 +132,14 @@ for ((i=0; i<FILES_COUNT; i++)); do
   if [[ -z "$LOCAL_PATH" ]] || [[ "$LOCAL_PATH" == "null" ]]; then
     echo -e "${RED}✗ Entry $i: Invalid local_path in config${NC}"
     BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
-    append_patch "$(jq -nc --argjson idx "$i" --arg now "$NOW_ISO" '{i: $idx, last_check_at: $now, sync_status: "error_invalid_local_path"}')"
+    append_patch "$(jq -nc --argjson idx "$i" --arg now "$NOW_ISO" --argjson cw '[]' '{i: $idx, last_check_at: $now, sync_status: "error_invalid_local_path", check_marker_warnings: $cw}')"
     continue
   fi
 
   if [[ -z "$REPO_FILE_PATH" ]] || [[ "$REPO_FILE_PATH" == "null" ]]; then
     echo -e "${RED}✗ $LOCAL_PATH: Invalid repo_file_path in config${NC}"
     BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
-    append_patch "$(jq -nc --argjson idx "$i" --arg now "$NOW_ISO" '{i: $idx, last_check_at: $now, sync_status: "error_invalid_repo_path"}')"
+    append_patch "$(jq -nc --argjson idx "$i" --arg now "$NOW_ISO" --argjson cw '[]' '{i: $idx, last_check_at: $now, sync_status: "error_invalid_repo_path", check_marker_warnings: $cw}')"
     continue
   fi
 
@@ -117,7 +147,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
   if ! REPO_ROOT=$(filesync_get_repo_dir "$REPO_NAME"); then
     echo -e "${RED}✗ $LOCAL_PATH: Could not resolve repo $REPO_NAME${NC}"
     BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
-    append_patch "$(jq -nc --argjson idx "$i" --arg now "$NOW_ISO" '{i: $idx, last_check_at: $now, sync_status: "error_repo_unavailable"}')"
+    append_patch "$(jq -nc --argjson idx "$i" --arg now "$NOW_ISO" --argjson cw '[]' '{i: $idx, last_check_at: $now, sync_status: "error_repo_unavailable", check_marker_warnings: $cw}')"
     continue
   fi
 
@@ -145,12 +175,14 @@ for ((i=0; i<FILES_COUNT; i++)); do
       --arg now "$NOW_ISO" \
       --arg rs "${REPO_ISO:-}" \
       --arg ls "${LOCAL_ISO:-}" \
+      --argjson cw '[]' \
       '{
         i: $idx,
         last_check_at: $now,
         sync_status: "detached",
         repo_file_modified_at: (if $rs == "" then null else $rs end),
-        local_file_modified_at: (if $ls == "" then null else $ls end)
+        local_file_modified_at: (if $ls == "" then null else $ls end),
+        check_marker_warnings: $cw
       }')"
     printf '%b[%s]%b %s %s: detached (mapping inactive)\n' "$(col_st detached)" "detached" "$(rst)" "${WHITE}" "$LOCAL_PATH"
     continue
@@ -163,12 +195,14 @@ for ((i=0; i<FILES_COUNT; i++)); do
       --argjson idx "$i" \
       --arg now "$NOW_ISO" \
       --arg ls "${LOCAL_ISO:-}" \
+      --argjson cw '[]' \
       '{
         i: $idx,
         last_check_at: $now,
         sync_status: "error_missing_master",
         repo_file_modified_at: null,
-        local_file_modified_at: (if $ls == "" then null else $ls end)
+        local_file_modified_at: (if $ls == "" then null else $ls end),
+        check_marker_warnings: $cw
       }')"
     continue
   fi
@@ -180,50 +214,40 @@ for ((i=0; i<FILES_COUNT; i++)); do
       --argjson idx "$i" \
       --arg now "$NOW_ISO" \
       --arg rs "${REPO_ISO:-}" \
+      --argjson cw '[]' \
       '{
         i: $idx,
         last_check_at: $now,
         sync_status: "error_missing_local",
         repo_file_modified_at: (if $rs == "" then null else $rs end),
-        local_file_modified_at: null
+        local_file_modified_at: null,
+        check_marker_warnings: $cw
       }')"
     continue
   fi
 
-  if ! has_clone_file_sync_marker "$FULL_LOCAL_PATH" 2>/dev/null; then
-    echo -e "$(col_st error_no_clone_marker)${YELLOW}⚠${NC} ${WHITE}$LOCAL_PATH: Missing filesync kind=clone marker${NC}"
-    BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
-    append_patch "$(jq -nc \
-      --argjson idx "$i" \
-      --arg now "$NOW_ISO" \
-      --arg rs "${REPO_ISO:-}" \
-      --arg ls "${LOCAL_ISO:-}" \
-      '{
-        i: $idx,
-        last_check_at: $now,
-        sync_status: "error_no_clone_marker",
-        repo_file_modified_at: (if $rs == "" then null else $rs end),
-        local_file_modified_at: (if $ls == "" then null else $ls end)
-      }')"
-    continue
-  fi
+  check_collect_marker_warnings
+  [[ ${#CHECK_MARKER_WARN_CODES[@]} -gt 0 ]] && MARKER_WARN_ROWS=$((MARKER_WARN_ROWS + 1))
 
   EXPECTED_TMP=$(mktemp)
   if ! render_clone_from_master_file "$FULL_MASTER_PATH" "$REPO_FILE_PATH" "$REPO_NAME" "$EXPECTED_TMP"; then
     rm -f "$EXPECTED_TMP"
-    filesync_error "${LOCAL_PATH}: could not render clone from master ${REPO_NAME}/${REPO_FILE_PATH} (master file missing or unparsable filesync marker)"
-    BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
+    filesync_warn "${LOCAL_PATH}: could not render clone from master ${REPO_NAME}/${REPO_FILE_PATH} (unparsable or missing filesync marker line)"
+    CHECKED=$((CHECKED + 1))
+    _cw_json="$(check_marker_warn_codes_json)"
     append_patch "$(jq -nc \
       --argjson idx "$i" \
       --arg now "$NOW_ISO" \
       --arg rs "${REPO_ISO:-}" \
       --arg ls "${LOCAL_ISO:-}" \
+      --argjson cw "$_cw_json" \
       '{
         i: $idx,
         last_check_at: $now,
         sync_status: "error_master_marker",
         repo_file_modified_at: (if $rs == "" then null else $rs end),
-        local_file_modified_at: (if $ls == "" then null else $ls end)
+        local_file_modified_at: (if $ls == "" then null else $ls end),
+        check_marker_warnings: $cw
       }')"
     printf '%b[%s]%b %s%s\n' "$(col_st error_master_marker)" "error_master_marker" "$(rst)" "${WHITE}" "$LOCAL_PATH"
     continue
@@ -243,18 +267,21 @@ for ((i=0; i<FILES_COUNT; i++)); do
 
   CHECKED=$((CHECKED + 1))
 
+  _cw_json="$(check_marker_warn_codes_json)"
   append_patch "$(jq -nc \
     --argjson idx "$i" \
     --arg now "$NOW_ISO" \
     --arg rs "${REPO_ISO:-}" \
     --arg ls "${LOCAL_ISO:-}" \
     --arg st "$STATUS" \
+    --argjson cw "$_cw_json" \
     '{
       i: $idx,
       last_check_at: $now,
       sync_status: $st,
       repo_file_modified_at: (if $rs == "" then null else $rs end),
-      local_file_modified_at: (if $ls == "" then null else $ls end)
+      local_file_modified_at: (if $ls == "" then null else $ls end),
+      check_marker_warnings: $cw
     }')"
 
   if [[ "$STATUS" == "conflict" ]] || [[ "$STATUS" =~ ^error_ ]]; then
@@ -279,6 +306,9 @@ fi
 echo ""
 if [[ -n "$FILE_FRAGMENT" ]] && [[ "$CHECKED" -eq 0 ]]; then
   echo -e "${YELLOW}No file rows matched --file=${FILE_FRAGMENT}${NC} (and repo filter if any)."
+fi
+if [[ "$MARKER_WARN_ROWS" -gt 0 ]]; then
+  echo -e "${YELLOW}Marker warning(s) on $MARKER_WARN_ROWS file row(s) (stderr above; codes in .filesync/files.json check_marker_warnings).${NC}"
 fi
 if [[ $BLOCKING_ISSUES -gt 0 ]]; then
   echo -e "${RED}Check completed with $BLOCKING_ISSUES blocking issue(s).${NC} ${WHITE}Rows updated: $CHECKED${NC}"

@@ -28,13 +28,14 @@ mkdir -p "${proj}"
 		--arg url "file://${master}" \
 		'[{"name":"origin","path":"../git-master","url":$url,"branch":"main"}]' >".filesync/repos.json"
 	filesync add-file origin tools/demo.txt
+	[[ -f tools/demo.txt ]] || die "add-file should create local file"
+	grep -q 'filesync kind=clone' tools/demo.txt || die "add-file should set clone marker on local"
 	_ll="$(filesync list-files --file=demo.txt 2>&1)" || die "list-files --file exit"
 	[[ "${_ll}" == *tools/demo.txt* ]] || die "list-files --file should show matching row"
 	_dr="$(filesync sync --dry-run 2>&1)" || die "sync --dry-run exit"
-	[[ "${_dr}" == *"Would sync"* ]] || die "dry-run should mention Would sync"
-	[[ ! -f tools/demo.txt ]] || die "dry-run must not create local file"
+	[[ "${_dr}" == *"Already in sync"* ]] || die "dry-run should report already in sync after add-file"
 	filesync sync
-	[[ -f tools/demo.txt ]] || die "sync should create local file"
+	[[ -f tools/demo.txt ]] || die "sync should keep local file"
 	grep -q 'filesync kind=clone' tools/demo.txt || die "local should be clone"
 	filesync check >/dev/null || die "check after sync"
 	echo "local-edit" >>tools/demo.txt
@@ -65,6 +66,8 @@ mkdir -p "${proj}"
 	grep -qF '<!-- filesync kind=clone' public/page.html || die "html clone marker"
 	filesync check --file=page.html >/dev/null || die "check html"
 	filesync rm public/page.html
+	grep -qF 'kind=master' "${master}/public/page.html" || die "rm must leave master repo marker"
+	! grep -q 'filesync kind=clone' public/page.html || die "rm should strip local clone marker"
 	{
 		echo "extra-body"
 		echo "# filesync kind=master"
@@ -84,6 +87,6 @@ mkdir -p "${proj}"
 	grep -qF 'repo=upstream' tools/demo.txt || die "edit-repo rename updates clone marker repo="
 	_ru="$(filesync list-repos --repo=upstream 2>&1)" || die "list-repos upstream"
 	[[ "${_ru}" == *upstream* ]] || die "list-repos filter upstream"
-	_sda="$(filesync sync --dry-run --all 2>&1)" || die "sync --all dry-run exit"
-	[[ "${_sda,,}" == *sync* ]] || [[ "${_sda}" == *"Nothing"* ]] || [[ "${_sda,,}" == *already* ]] || die "sync --all dry-run"
+	_sda="$(filesync sync --dry-run --status=all 2>&1)" || die "sync --status=all dry-run exit"
+	[[ "${_sda,,}" == *sync* ]] || [[ "${_sda}" == *"Nothing"* ]] || [[ "${_sda,,}" == *already* ]] || die "sync --status=all dry-run"
 )

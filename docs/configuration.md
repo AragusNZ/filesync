@@ -83,18 +83,29 @@ Internally, commands build a **temporary** JSON file (merged top-level config + 
 
 **`attach`**: re-couples rows with `sync_status: detached` by rewriting the local file from master (clone marker), clearing `sync_status`, then running **`check`** for that repo and path so status is recomputed.
 
+## `sync` / `list-files` status filter (`--status`)
+
+**`list-files`**: optional **`--status=a,b,...`** and optional **`--include-detached`** (with **`--status`** only). Omit **`--status`** to list every row (after **`--repo`** / **`--file`** filters).
+
+**`sync`**: by default only rows whose **`sync_status`** is empty/unset or **`sync_required`** are processed; **`detached`** rows are skipped unless **`--include-detached`** is set. Pass **`--status=`** to replace that default with other tokens.
+
+Comma-separated tokens (whitespace around tokens is stripped). A row matches if **any** token matches (OR):
+
+- **`unset`** — empty / missing **`sync_status`**
+- **`all`** — every status **except** **`detached`**, unless **`--include-detached`** is set (then **`all`** includes **`detached`** too) or the list also contains the literal token **`detached`**
+- **`error`** — any **`sync_status`** whose name starts with **`error_`**
+- any other token — exact **`sync_status`** string (e.g. **`synced`**, **`local_newer`**, **`detached`**, **`error_repo_unavailable`**)
+
+Examples: **`--status=all`** (all non-detached); **`--status=all --include-detached`** or **`--status=all,detached`** (include detached); **`--status=error`**; **`--status=sync_required,local_newer,synced`**.
+
 ## `sync` behavior and flags
 
-By default, **`sync`** only processes rows whose **`sync_status`** is empty/unset or **`sync_required`**. Rows with **`sync_status: detached`** are skipped unless **`--include-detached`** is set.
-
+- **`--include-detached`**: allow **`sync_status: detached`** rows when using the default status filter, or include them when **`--status=`** contains **`all`** (without adding the **`detached`** token).
 - **`--dry-run`**: report what would be copied; do not write files or update `files.json`.
 - **`--force`**: if the local file exists but lacks the **`filesync kind=clone`** marker, sync anyway (default is to skip those paths).
-- **`--all`**: include every row that passes repo/file filters and is not detached (unless **`--include-detached`**); still requires master/clone marker rules unless **`--force`** applies to clone-less locals.
-- **`--include-status=a,b`**: comma-separated list of additional **`sync_status`** values to treat as eligible (whitespace around tokens is stripped).
-- **`--include-detached`**: allow rows with **`sync_status: detached`** to be synced.
 
 Master files must contain **`filesync kind=master`** or the row is skipped (with a warning), regardless of other flags.
 
 ## Dependencies
 
-`jq` is required. **`git`** must be on `PATH` for: `check`, `sync`, `list-files`, `list-repos`, `add-file`, `add-master`, `push`, `detach`, `attach`, `rm`, and `edit-repo` (the shared runtime checks for `git` even when a given command does not invoke it). Other commands (`init`, `update`, `enable`, `disable`, `add-repo`) only require `jq` (and `curl` or `wget` for `update` when fetching release metadata or assets).
+`jq` is required. **`git`** must be on `PATH` for: `check`, `sync`, `list-files`, `list-repos`, `add-file`, `add-master`, `push`, `detach`, `attach`, `rm`, and `edit-repo` (the shared runtime checks for `git` even when a given command does not invoke it). Other commands (`init`, `update`, `enable`, `disable`, `path-mode`, `add-repo`) only require `jq` (and `curl` or `wget` for `update` when fetching release metadata or assets).

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Usage: list.sh list-repos [--repo=name] | list.sh list-files [--repo=name] [--file=path_fragment]
+# Usage: list.sh list-repos [--repo=name] | list.sh list-files [--repo=name] [--file=path_fragment] [--status=a,b,...] [--include-detached]
 # Dispatcher passes longform mode; repos|lr and list|lf are accepted for compatibility.
 
 set -euo pipefail
@@ -11,7 +11,7 @@ filesync_command_init "${BASH_SOURCE[0]}"
 
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
-_list_usage_pair='filesync list-repos [--repo=name] | filesync list-files [--repo=name] [--file=path_fragment]'
+_list_usage_pair='filesync list-repos [--repo=name] | filesync list-files [--repo=name] [--file=path_fragment] [--status=a,b,...] [--include-detached]'
 
 sub="${1:-}"
 if [[ -z "$sub" ]]; then
@@ -22,6 +22,8 @@ shift
 
 REPO_FILTER=""
 FILE_FRAGMENT=""
+STATUS_CSV=""
+INCLUDE_DETACHED=false
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --repo=*)
@@ -30,6 +32,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --file=*)
       FILE_FRAGMENT="${1#*=}"
+      shift
+      ;;
+    --include-detached)
+      INCLUDE_DETACHED=true
+      shift
+      ;;
+    --status=*)
+      STATUS_CSV="${1#*=}"
       shift
       ;;
     -*)
@@ -60,6 +70,18 @@ if [[ "$sub" == list-repos || "$sub" == repos || "$sub" == lr ]] && [[ -n "$FILE
   exit 1
 fi
 
+if [[ "$sub" == list-repos || "$sub" == repos || "$sub" == lr ]] && [[ -n "$STATUS_CSV" ]]; then
+  echo -e "${RED}filesync list-repos does not accept --status${NC}" >&2
+  echo "Usage: filesync list-repos [--repo=name]" >&2
+  exit 1
+fi
+
+if [[ "$sub" == list-repos || "$sub" == repos || "$sub" == lr ]] && [[ "$INCLUDE_DETACHED" == true ]]; then
+  echo -e "${RED}filesync list-repos does not accept --include-detached${NC}" >&2
+  echo "Usage: filesync list-repos [--repo=name]" >&2
+  exit 1
+fi
+
 case "$sub" in
   list-repos|repos|lr)
     echo -e "${CYAN}Repos${NC}"
@@ -81,18 +103,22 @@ case "$sub" in
     echo "------"
     [[ -n "$REPO_FILTER" ]] && echo -e "${CYAN}Filter: --repo=$REPO_FILTER${NC}"
     [[ -n "$FILE_FRAGMENT" ]] && echo -e "${CYAN}Filter: --file= substring on local_path or repo_file_path: ${FILE_FRAGMENT}${NC}"
+    [[ -n "$STATUS_CSV" ]] && echo -e "${CYAN}Filter: --status=${STATUS_CSV}${NC}"
+    [[ "$INCLUDE_DETACHED" == true ]] && echo -e "${CYAN}Also: --include-detached${NC}"
     print_file_line() {
-      local rn="$1" rp="$2" lp="$3" st="${4:-}"
+      local rn="$1" rp="$2" lp="$3" st="${4:-}" mw="${5:-}"
       local st_disp
       if [[ -t 1 ]]; then
         st_disp="$(printf '%b%s%b' "$(file_sync_status_color "${st:-unset}")" "${st:-unset}" "$(file_sync_color_reset)")"
       else
         st_disp="${st:-unset}"
       fi
+      local suf=""
+      [[ -n "$mw" ]] && suf=" ${YELLOW}⚠ ${mw}${NC}"
       if [[ "$rp" == "$lp" ]]; then
-        echo -e "[$st_disp] $rn | $rp"
+        echo -e "[$st_disp] $rn | $rp${suf}"
       else
-        echo -e "[$st_disp] $rn | $rp -> ${YELLOW}$lp${NC}"
+        echo -e "[$st_disp] $rn | $rp -> ${YELLOW}$lp${NC}${suf}"
       fi
     }
     if [[ -n "$REPO_FILTER" ]]; then
@@ -107,20 +133,29 @@ case "$sub" in
     fi
     printed=0
     if [[ -n "$REPO_FILTER" ]]; then
-      while IFS=$'\t' read -r rn rp lp st; do
+      while IFS=$'\t' read -r rn rp lp st mw; do
         filesync_file_matches_fragment "$FILE_FRAGMENT" "$lp" "$rp" || continue
-        print_file_line "$rn" "$rp" "$lp" "$st"
+        if [[ -n "$STATUS_CSV" ]] && ! file_sync_status_matches_csv "$st" "$STATUS_CSV" "$INCLUDE_DETACHED"; then
+          continue
+        fi
+        print_file_line "$rn" "$rp" "$lp" "$st" "$mw"
         printed=$((printed + 1))
-      done < <(jq -r --arg n "$REPO_FILTER" '.files[] | select(.repo_name == $n) | "\(.repo_name)\t\(.repo_file_path)\t\(.local_path)\t\(.sync_status // "")"' "$CONFIG_FILE")
+      done < <(jq -r --arg n "$REPO_FILTER" '.files[] | select(.repo_name == $n) | "\(.repo_name)\t\(.repo_file_path)\t\(.local_path)\t\(.sync_status // "")\t\(.check_marker_warnings // [] | join(","))"' "$CONFIG_FILE")
     else
-      while IFS=$'\t' read -r rn rp lp st; do
+      while IFS=$'\t' read -r rn rp lp st mw; do
         filesync_file_matches_fragment "$FILE_FRAGMENT" "$lp" "$rp" || continue
-        print_file_line "$rn" "$rp" "$lp" "$st"
+        if [[ -n "$STATUS_CSV" ]] && ! file_sync_status_matches_csv "$st" "$STATUS_CSV" "$INCLUDE_DETACHED"; then
+          continue
+        fi
+        print_file_line "$rn" "$rp" "$lp" "$st" "$mw"
         printed=$((printed + 1))
-      done < <(jq -r '.files[] | "\(.repo_name)\t\(.repo_file_path)\t\(.local_path)\t\(.sync_status // "")"' "$CONFIG_FILE")
+      done < <(jq -r '.files[] | "\(.repo_name)\t\(.repo_file_path)\t\(.local_path)\t\(.sync_status // "")\t\(.check_marker_warnings // [] | join(","))"' "$CONFIG_FILE")
     fi
     if [[ -n "$FILE_FRAGMENT" ]] && [[ "$printed" -eq 0 ]] && [[ "$TOTAL_FOR_LIST" -gt 0 ]]; then
       echo -e "${YELLOW}No file rows matched --file=${FILE_FRAGMENT}${NC} (and repo filter if any)."
+    fi
+    if [[ -n "$STATUS_CSV" ]] && [[ "$printed" -eq 0 ]] && [[ "$TOTAL_FOR_LIST" -gt 0 ]]; then
+      echo -e "${YELLOW}No file rows matched --status=${STATUS_CSV}${NC} (and other filters if any)."
     fi
     ;;
 esac

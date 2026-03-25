@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Sync from master repos into project (updates .filesync/files.json rows).
-# Usage: sync.sh [--repo=name] [--file=path_fragment] [--dry-run] [--force] [--all] [--include-status=a,b] [--include-detached]
+# Usage: sync.sh [--repo=name] [--file=path_fragment] [--dry-run] [--force] [--status=a,b,...] [--include-detached]
 # Path fragment: substring match on local_path or repo_file_path (after optional --repo filter).
 
 set -euo pipefail
@@ -14,17 +14,15 @@ REPO_FILTER=""
 FILE_FRAGMENT=""
 DRY_RUN=false
 FORCE=false
-SYNC_ALL=false
-INCLUDE_STATUS_EXTRA=""
+STATUS_CSV=""
 INCLUDE_DETACHED=false
 
 while [[ $# -gt 0 ]]; do
   case $1 in
     --dry-run) DRY_RUN=true; shift ;;
     --force) FORCE=true; shift ;;
-    --all) SYNC_ALL=true; shift ;;
-    --include-status=*) INCLUDE_STATUS_EXTRA="${1#*=}"; shift ;;
     --include-detached) INCLUDE_DETACHED=true; shift ;;
+    --status=*) STATUS_CSV="${1#*=}"; shift ;;
     --repo=*)
       REPO_FILTER="${1#*=}"
       shift
@@ -47,25 +45,15 @@ done
 sync_entry_allowed() {
   local status="${1:-}"
   [[ "$status" == "null" ]] && status=""
-  if [[ "$status" == "detached" ]]; then
-    [[ "$INCLUDE_DETACHED" == true ]] && return 0
+  if [[ -z "$STATUS_CSV" ]]; then
+    if [[ "$status" == "detached" ]]; then
+      [[ "$INCLUDE_DETACHED" == true ]] && return 0
+      return 1
+    fi
+    [[ -z "$status" ]] || [[ "$status" == "sync_required" ]] && return 0
     return 1
   fi
-  if [[ "$SYNC_ALL" == true ]]; then
-    return 0
-  fi
-  if [[ -z "$status" ]] || [[ "$status" == "sync_required" ]]; then
-    return 0
-  fi
-  if [[ -n "$INCLUDE_STATUS_EXTRA" ]]; then
-    local tok
-    IFS=',' read -ra _extra <<< "$INCLUDE_STATUS_EXTRA"
-    for tok in "${_extra[@]}"; do
-      tok="${tok//[[:space:]]/}"
-      [[ "$tok" == "$status" ]] && return 0
-    done
-  fi
-  return 1
+  file_sync_status_matches_csv "$status" "$STATUS_CSV" "$INCLUDE_DETACHED"
 }
 
 # shellcheck disable=SC2034
@@ -101,13 +89,12 @@ FILE_PATH_MATCHES=0
 echo -e "${CYAN}Syncing files from repo(s)...${NC}"
 [[ -n "$REPO_FILTER" ]] && echo -e "${CYAN}Filter: --repo=$REPO_FILTER${NC}"
 [[ -n "$FILE_FRAGMENT" ]] && echo -e "${CYAN}Filter: --file= substring on local_path or repo_file_path: ${FILE_FRAGMENT}${NC}"
-if [[ "$SYNC_ALL" == true ]]; then
-  echo -e "${CYAN}Mode: --all (all coupled statuses)${NC}"
-elif [[ -n "$INCLUDE_STATUS_EXTRA" ]]; then
-  echo -e "${CYAN}Extra statuses: $INCLUDE_STATUS_EXTRA${NC}"
+if [[ -n "$STATUS_CSV" ]]; then
+  echo -e "${CYAN}Filter: --status=${STATUS_CSV}${NC}"
 else
-  echo -e "${CYAN}Mode: unset or sync_required only (use --all or --include-status=...)${NC}"
+  echo -e "${CYAN}Mode: unset or sync_required only (use ${YELLOW}--status=a,b,...${CYAN} to include other statuses)${NC}"
 fi
+[[ "$INCLUDE_DETACHED" == true ]] && echo -e "${CYAN}Also: --include-detached${NC}"
 echo ""
 
 FILES_COUNT=$(jq '.files | length' "$CONFIG_FILE")

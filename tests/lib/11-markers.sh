@@ -156,4 +156,31 @@ strip2="${td}/strip2.txt"
 strip_filesync_marker_lines "${mf}" "${strip2}"
 if ! grep -q 'filesync' "${strip2}"; then ok "strip_filesync_marker_lines alias"; else bad "strip alias"; fi
 
+nm="${td}/non_master_strip.txt"
+echo "# filesync kind=clone path=x repo=y" >"${td}/nm_in.txt"
+echo "body" >>"${td}/nm_in.txt"
+strip_non_master_filesync_marker_lines "${td}/nm_in.txt" "${nm}"
+if [[ "$(tr -d '\n' <"${nm}")" == "body" ]]; then ok "strip_non_master removes clone"; else bad "strip_non_master clone"; fi
+echo "# filesync kind=master" >"${td}/nm_m.txt"
+echo "keep" >>"${td}/nm_m.txt"
+strip_non_master_filesync_marker_lines "${td}/nm_m.txt" "${nm}"
+if grep -qE 'kind=master' "${nm}" && grep -q 'keep' "${nm}" && ! grep -q 'kind=clone' "${nm}"; then
+	ok "strip_non_master keeps master"
+else
+	bad "strip_non_master master"
+fi
+
+plain="${td}/plain.txt"
+echo "body-only" >"${plain}"
+if prepend_master_marker_to_file "${plain}" "x.txt" && head -1 "${plain}" | grep -qE 'kind=master' && grep -q 'body-only' "${plain}"; then
+	ok "prepend_master_marker_to_file"
+else
+	bad "prepend_master_marker_to_file"
+fi
+if prepend_master_marker_to_file "${plain}" "x.txt"; then
+	bad "prepend_master_marker_to_file should fail when marker exists"
+else
+	ok "prepend_master_marker_to_file rejects already marked"
+fi
+
 if [[ "${fail}" -ne 0 ]]; then exit 1; fi

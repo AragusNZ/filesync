@@ -72,6 +72,29 @@ Turn on file sync in merged config.
 Also
 .BR dis .
 Turn off file sync in merged config.
+.TP
+.B path-mode
+Also
+.BR pm .
+.RI [ relative | absolute ]
+With no argument, print the effective
+.I path_mode
+from merged config
+.RI ( relative
+or
+.IR absolute ).
+With an argument, set
+.I path_mode
+in
+.BR .filesync/config.json :
+.B relative
+resolves each repo
+.B path
+under the project root;
+.B absolute
+uses
+.B path
+as a filesystem directory as-is.
 .SS "Inspect and sync"
 .TP
 .B check
@@ -92,6 +115,24 @@ matches rows where
 or
 .I repo_file_path
 contains the fragment (substring).
+Compares each local file to the clone rendered from the master copy (diff drives
+.IR sync_status ).
+Warns (stderr and per-row
+.I check_marker_warnings
+codes in
+.IR files.json )
+on crossover (local
+.I kind=master
+or master
+.IR kind=clone ),
+local missing
+.IR kind=clone ", "
+or master missing
+.IR kind=master ", "
+without treating those alone as fatal.
+If the master file cannot be rendered, the row is
+.I error_master_marker
+but the command exits successfully unless other blocking issues exist.
 .TP
 .B sync
 Also
@@ -100,9 +141,8 @@ Also
 .RI [ \-\-file= fragment ]
 .RI [ \-\-dry\-run ]
 .RI [ \-\-force ]
-.RI [ \-\-all ]
-.RI [ \-\-include-status= list ]
-.RI [ \-\-include-detached ]
+.RI [ \-\-status= list ]
+.RI [ \-\-include\-detached ]
 Copy from master repos into the project and update
 .IR files.json .
 Filters
@@ -114,13 +154,25 @@ match
 By default only rows with unset or
 .I sync_required
 status are considered; detached rows are skipped unless
-.BR \-\-include-detached .
-.B \-\-all
-includes every coupled status;
-.BI \-\-include-status=
-adds comma-separated
+.BR \-\-include\-detached .
+.BI \-\-status=
+overrides with a comma-separated list of
 .I sync_status
-values.
+tokens (any token may match): literals
+.RI ( synced ", " sync_required ", " detached ", ...),
+.I unset
+for empty status,
+.I all
+for every status except
+.IR detached ,
+unless
+.B \-\-include\-detached
+is set or
+.I detached
+appears in the list,
+.I error
+for any status whose name starts with
+.IR error_ .
 .B \-\-dry-run
 prints planned work without writing files or status.
 .B \-\-force
@@ -136,27 +188,52 @@ List configured repos or details for one repo by name.
 accepts only
 .BR \-\-repo= ;
 it does not accept
-.BR \-\-file= .
+.BR \-\-file= ", " \-\-status= ", or " \-\-include\-detached .
 .TP
 .B list-files
 Also
 .BR lf ", " list ", " files .
 .RI [ \-\-repo= name ]
 .RI [ \-\-file= fragment ]
+.RI [ \-\-status= list ]
+.RI [ \-\-include\-detached ]
 List file mappings and cached status; run
 .B check
 to refresh status fields. Filters match
 .BR check .
+Optional
+.BI \-\-status=
+uses the same comma-separated tokens as
+.BR sync
+(including
+.B \-\-include\-detached
+with
+.IR all ).
+Non-empty
+.I check_marker_warnings
+for a row are summarized on the line after the status.
 .SS "Mappings and repos"
 .TP
 .B add-file
 Also
 .BR af ", " add .
 .I repo_name path_in_repo \fR[\fI:local_path\fR] \fR...
+.RI [ \-\-mark\-master ]
 .RI [ \-\-also= repo1,repo2 ]
 Track files from a repo checkout into the project. Each path token is relative to the repo; append
 .IB : local_path
 when the project-relative path differs.
+The repo file must carry a
+.B kind=master
+marker; if it has a different filesync marker (for example
+.BR kind=clone ),
+the command fails.
+If the repo file has no filesync marker at all, the command fails unless
+.B \-\-mark\-master
+is given, in which case a master marker line is prepended (comment style follows the path extension).
+The local file is written (or overwritten) with content rendered from the master copy including a
+.B kind=clone
+marker.
 .B \-\-also=
 mirrors rows into sibling projects'
 .B .filesync/
@@ -182,7 +259,15 @@ Push local content to the master path in the linked repo.
 Also
 .BR dd .
 .I local_path \fR[\fIlocal_path ...\fR]
-Detach mappings (leave marker content).
+Set
+.I sync_status
+to
+.I detached
+in
+.IR files.json
+and rewrite the first marker line in each local file to
+.BR kind=detached
+(keeping path/repo context when possible).
 .TP
 .B attach
 Also
@@ -194,7 +279,15 @@ on each.
 .TP
 .BR rm ", " remove
 .I local_path \fR[\fIlocal_path ...\fR]
-Remove mapping rows.
+Remove the matching row(s) from
+.IR files.json .
+On disk, removes
+.B kind=clone
+or
+.B kind=detached
+marker line(s) from each local file; leaves
+.B kind=master
+lines so a shared master copy can stay valid for other projects.
 .TP
 .B add-repo
 Also
@@ -301,9 +394,12 @@ completed with blocking issues or failures. Messages on standard error are prefi
 where applicable.
 .TP
 .B 2
-Some invocations (e.g. test harnesses or
-.BR "filesync update" )
-may use exit status 2 for invalid options; see the relevant subcommand documentation.
+Reserved for auxiliary tooling (e.g. test runner scripts); the
+.B filesync
+CLI itself uses
+.B 1
+for invalid options on subcommands such as
+.BR update .
 .SH SEE ALSO
 Extended configuration and environment notes live in
 .I docs/configuration.md
