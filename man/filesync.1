@@ -130,6 +130,7 @@ Also
 .BR c .
 .RI [ \-\-repo= name ]
 .RI [ \-\-file= fragment ]
+.RI [ \-\-status= list ]
 Verify mappings, refresh
 .I files.json
 row status, and update
@@ -143,6 +144,19 @@ matches rows where
 or
 .I repo_file_path
 contains the fragment (substring).
+.BI \-\-status=
+matches rows by cached
+.I sync_status
+before recomputing selected rows.
+Token rules match
+.BR sync :
+literal statuses,
+.IR unset ,
+.IR all ,
+and
+.I error
+for any
+.IR error_* .
 Compares each local file to the clone rendered from the master copy (diff drives
 .IR sync_status ).
 Per-row status lines use the same layout as

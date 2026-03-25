@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Check synced files; update .filesync/files.json and .filesync/config.json (last_check_at).
-# Usage: check.sh [--repo=name] [--file=path_fragment]
+# Usage: check.sh [--repo=name] [--file=path_fragment] [--status=a,b,...]
 # Path fragment: substring match on local_path or repo_file_path (after optional --repo filter).
 
 set -euo pipefail
@@ -18,6 +18,7 @@ col_st() { file_sync_status_color "$1"; }
 
 REPO_FILTER=""
 FILE_FRAGMENT=""
+STATUS_FILTER=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --repo=*)
@@ -28,14 +29,18 @@ while [[ $# -gt 0 ]]; do
       FILE_FRAGMENT="${1#*=}"
       shift
       ;;
+    --status=*)
+      STATUS_FILTER="${1#*=}"
+      shift
+      ;;
     -*)
       echo -e "${RED}Unknown option: $1${NC}" >&2
-      echo "Usage: filesync check [--repo=name] [--file=path_fragment]" >&2
+      echo "Usage: filesync check [--repo=name] [--file=path_fragment] [--status=a,b,...]" >&2
       exit 1
       ;;
     *)
       echo -e "${RED}Unexpected argument: $1${NC}" >&2
-      echo "Usage: filesync check [--repo=name] [--file=path_fragment]" >&2
+      echo "Usage: filesync check [--repo=name] [--file=path_fragment] [--status=a,b,...]" >&2
       exit 1
       ;;
   esac
@@ -93,7 +98,7 @@ CHECKED=0
 MARKER_WARN_ROWS=0
 
 filesync_print_check_banner
-filesync_print_filter_context "$REPO_FILTER" "$FILE_FRAGMENT" "" false 0
+filesync_print_filter_context "$REPO_FILTER" "$FILE_FRAGMENT" "$STATUS_FILTER" false 0
 echo "" >&2
 
 PATCH_LINES_FILE=$(mktemp)
@@ -144,6 +149,11 @@ while IFS=$'\t' read -r i REPO_NAME LOCAL_PATH REPO_FILE_PATH PRIOR_STATUS LAST_
   fi
 
   if ! filesync_file_matches_fragment "$FILE_FRAGMENT" "$LOCAL_PATH" "$REPO_FILE_PATH"; then
+    filesync_check_iter_progress
+    continue
+  fi
+
+  if [[ -n "$STATUS_FILTER" ]] && ! file_sync_status_matches_csv "$PRIOR_STATUS" "$STATUS_FILTER" false; then
     filesync_check_iter_progress
     continue
   fi
@@ -336,6 +346,9 @@ fi
 echo "" >&2
 if [[ -n "$FILE_FRAGMENT" ]] && [[ "$CHECKED" -eq 0 ]]; then
   filesync_print_no_file_rows_for_fragment "$FILE_FRAGMENT"
+fi
+if [[ -n "$STATUS_FILTER" ]] && [[ "$CHECKED" -eq 0 ]]; then
+  filesync_print_no_file_rows_for_status "$STATUS_FILTER"
 fi
 if [[ "$MARKER_WARN_ROWS" -gt 0 ]]; then
   echo -e "${YELLOW}Marker warning(s) on $MARKER_WARN_ROWS file row(s) (see ⚠ on lines above; codes in .filesync/files.json check_marker_warnings).${NC}" >&2

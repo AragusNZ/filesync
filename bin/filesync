@@ -32,7 +32,7 @@ help() {
   echo "  filesync progress [hidden|bar|percent]   # TTY progress on long loops (default percent; legacy show/hide-progress)"
   echo "  filesync pm|path-mode [relative|absolute]   # show or set repo path resolution mode"
   echo "  filesync s|sync [--repo=name] [--file=path_fragment] [--dry-run|--force|--showall|--status=a,b,...|--include-detached|...]"
-  echo "  filesync c|check [--repo=name] [--file=path_fragment]"
+  echo "  filesync c|check [--repo=name] [--file=path_fragment] [--status=a,b,...]"
   echo "  filesync lr|repos|list-repos [--repo=name]   # list repos"
   echo "  filesync lf|files|list-files [--repo=name] [--file=path_fragment] [--status=a,b,...] [--include-detached]"
   echo "  filesync af|add-file <repo> <path_in_repo>[:<local_path>] ... [--mark-master] [--also=repo1,repo2]"
