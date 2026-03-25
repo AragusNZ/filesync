@@ -13,7 +13,7 @@ source "$_CMD_ROOT/../lib/progress.sh"
 trap 'filesync_progress_end || true; rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
 if [[ $# -lt 1 ]]; then
-  echo -e "${RED}Usage: filesync detach <local_path1> [local_path2 ...]${NC}" >&2
+  echo -e "${RED}Usage: filesync detach-file|ddf <local_path1> [local_path2 ...]${NC}" >&2
   exit 1
 fi
 

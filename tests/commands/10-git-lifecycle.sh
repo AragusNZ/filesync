@@ -42,10 +42,10 @@ mkdir -p "${proj}"
 	filesync check >/dev/null || die "check after local edit"
 	filesync push tools/demo.txt
 	grep -q 'local-edit' "${master}/tools/demo.txt" || die "push should update master"
-	filesync detach tools/demo.txt
+	filesync detach-file tools/demo.txt
 	jq -e '.[] | select(.local_path=="tools/demo.txt") | .sync_status == "detached"' ".filesync/files.json" >/dev/null || die "detach status"
 	grep -q 'filesync kind=detached' tools/demo.txt || die "detach marker"
-	filesync attach tools/demo.txt
+	filesync attach-file tools/demo.txt
 	jq -e '.[] | select(.local_path=="tools/demo.txt") | .sync_status == "synced"' ".filesync/files.json" >/dev/null || die "attach + check should leave synced"
 	grep -q 'filesync kind=clone' tools/demo.txt || die "attach clone marker"
 	filesync check >/dev/null || die "check after attach"

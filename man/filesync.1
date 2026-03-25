@@ -422,9 +422,9 @@ is given, no paths are listed, and there are no
 .B local_newer
 rows, the command exits successfully after a short notice.
 .TP
-.B detach
+.B detach-file
 Also
-.BR dd .
+.BR ddf .
 .I local_path \fR[\fIlocal_path ...\fR]
 Set
 .I sync_status
@@ -436,13 +436,37 @@ and rewrite the first marker line in each local file to
 .BR kind=detached
 (keeping path/repo context when possible).
 .TP
-.B attach
+.B attach-file
 Also
-.BR da .
+.BR daf .
 .I local_path \fR[\fIlocal_path ...\fR]
 Re-couple detached rows and run
 .B check
 on each.
+.TP
+.B detach-repo
+Also
+.BR ddr .
+.I repo_name
+For every row in
+.I files.json
+whose
+.I repo_name
+matches
+.IR repo_name ,
+run the same operation as
+.BR detach-file
+for that row's
+.IR local_path .
+.TP
+.B attach-repo
+Also
+.BR dar .
+.I repo_name
+For every such row, run the same operation as
+.BR attach-file
+(non-detached rows are skipped as for
+.BR attach-file ).
 .TP
 .BR rmf ", " remove-file
 .I local_path \fR[\fIlocal_path ...\fR]

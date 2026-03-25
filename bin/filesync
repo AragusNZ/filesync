@@ -36,8 +36,10 @@ help() {
   echo "  filesync ac|add-clone <target_repo> <master_path>[:<local_path>] ... [--also=repo1,repo2]"
   echo "           # clone from kind=master file in this project into sibling project(s); fails if target exists"
   echo "  filesync p|push [--all] [<local_path> [local_path ...]]"
-  echo "  filesync dd|detach <local_path> [local_path ...]"
-  echo "  filesync da|attach <local_path> [local_path ...]   # re-couple detached rows + check each"
+  echo "  filesync ddf|detach-file <local_path> [local_path ...]"
+  echo "  filesync daf|attach-file <local_path> [local_path ...]   # re-couple detached rows + check each"
+  echo "  filesync ddr|detach-repo <repo_name>   # detach every mapping for that repo"
+  echo "  filesync dar|attach-repo <repo_name>   # attach every mapping for that repo"
   echo "  filesync rmf|remove-file <local_path> [local_path ...]   # drop row; strip clone/detached marker, keep master"
   echo "  filesync rmr|remove-repo <repo_name> [--force]   # drop repo from repos.json; --force unmaps files first"
   echo "  filesync ar|add-repo                 # interactive add repo"
@@ -89,11 +91,17 @@ main() {
     push|p)
       exec "$ROOT/commands/push.sh" "$@"
       ;;
-    detach|dd)
+    detach-file|ddf)
       exec "$ROOT/commands/detach.sh" "$@"
       ;;
-    attach|da)
+    attach-file|daf)
       exec "$ROOT/commands/attach.sh" "$@"
+      ;;
+    detach-repo|ddr)
+      exec "$ROOT/commands/detach-repo.sh" "$@"
+      ;;
+    attach-repo|dar)
+      exec "$ROOT/commands/attach-repo.sh" "$@"
       ;;
     remove-file|rmf)
       exec "$ROOT/commands/rm.sh" "$@"

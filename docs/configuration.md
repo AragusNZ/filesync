@@ -42,7 +42,7 @@ Each synced copy carries a single-line **marker** containing the substring **`fi
 
 - **`kind=master`** — file in the upstream repo (source of truth).
 - **`kind=clone`** — coupled local copy; includes **`path=…`** (repo-relative path) and **`repo=…`** (repo name).
-- **`kind=detached`** — local file after **`detach`**; optional **`path=`** / **`repo=`** for context.
+- **`kind=detached`** — local file after **`detach-file`**; optional **`path=`** / **`repo=`** for context.
 
 The tool rewrites the first marker line when syncing or changing coupling; the **comment style** around that payload matches the source file (or `marker_style` / extension rules above). Standard **`.json`** does not allow comments; use a commented dialect (e.g. JSONC) and map extension/basename, or avoid markers inside strict JSON.
 
@@ -86,7 +86,7 @@ Internally, commands build a **temporary** JSON file (merged top-level config + 
 - **`--repo=name`**: for **`check`**, **`sync`**, and **`list-files`**, only rows where `repo_name` equals this name. For **`list-repos`**, show only that repo’s entry.
 - **`--file=fragment`**: for **`check`**, **`sync`**, and **`list-files`**, only rows where `local_path` **or** `repo_file_path` contains the fragment (substring / “like” match). Whitespace is trimmed from the fragment; an empty value matches all rows. Not valid for **`list-repos`**.
 
-**`attach`**: re-couples rows with `sync_status: detached` by rewriting the local file from master (clone marker), clearing `sync_status`, then running **`check`** for that repo and path so status is recomputed.
+**`attach-file`** (and **`attach-repo`**, which runs it for every row for a repo): re-couples rows with `sync_status: detached` by rewriting the local file from master (clone marker), clearing `sync_status`, then running **`check`** for that repo and path so status is recomputed. **`detach-repo`** runs **`detach-file`** for every mapping with that **`repo_name`**.
 
 ## Cross-project mirroring (`--also`)
 
@@ -132,4 +132,4 @@ Master files must contain **`filesync kind=master`** or the row is skipped (with
 
 ## Dependencies
 
-`jq` is required. **`git`** must be on `PATH` for: `check`, `sync`, `list-files`, `list-repos`, `add-file`, `add-master`, `add-clone`, `push`, `detach`, `attach`, `remove-file`, `remove-repo`, and `edit-repo` (the shared runtime checks for `git` even when a given command does not invoke it). Other commands (`init`, `update`, `enable`, `disable`, `progress`, `path-mode`, `add-repo`) only require `jq` (and `curl` or `wget` for `update` when fetching release metadata or assets).
+`jq` is required. **`git`** must be on `PATH` for: `check`, `sync`, `list-files`, `list-repos`, `add-file`, `add-master`, `add-clone`, `push`, `detach-file`, `attach-file`, `detach-repo`, `attach-repo`, `remove-file`, `remove-repo`, and `edit-repo` (the shared runtime checks for `git` even when a given command does not invoke it). Other commands (`init`, `update`, `enable`, `disable`, `progress`, `path-mode`, `add-repo`) only require `jq` (and `curl` or `wget` for `update` when fetching release metadata or assets).

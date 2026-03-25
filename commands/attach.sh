@@ -19,7 +19,7 @@ declare -A FILESYNC_REPO_DIR_CACHE
 declare -a FILESYNC_CLONED_TEMP_DIRS
 
 if [[ $# -lt 1 ]]; then
-  echo -e "${RED}Usage: filesync attach <local_path1> [local_path2 ...]${NC}" >&2
+  echo -e "${RED}Usage: filesync attach-file|daf <local_path1> [local_path2 ...]${NC}" >&2
   exit 1
 fi
 
