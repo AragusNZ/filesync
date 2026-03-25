@@ -67,7 +67,7 @@ They do **not** rewrite a single monolithic config file at the project root.
 
 ### Enable / disable
 
-**`filesync enable`** and **`filesync disable`** (aliases **`en`** / **`dis`**) set **`file_sync_enabled`** in `.filesync/config.json` (`enable` asks for **y/N** confirmation; `disable` does not). While disabled, **`filesync check`** and **`filesync sync`** print a short message and exit with status **0** without updating or syncing files.
+**`filesync enable`** and **`filesync disable`** set **`file_sync_enabled`** in `.filesync/config.json` (`enable` asks for **y/N** confirmation; `disable` does not). While disabled, **`filesync check`** and **`filesync sync`** print a short message and exit with status **0** without updating or syncing files.
 
 ## Assembled state
 
@@ -79,7 +79,7 @@ Internally, commands build a **temporary** JSON file (merged top-level config + 
 
 ## Removing a repo (`remove-repo`)
 
-**`filesync remove-repo`** (alias **`rmr`**) drops an entry from **`repos.json`**. If **`files.json`** still has rows for that repo, the command fails unless **`--force`** is given; with **`--force`**, each mapping is removed the same way as **`remove-file`** (row deleted; clone/detached markers stripped on disk; master marker kept), then the repo entry is removed. See **`man filesync`** for details.
+**`filesync remove-repo`** (alias **`rmr`**) drops an entry from **`repos.json`**. If **`files.json`** still has rows for that repo, the command asks for confirmation; if you confirm, each mapping is removed the same way as **`remove-file`** (row deleted; clone/detached markers stripped on disk; master marker kept), then the repo entry is removed. **`rmr -y`** skips the prompt. See **`man filesync`** for details.
 
 ## `check` / `sync` / `list-repos` / `list-files` filters
 
@@ -124,7 +124,7 @@ Master files must contain **`filesync kind=master`** or the row is skipped (with
 
 - **`FILESYNC_PROJECT_ROOT`**: forces the project root (discovery does not walk parents); `.filesync` defaults to `$FILESYNC_PROJECT_ROOT/.filesync` unless `FILESYNC_DIR` is also set.
 - **`FILESYNC_DIR`**: forces the `.filesync` directory path; project root becomes its parent.
-- **`FILESYNC_INSTALL_PREFIX`**: for `filesync update --apply` from a git checkout, overrides the inferred `PREFIX` passed to `make install` when autodetection is wrong.
+- **`FILESYNC_INSTALL_PREFIX`**: for `filesync update` from a git checkout when installing an update, overrides the inferred `PREFIX` passed to `make install` when autodetection is wrong.
 - **`FILESYNC_VERBOSE`**: when set, enables extra informational messages on stderr (where supported).
 - **`FILESYNC_DEBUG`**: when set, enables a short debug line on stderr when a command fails under `set -e` (ERR trap / errtrace).
 - **`FILESYNC_NO_PROGRESS`**: when set to `1`, disables TTY progress output (overrides `progress_display`).

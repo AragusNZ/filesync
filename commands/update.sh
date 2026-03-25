@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Check for a newer upstream release and optionally apply an update (.deb or git + make install).
-# Usage: update.sh [--check] [--apply] [-y|--yes]
+# Compare this install to the latest GitHub release; if newer exists, prompt to apply (git + make install or .deb).
+# Usage: update.sh [-y]
 
 set -euo pipefail
 
@@ -16,19 +16,17 @@ source "${FILESYNC_PKG_ROOT}/lib/deps.sh"
 filesync_require_jq
 
 REPO_SLUG="AragusNZ/filesync"
-APPLY=false
 YES=false
 
 while [[ $# -gt 0 ]]; do
 	case "$1" in
-		--check) shift ;;
-		--apply) APPLY=true; shift ;;
 		-y | --yes) YES=true; shift ;;
 		-h | --help)
-			echo "Usage: filesync update [--check] [--apply] [-y|--yes]" >&2
-			echo "  --check   Only show current vs latest (default if no --apply)" >&2
-			echo "  --apply   Install update (git pull + make install, or latest .deb)" >&2
-			echo "  -y        Do not prompt before --apply" >&2
+			echo "Usage: filesync update [-y]" >&2
+			echo "  Compare this install to the latest GitHub release." >&2
+			echo "  If a newer release exists and can be installed from this layout (git clone or .deb)," >&2
+			echo "  you are prompted to apply it (git pull + make install, or dpkg -i the release .deb)." >&2
+			echo "  -y  Apply immediately when an update is available (no prompt)." >&2
 			echo "Env: FILESYNC_INSTALL_PREFIX (for git+make install PREFIX when autodetection is wrong)" >&2
 			exit 0
 			;;
@@ -110,30 +108,22 @@ else
 	echo -e "${YELLOW}A newer release is available (${CURRENT} -> ${LATEST}).${NC}" >&2
 fi
 
-if [[ "$APPLY" != true ]]; then
+can_apply=false
+if [[ -d "${FILESYNC_PKG_ROOT}/.git" ]]; then
+	can_apply=true
+elif [[ -n "$DEB_URL" ]]; then
+	can_apply=true
+fi
+
+if [[ "$can_apply" != true ]]; then
 	echo "" >&2
-	if [[ -d "${FILESYNC_PKG_ROOT}/.git" ]]; then
-		PREFIX_HINT="${FILESYNC_INSTALL_PREFIX:-$(dirname "$(dirname "${FILESYNC_PKG_ROOT}")")}"
-		echo "This tree is a git checkout. To update:" >&2
-		echo "  cd ${FILESYNC_PKG_ROOT} && git pull && sudo make install PREFIX=${PREFIX_HINT}" >&2
-		echo "(Set FILESYNC_INSTALL_PREFIX if you originally used a different PREFIX.)" >&2
-	else
-		if [[ -n "$DEB_URL" ]]; then
-			echo "Debian/Ubuntu (.deb from GitHub Releases):" >&2
-			echo "  curl -fsSLO '$DEB_URL'" >&2
-			echo "  sudo apt install -y ./\"$(basename "$DEB_URL")\"" >&2
-			echo "Or run: filesync update --apply" >&2
-		else
-			echo "No .deb asset found on the latest release; see:" >&2
-			echo "  https://github.com/${REPO_SLUG}/releases/latest" >&2
-		fi
-	fi
+	echo "This install cannot be updated automatically (not a git checkout of filesync and no matching release .deb). See:" >&2
+	echo "  https://github.com/${REPO_SLUG}/releases/latest" >&2
 	exit 0
 fi
 
-# --apply
 if [[ "$YES" != true ]]; then
-	read -rp "Apply update now? [y/N] " ans
+	read -rp "Apply update now? [y/N] " ans || true
 	if [[ "${ans,,}" != "y" && "${ans,,}" != "yes" ]]; then
 		echo "Aborted." >&2
 		exit 0
@@ -154,7 +144,7 @@ if [[ -d "${FILESYNC_PKG_ROOT}/.git" ]]; then
 fi
 
 if [[ -z "$DEB_URL" ]]; then
-	echo -e "${RED}No .deb on this release; cannot --apply automatically.${NC}" >&2
+	echo -e "${RED}No .deb on this release; cannot install automatically.${NC}" >&2
 	exit 1
 fi
 

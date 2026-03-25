@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Remove a repo from repos.json when it has no file rows, or with --force unmap all its files first (same as rmf).
+# Remove a repo from repos.json when it has no file rows, or after confirming, unmap all its files first (same as rmf).
 
 set -euo pipefail
 
@@ -14,23 +14,23 @@ source "$_CMD_ROOT/../lib/rm-mapping.sh"
 
 trap 'filesync_progress_end || true; rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
-FORCE=0
+YES=0
 REPO=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --force)
-      FORCE=1
+    -y|--yes)
+      YES=1
       shift
       ;;
     -*)
       echo -e "${RED}Unknown option: $1${NC}" >&2
-      echo "Usage: filesync remove-repo|rmr <repo_name> [--force]" >&2
+      echo "Usage: filesync remove-repo|rmr <repo_name> [-y]" >&2
       exit 1
       ;;
     *)
       if [[ -n "$REPO" ]]; then
         echo -e "${RED}Unexpected argument: $1${NC}" >&2
-        echo "Usage: filesync remove-repo|rmr <repo_name> [--force]" >&2
+        echo "Usage: filesync remove-repo|rmr <repo_name> [-y]" >&2
         exit 1
       fi
       REPO="$1"
@@ -40,7 +40,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$REPO" ]]; then
-  echo -e "${RED}Usage: filesync remove-repo|rmr <repo_name> [--force]${NC}" >&2
+  echo -e "${RED}Usage: filesync remove-repo|rmr <repo_name> [-y]${NC}" >&2
   exit 1
 fi
 
@@ -66,9 +66,13 @@ if [[ "$count" -eq 0 ]]; then
   exit 0
 fi
 
-if [[ "$FORCE" -ne 1 ]]; then
-  echo -e "${RED}Error: Repo '$REPO' has ${count} file mapping(s) in files.json. Use --force to remove those mappings and the repo.${NC}" >&2
-  exit 1
+echo -e "${YELLOW}Repo '$REPO' has ${count} file mapping(s) in files.json.${NC}" >&2
+if [[ "$YES" -ne 1 ]]; then
+  read -rp "Are you sure you want to remove this repo? Doing so will also remove all associated files. [y/N] " ans || true
+  if [[ "${ans,,}" != "y" && "${ans,,}" != "yes" ]]; then
+    echo "Aborted." >&2
+    exit 0
+  fi
 fi
 
 declare -a LOCAL_PATHS=()
@@ -83,7 +87,7 @@ if filesync_progress_want "$_n"; then
 fi
 _pi=0
 for lp in "${LOCAL_PATHS[@]}"; do
-  filesync_remove_file_mapping_row "$PROJECT_ROOT" "$FILESYNC_FILES_FILE" "$lp" || filesync_die "remove-repo --force failed for one or more paths (see messages above)"
+  filesync_remove_file_mapping_row "$PROJECT_ROOT" "$FILESYNC_FILES_FILE" "$lp" || filesync_die "remove-repo failed for one or more paths (see messages above)"
   _pi=$((_pi + 1))
   if [[ "${FILESYNC_PROGRESS_ACTIVE:-0}" -eq 1 ]]; then
     filesync_progress_update "$_pi"

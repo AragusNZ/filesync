@@ -42,8 +42,7 @@ GitHub Releases publish a **source tarball** (`make install` from the extracted 
 
 ### Updating filesync
 
-- **`filesync update`** — compares your install to the [latest GitHub release](https://github.com/AragusNZ/filesync/releases/latest) and prints upgrade steps.
-- **`filesync update --apply`** — from a **git clone**, runs `git pull` then **`make install`** (via **`sudo`** when `sudo` is on `PATH`; default `PREFIX` is derived from the install path; override with **`FILESYNC_INSTALL_PREFIX`** if you used a custom prefix). From a **`.deb`** install, downloads the release `.deb` and runs **`dpkg -i`** (via **`sudo`** when available). Use **`-y`** to skip the confirmation prompt.
+- **`filesync update`** — compares your install to the [latest GitHub release](https://github.com/AragusNZ/filesync/releases/latest). If a newer version exists and the install can be upgraded automatically (git checkout of filesync, or a matching release **`.deb`**), prompts to apply it (**`git pull`** + **`make install`**, or **`dpkg -i`** the **`.deb`**; **`sudo`** is used when on `PATH`). Use **`-y`** to skip the prompt. If you are already up to date, it says so; if an update exists but cannot be applied from this layout, it points you to the release page.
 
 ## Usage
 
@@ -66,7 +65,7 @@ filesync list-files
 
 **Development without install:** run `./bin/filesync` from this tree (or `bash /path/to/filesync/bin/filesync …`).
 
-Primary subcommands: `init`, `enable`, `disable`, `progress`, `show-progress`, `hide-progress`, `path-mode`, `sync`, `check`, `list-repos`, `list-files`, `add-file`, `add-master`, `add-clone`, `push`, `detach-file`, `attach-file`, `detach-repo`, `attach-repo`, `remove-file`, `remove-repo`, `add-repo`, `edit-repo`, `update`. Shorter aliases (`s`, `c`, `lr`, `lf`, `files`, `af`, `am`, `ddf`, `daf`, `ddr`, `dar`, `rmf`, `rmr`, `ar`, `er`, `en`, `dis`, …) are listed in the built-in help — run **`filesync`** with no arguments. Legacy names `repos`, `list`, `add`, `repo`, and `repo-edit` are still accepted.
+Primary subcommands: `init`, `enable`, `disable`, `progress`, `show-progress`, `hide-progress`, `path-mode`, `sync`, `check`, `list-repos`, `list-files`, `add-file`, `add-master`, `add-clone`, `push`, `detach-file`, `attach-file`, `detach-repo`, `attach-repo`, `remove-file`, `remove-repo`, `add-repo`, `edit-repo`, `update`. Shorter aliases (`s`, `c`, `lr`, `lf`, `files`, `af`, `am`, `ddf`, `daf`, `ddr`, `dar`, `rmf`, `rmr`, `ar`, `er`, …) are listed in the built-in help — run **`filesync`** with no arguments. Legacy names `repos`, `list`, `add`, `repo`, and `repo-edit` are still accepted.
 
 **`check`**, **`sync`**, **`list-repos`**, and **`list-files`** accept optional **`--repo=name`**. **`check`**, **`sync`**, and **`list-files`** also accept **`--file=fragment`**: substring match on `local_path` or `repo_file_path` (case-sensitive). **`check`** also accepts **`--status=a,b,...`** (same token rules as `sync`/`list-files`) and matches against each row's current cached `sync_status` before re-checking selected rows. Combine filters to narrow scope.
 
