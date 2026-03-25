@@ -130,7 +130,8 @@ else
 	ensure_staged
 fi
 
-export PATH="$(tr -d '\r\n' <"${TMP}/.filesync_test_bindir"):${PATH}"
+_bindir="$(tr -d '\r\n' <"${TMP}/.filesync_test_bindir")"
+export PATH="${_bindir}:${PATH}"
 
 failed=()
 passed=()

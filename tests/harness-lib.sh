@@ -9,5 +9,6 @@ fail=0
 ok() { echo "  lib ok: $*"; }
 bad() {
 	echo "  lib FAIL: $*" >&2
+	# shellcheck disable=SC2034
 	fail=1
 }

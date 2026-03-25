@@ -80,6 +80,7 @@ fi
 tmp_repos="$(mktemp)"
 tmp_files="$(mktemp)"
 cleanup_er() {
+  # shellcheck disable=SC2317
   rm -f "$tmp_repos" "$tmp_files"
 }
 trap 'cleanup_er; rm -f "${FILESYNC_STATE_FILE:-}"' EXIT

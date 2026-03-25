@@ -4,6 +4,7 @@ ROOT="${1:?repo root}"
 TESTS="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=/dev/null
 source "${TESTS}/harness-lib.sh"
+: "${fail:=0}"
 # shellcheck source=/dev/null
 source "${ROOT}/lib/marker-style.sh"
 

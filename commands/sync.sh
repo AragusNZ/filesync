@@ -68,11 +68,14 @@ sync_entry_allowed() {
   return 1
 }
 
+# shellcheck disable=SC2034
 declare -A FILESYNC_REPO_DIR_CACHE
 declare -a FILESYNC_CLONED_TEMP_DIRS
 
 cleanup_sync_exit() {
+  # shellcheck disable=SC2317
   rm -f "${FILESYNC_STATE_FILE:-}"
+  # shellcheck disable=SC2317
   rm -rf "${FILESYNC_CLONED_TEMP_DIRS[@]:-}"
 }
 trap cleanup_sync_exit EXIT

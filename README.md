@@ -34,7 +34,7 @@ sudo make uninstall
 sudo make uninstall PREFIX=/usr
 ```
 
-The installed `filesync --version` string comes from `share/VERSION` in the install tree. For **git tags / `.deb` builds**, [scripts/build-deb.sh](scripts/build-deb.sh) overwrites that file in the package so it matches the `VERSION` environment variable (the release workflow sets this from the tag). Bump [share/VERSION](share/VERSION) in the repository when you cut a release so tarballs and `make install` from a source tree stay aligned.
+The installed `filesync --version` string comes from `share/VERSION` in the install tree. For **git tags / `.deb` builds**, [scripts/build-deb.sh](scripts/build-deb.sh) overwrites that file in the package so it matches the `VERSION` environment variable (the release workflow sets this from the tag). Bump [share/VERSION](share/VERSION) in the repository when you cut a release so tarballs and `make install` from a source tree stay aligned. Maintainers can use [scripts/version-push.sh](scripts/version-push.sh) to bump that file, commit, tag `v…`, and push (see **Developing** below).
 
 ### Releases
 
@@ -113,14 +113,11 @@ Discovery: walk parents from the current working directory until a directory `D`
 
 - **Tests**: `tests/lib/*.sh` exercise `lib/*.sh` (no install); `tests/commands/*.sh` exercise the staged CLI. Run **`bash tests/run-lib-tests.sh --list /path/to/repo`** or **`bash tests/run-command-tests.sh --list /path/to/repo`** to see files; **`--filter SUBSTR`** limits runs (substring match on each script basename).
 
-CI runs **`shellcheck`**, **`bash scripts/ci-test.sh`** (orchestrates `tests/run-command-tests.sh` then `tests/run-lib-tests.sh`), builds a **`VERSION=0.0.0-ci`** `.deb`, and runs **`lintian --fail-on warning`**. To reproduce locally:
+- **Lint**: [scripts/lint.sh](scripts/lint.sh) runs **ShellCheck** (`shellcheck -x`) on the same paths as CI (`bin/filesync`, `commands/*.sh`, `lib/*.sh`, selected `scripts/` and `tests/`). Install **`shellcheck`** (e.g. `apt install shellcheck`). From the repo root: **`bash scripts/lint.sh`** (ShellCheck only). Add **`--tests`** to run **`scripts/ci-test.sh`** next; **`--deb`** to build a `.deb` and run **`lintian --fail-on warning`** (needs **`dpkg-dev`** and **`lintian`**; **`VERSION`** defaults to **`0.0.0-ci`**). **`--all`** runs ShellCheck, tests, and deb+lintian — matching the GitHub Actions job.
 
-```bash
-shellcheck -x bin/filesync commands/*.sh lib/*.sh scripts/ci-test.sh scripts/build-deb.sh tests/run-lib-tests.sh tests/run-command-tests.sh tests/harness-lib.sh tests/harness-command.sh tests/lib/*.sh tests/commands/*.sh
-bash scripts/ci-test.sh --quiet
-VERSION=0.0.0-ci bash scripts/build-deb.sh
-lintian --fail-on warning filesync_0.0.0-ci_all.deb
-```
+- **Version bump and release push**: [scripts/version-push.sh](scripts/version-push.sh) reads the first line of **`share/VERSION`**, increments the **patch** (third) number by default, writes the file, **`git commit`s**, creates an annotated tag **`vX.Y.Z`**, then runs **`git push`** (current branch) and **`git push origin vX.Y.Z`**. Use **`--minor`** or **`--major`** to bump the second or first number instead (and reset lower segments to **0**). Requires a **clean** working tree, a **branch** checkout (not detached `HEAD`), and that the new tag does not already exist. Run it **only when you intend to publish a new version**, not on every commit.
+
+CI runs the same steps as **`bash scripts/lint.sh --all`** (ShellCheck path list in [`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 
 ## License
 

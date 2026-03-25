@@ -10,7 +10,10 @@ filesync_command_init "${BASH_SOURCE[0]}"
 
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
+# Populated by lib/repo-resolve.sh (sourced via runtime with shellcheck source=/dev/null).
+# shellcheck disable=SC2034
 declare -A FILESYNC_REPO_DIR_CACHE
+# shellcheck disable=SC2034
 declare -a FILESYNC_CLONED_TEMP_DIRS
 
 if [[ $# -lt 1 ]]; then

@@ -43,7 +43,9 @@ if ! jq -e '.file_sync_enabled == true' "$CONFIG_FILE" &>/dev/null; then
   exit 0
 fi
 
+# shellcheck disable=SC2034
 declare -A FILESYNC_REPO_DIR_CACHE
+# shellcheck disable=SC2034
 declare -a FILESYNC_CLONED_TEMP_DIRS
 
 append_patch() {
@@ -61,7 +63,9 @@ echo ""
 PATCH_LINES_FILE=$(mktemp)
 
 cleanup_verify_exit() {
+  # shellcheck disable=SC2317
   rm -f "${PATCH_LINES_FILE:-}" "${FILESYNC_STATE_FILE:-}"
+  # shellcheck disable=SC2317
   rm -rf "${FILESYNC_CLONED_TEMP_DIRS[@]:-}"
 }
 trap cleanup_verify_exit EXIT

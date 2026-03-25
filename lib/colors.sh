@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # ANSI colors for terminal output (source from commands / runtime).
+# shellcheck disable=SC2034
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'

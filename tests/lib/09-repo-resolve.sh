@@ -4,6 +4,7 @@ ROOT="${1:?repo root}"
 TESTS="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=/dev/null
 source "${TESTS}/harness-lib.sh"
+: "${fail:=0}"
 # shellcheck source=/dev/null
 source "${ROOT}/lib/paths.sh"
 # shellcheck source=/dev/null
@@ -13,7 +14,9 @@ td="${LIB_TEST_TMP}"
 PROJECT_ROOT="${td}/stproj"
 mkdir -p "${PROJECT_ROOT}/repodir"
 jq -n --slurpfile s "${td}/assembled.json" '$s[0] * {repos: [{name: "origin", path: "repodir", url: null, branch: "main"}]}' >"${td}/state_repos.json"
+# shellcheck disable=SC2034
 declare -A FILESYNC_REPO_DIR_CACHE
+# shellcheck disable=SC2034
 declare -a FILESYNC_CLONED_TEMP_DIRS
 CONFIG_FILE="${td}/state_repos.json"
 PATH_MODE="relative"

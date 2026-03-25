@@ -29,6 +29,7 @@ filesync_get_repo_dir() {
     local abs_path
     abs_path=$(filesync_resolve_repo_path "$PROJECT_ROOT" "$repo_path" "${PATH_MODE:-relative}")
     if [[ -n "$abs_path" ]] && [[ -d "$abs_path" ]]; then
+      # shellcheck disable=SC2004
       FILESYNC_REPO_DIR_CACHE[$repo_name]="$abs_path"
       echo "$abs_path"
       return
@@ -46,6 +47,7 @@ filesync_get_repo_dir() {
     echo -e "${RED:-}Error: Failed to clone $repo_name${NC:-}" >&2
     return 1
   }
+  # shellcheck disable=SC2004
   FILESYNC_REPO_DIR_CACHE[$repo_name]="$tmp_dir/$repo_name"
   echo "$tmp_dir/$repo_name"
 }
