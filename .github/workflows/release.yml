@@ -39,9 +39,15 @@ jobs:
           sudo apt-get install -y dpkg-dev
           bash scripts/build-deb.sh
 
-      - name: Upload release assets
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            filesync-*.tar.gz
-            filesync_*_all.deb
+      - name: Create release and upload assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ver="${{ steps.ver.outputs.version }}"
+          gh release create "v${ver}" \
+            "filesync-${ver}.tar.gz" \
+            "filesync_${ver}_all.deb" \
+            --repo "${{ github.repository }}" \
+            --verify-tag \
+            --title "filesync ${ver}" \
+            --notes ""
