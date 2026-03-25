@@ -143,6 +143,7 @@ Also
 .RI [ \-\-file= fragment ]
 .RI [ \-\-dry\-run ]
 .RI [ \-\-force ]
+.RI [ \-\-showall ]
 .RI [ \-\-status= list ]
 .RI [ \-\-include\-detached ]
 Copy from master repos into the project and update
@@ -179,6 +180,8 @@ for any status whose name starts with
 prints planned work without writing files or status.
 .B \-\-force
 overwrites a local file that lacks a clone marker.
+.B \-\-showall
+prints a per-file line for rows that are already in sync with master; by default those lines are omitted (counts in the summary still include them).
 Coupled sync requires a master marker on the repo file.
 Per-file lines start with a result symbol, use the same
 .IR repo " | " repo_file_path

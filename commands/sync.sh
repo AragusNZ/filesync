@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Sync from master repos into project (updates .filesync/files.json rows).
-# Usage: sync.sh [--repo=name] [--file=path_fragment] [--dry-run] [--force] [--status=a,b,...] [--include-detached]
+# Usage: sync.sh [--repo=name] [--file=path_fragment] [--dry-run] [--force] [--showall] [--status=a,b,...] [--include-detached]
 # Path fragment: substring match on local_path or repo_file_path (after optional --repo filter).
 
 set -euo pipefail
@@ -16,11 +16,13 @@ DRY_RUN=false
 FORCE=false
 STATUS_CSV=""
 INCLUDE_DETACHED=false
+SHOWALL=false
 
 while [[ $# -gt 0 ]]; do
   case $1 in
     --dry-run) DRY_RUN=true; shift ;;
     --force) FORCE=true; shift ;;
+    --showall) SHOWALL=true; shift ;;
     --include-detached) INCLUDE_DETACHED=true; shift ;;
     --status=*) STATUS_CSV="${1#*=}"; shift ;;
     --repo=*)
@@ -95,6 +97,7 @@ else
   echo -e "${CYAN}Mode: unset or sync_required only (use ${YELLOW}--status=a,b,...${CYAN} to include other statuses)${NC}"
 fi
 [[ "$INCLUDE_DETACHED" == true ]] && echo -e "${CYAN}Also: --include-detached${NC}"
+[[ "$SHOWALL" == true ]] && echo -e "${CYAN}Also: --showall (per-file already-in-sync lines)${NC}"
 echo ""
 
 FILES_COUNT=$(jq '.files | length' "$CONFIG_FILE")
@@ -183,7 +186,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
     set -e
     rm -f "$EXPECTED_TMP"
     if [[ $DIFF_RESULT -eq 0 ]]; then
-      file_sync_print_sync_action_line "${GREEN}✓${NC}" "${CYAN}" "Already in sync" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
+      [[ "$SHOWALL" == true ]] && file_sync_print_sync_action_line "${GREEN}✓${NC}" "${CYAN}" "Already in sync" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
       ALREADY_SYNCED=$((ALREADY_SYNCED + 1))
       if [[ "$DRY_RUN" != true ]]; then
         filesync_write_file_row "$FILESYNC_FILES_FILE" "$PROJECT_ROOT" "$LOCAL_PATH" "$FULL_MASTER_PATH" "synced"
