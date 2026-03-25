@@ -106,20 +106,7 @@ case "$sub" in
     [[ -n "$STATUS_CSV" ]] && echo -e "${CYAN}Filter: --status=${STATUS_CSV}${NC}"
     [[ "$INCLUDE_DETACHED" == true ]] && echo -e "${CYAN}Also: --include-detached${NC}"
     print_file_line() {
-      local rn="$1" rp="$2" lp="$3" st="${4:-}" mw="${5:-}"
-      local st_disp
-      if [[ -t 1 ]]; then
-        st_disp="$(printf '%b%s%b' "$(file_sync_status_color "${st:-unset}")" "${st:-unset}" "$(file_sync_color_reset)")"
-      else
-        st_disp="${st:-unset}"
-      fi
-      local suf=""
-      [[ -n "$mw" ]] && suf=" ${YELLOW}⚠ ${mw}${NC}"
-      if [[ "$rp" == "$lp" ]]; then
-        echo -e "[$st_disp] $rn | $rp${suf}"
-      else
-        echo -e "[$st_disp] $rn | $rp -> ${YELLOW}$lp${NC}${suf}"
-      fi
+      file_sync_print_file_row "$1" "$2" "$3" "${4:-unset}" "${5:-}"
     }
     if [[ -n "$REPO_FILTER" ]]; then
       count=$(jq --arg n "$REPO_FILTER" '[.files[] | select(.repo_name == $n)] | length' "$CONFIG_FILE")

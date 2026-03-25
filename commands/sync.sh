@@ -108,7 +108,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
   set -e
 
   if [[ -z "$REPO_NAME" ]] || [[ "$REPO_NAME" == "null" ]]; then
-    echo -e "${RED}✗ Entry $i: Invalid repo_name in config${NC}"
+    echo -e "${RED}✗${NC} ${WHITE}Entry $i: Invalid repo_name${NC} ${RED}[config]${NC}"
     FAILED=$((FAILED + 1))
     continue
   fi
@@ -123,19 +123,19 @@ for ((i=0; i<FILES_COUNT; i++)); do
   FILE_PATH_MATCHES=$((FILE_PATH_MATCHES + 1))
 
   if [[ -z "$LOCAL_PATH" ]] || [[ "$LOCAL_PATH" == "null" ]]; then
-    echo -e "${RED}✗ Entry $i: Invalid local_path in config${NC}"
+    echo -e "${RED}✗${NC} ${WHITE}Entry $i: Invalid local_path${NC} ${RED}[config]${NC}"
     FAILED=$((FAILED + 1))
     continue
   fi
 
   if [[ -z "$REPO_FILE_PATH" ]] || [[ "$REPO_FILE_PATH" == "null" ]]; then
-    echo -e "${RED}✗ $LOCAL_PATH: Invalid repo_file_path in config${NC}"
+    echo -e "${RED}✗${NC} ${WHITE}$LOCAL_PATH: Invalid repo_file_path${NC} ${RED}[config]${NC}"
     FAILED=$((FAILED + 1))
     continue
   fi
 
   if ! sync_entry_allowed "$ROW_STATUS"; then
-    echo -e "${YELLOW}⊘ $LOCAL_PATH: Skipped (sync_status=${ROW_STATUS:-unset}, not selected)${NC}"
+    file_sync_print_sync_skip_line "⊘" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH" "not selected; status=${ROW_STATUS:-unset}"
     STATUS_SKIPPED=$((STATUS_SKIPPED + 1))
     continue
   fi
@@ -147,13 +147,13 @@ for ((i=0; i<FILES_COUNT; i++)); do
   FULL_MASTER_PATH="$REPO_ROOT/$REPO_FILE_PATH"
 
   if [[ ! -f "$FULL_MASTER_PATH" ]]; then
-    echo -e "${RED}✗ $LOCAL_PATH: Source file not found in $REPO_NAME ($REPO_FILE_PATH)${NC}"
+    file_sync_print_sync_action_line "${RED}✗${NC}" "${RED}" "source missing" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
     FAILED=$((FAILED + 1))
     continue
   fi
 
   if ! has_master_file_sync_marker "$FULL_MASTER_PATH" 2>/dev/null; then
-    echo -e "${YELLOW}⚠ $LOCAL_PATH: Skipped (source file missing filesync kind=master marker)${NC}"
+    file_sync_print_sync_skip_line "⚠" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH" "no master marker"
     SKIPPED=$((SKIPPED + 1))
     continue
   fi
@@ -161,7 +161,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
   if [[ -f "$FULL_LOCAL_PATH" ]]; then
     if ! has_clone_file_sync_marker "$FULL_LOCAL_PATH" 2>/dev/null; then
       if [[ "$FORCE" != true ]]; then
-        echo -e "${YELLOW}⚠ $LOCAL_PATH: Skipped (missing filesync kind=clone marker, use --force)${NC}"
+        file_sync_print_sync_skip_line "⚠" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH" "no clone marker (--force to overwrite)"
         SKIPPED=$((SKIPPED + 1))
         continue
       fi
@@ -172,6 +172,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
     EXPECTED_TMP=$(mktemp)
     if ! render_clone_from_master_file "$FULL_MASTER_PATH" "$REPO_FILE_PATH" "$REPO_NAME" "$EXPECTED_TMP"; then
       rm -f "$EXPECTED_TMP"
+      file_sync_print_sync_action_line "${RED}✗${NC}" "${RED}" "could not render" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
       filesync_error "${LOCAL_PATH}: could not render clone from master ${REPO_NAME}/${REPO_FILE_PATH} (master file missing or unparsable filesync marker)"
       FAILED=$((FAILED + 1))
       continue
@@ -182,7 +183,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
     set -e
     rm -f "$EXPECTED_TMP"
     if [[ $DIFF_RESULT -eq 0 ]]; then
-      echo -e "${GREEN}✓${NC} ${WHITE}$LOCAL_PATH: Already in sync${NC}"
+      file_sync_print_sync_action_line "${GREEN}✓${NC}" "${CYAN}" "Already in sync" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
       ALREADY_SYNCED=$((ALREADY_SYNCED + 1))
       if [[ "$DRY_RUN" != true ]]; then
         filesync_write_file_row "$FILESYNC_FILES_FILE" "$PROJECT_ROOT" "$LOCAL_PATH" "$FULL_MASTER_PATH" "synced"
@@ -192,15 +193,16 @@ for ((i=0; i<FILES_COUNT; i++)); do
   fi
 
   if [[ "$DRY_RUN" == true ]]; then
-    echo -e "${YELLOW}→ $LOCAL_PATH: Would sync from $REPO_NAME/$REPO_FILE_PATH${NC}"
+    file_sync_print_sync_action_line "${YELLOW}→${NC}" "${CYAN}" "dry-run" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
   else
     mkdir -p "$(dirname "$FULL_LOCAL_PATH")"
     if ! render_clone_from_master_file "$FULL_MASTER_PATH" "$REPO_FILE_PATH" "$REPO_NAME" "$FULL_LOCAL_PATH"; then
+      file_sync_print_sync_action_line "${RED}✗${NC}" "${RED}" "could not render" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
       filesync_error "${LOCAL_PATH}: could not render clone from master ${REPO_NAME}/${REPO_FILE_PATH} (master file missing or unparsable filesync marker)"
       FAILED=$((FAILED + 1))
       continue
     fi
-    echo -e "${GREEN}✓ $LOCAL_PATH: Synced${NC}"
+    file_sync_print_sync_action_line "${GREEN}✓${NC}" "${CYAN}" "synced" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
     filesync_write_file_row "$FILESYNC_FILES_FILE" "$PROJECT_ROOT" "$LOCAL_PATH" "$FULL_MASTER_PATH" "synced"
   fi
   SYNCED=$((SYNCED + 1))

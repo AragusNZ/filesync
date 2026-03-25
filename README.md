@@ -1,6 +1,6 @@
 # filesync
 
-Bash tooling to map and sync files across multiple git checkouts (e.g. a monorepo plus sibling service repos). State lives in the **consuming project** under `.filesync/`; install the CLI once on the system and run it from any directory inside that project.
+**Stop hand-copying the same file between folders and repos.** filesync is a small Bash CLI that keeps the paths you care about in sync wherever you work—main app, side project, another checkout, all of it. Your project stores its wiring under `.filesync/`; install the tool once on your machine and run it from any folder inside that project.
 
 ## Requirements
 

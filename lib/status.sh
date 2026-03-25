@@ -153,6 +153,51 @@ file_sync_color_reset() {
   printf '%s' $'\033[0m'
 }
 
+# Colored repo | path mapping (no newline); same body as list-files / sync.
+file_sync_fmt_mapping() {
+  # shellcheck disable=SC2154
+  local rn="$1" rp="$2" lp="$3"
+  if [[ "$rp" == "$lp" ]]; then
+    printf '%b' "${WHITE}${rn} | ${rp}${NC}"
+  else
+    printf '%b' "${WHITE}${rn} | ${rp} -> ${YELLOW}${lp}${NC}"
+  fi
+}
+
+# One tracked-file line (same layout as list-files).
+# Args: repo_name repo_file_path local_path sync_status [marker_warnings_csv]
+file_sync_print_file_row() {
+  # shellcheck disable=SC2154
+  local rn="$1" rp="$2" lp="$3" st="${4:-unset}" mw="${5:-}"
+  local st_disp
+  if [[ -t 1 ]]; then
+    st_disp="$(printf '%b%s%b' "$(file_sync_status_color "${st}")" "${st}" "$(file_sync_color_reset)")"
+  else
+    st_disp="${st}"
+  fi
+  local suf=""
+  [[ -n "$mw" ]] && suf=" ${YELLOW}⚠ ${mw}${NC}"
+  echo -e "[${st_disp}] $(file_sync_fmt_mapping "$rn" "$rp" "$lp")${suf}"
+}
+
+# sync.sh: gray line (icon + mapping + bracket) for skipped rows.
+file_sync_print_sync_skip_line() {
+  # shellcheck disable=SC2154
+  local icon="$1" rn="$2" rp="$3" lp="$4" note="$5"
+  if [[ "$rp" == "$lp" ]]; then
+    echo -e "${GRAY}${icon} ${rn} | ${rp} [${note}]${NC}"
+  else
+    echo -e "${GRAY}${icon} ${rn} | ${rp} -> ${lp} [${note}]${NC}"
+  fi
+}
+
+# sync.sh: icon + list-style mapping + [note] (note uses note_color for the bracket).
+file_sync_print_sync_action_line() {
+  # shellcheck disable=SC2154
+  local icon_esc="$1" note_color="$2" note="$3" rn="$4" rp="$5" lp="$6"
+  echo -e "${icon_esc} $(file_sync_fmt_mapping "$rn" "$rp" "$lp") ${note_color}[${note}]${NC}"
+}
+
 # Update one row in .filesync/files.json by local_path.
 # Args: files_json_path project_root local_path full_master_path sync_status
 filesync_write_file_row() {

@@ -117,19 +117,21 @@ or
 contains the fragment (substring).
 Compares each local file to the clone rendered from the master copy (diff drives
 .IR sync_status ).
-Warns (stderr and per-row
+Per-row status lines use the same layout as
+.BR list-files :
+.IR [ sync_status "] " repo " | " repo_file_path
+with an optional local path arrow and
+.B ⚠
+comma-separated
 .I check_marker_warnings
-codes in
-.IR files.json )
-on crossover (local
-.I kind=master
-or master
-.IR kind=clone ),
-local missing
+codes when needed (crossover, local missing
 .IR kind=clone ", "
-or master missing
+master missing
 .IR kind=master ", "
-without treating those alone as fatal.
+etc.).
+Codes are also stored in
+.IR files.json ;
+those situations are not fatal on their own.
 If the master file cannot be rendered, the row is
 .I error_master_marker
 but the command exits successfully unless other blocking issues exist.
@@ -178,6 +180,13 @@ prints planned work without writing files or status.
 .B \-\-force
 overwrites a local file that lacks a clone marker.
 Coupled sync requires a master marker on the repo file.
+Per-file lines start with a result symbol, use the same
+.IR repo " | " repo_file_path
+layout as
+.BR list-files ,
+and end with a bracketed outcome
+.RI ( e.g. "\fB[Synced]\fR", "\fB[Already in sync]\fR", "\fB[Dry-run]\fR" ).
+Rows skipped by status filter or marker rules are printed in gray.
 .TP
 .B list-repos
 Also

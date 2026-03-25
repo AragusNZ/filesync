@@ -11,7 +11,6 @@ source "$_CMD_ROOT/../lib/runtime.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
 
 col_st() { file_sync_status_color "$1"; }
-rst() { file_sync_color_reset; }
 
 REPO_FILTER=""
 FILE_FRAGMENT=""
@@ -61,24 +60,28 @@ check_marker_warn_codes_json() {
   printf '%s\n' "${CHECK_MARKER_WARN_CODES[@]}" | jq -R . | jq -s .
 }
 
-# Both files must exist. Sets CHECK_MARKER_WARN_CODES and prints filesync_warn lines.
+# Both files must exist. Sets CHECK_MARKER_WARN_CODES (shown on the row line like list-files).
 check_collect_marker_warnings() {
   CHECK_MARKER_WARN_CODES=()
   if has_clone_file_sync_marker "$FULL_MASTER_PATH" 2>/dev/null; then
     CHECK_MARKER_WARN_CODES+=(master_kind_clone)
-    filesync_warn "$LOCAL_PATH: master copy has kind=clone (possible crossover; expected kind=master in repo)"
   elif ! has_master_file_sync_marker "$FULL_MASTER_PATH" 2>/dev/null; then
     CHECK_MARKER_WARN_CODES+=(master_no_master_marker)
-    filesync_warn "$LOCAL_PATH: master copy lacks kind=master marker"
   fi
   if has_master_file_sync_marker "$FULL_LOCAL_PATH" 2>/dev/null; then
     CHECK_MARKER_WARN_CODES+=(local_kind_master)
-    filesync_warn "$LOCAL_PATH: local file has kind=master (possible crossover; expected kind=clone)"
   fi
   if ! has_clone_file_sync_marker "$FULL_LOCAL_PATH" 2>/dev/null; then
     CHECK_MARKER_WARN_CODES+=(local_no_clone_marker)
-    filesync_warn "$LOCAL_PATH: local file lacks kind=clone marker"
   fi
+}
+
+check_marker_warnings_csv() {
+  if [[ ${#CHECK_MARKER_WARN_CODES[@]} -eq 0 ]]; then
+    printf ''
+    return
+  fi
+  (IFS=,; printf '%s' "${CHECK_MARKER_WARN_CODES[*]}")
 }
 
 BLOCKING_ISSUES=0
@@ -184,7 +187,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
         local_file_modified_at: (if $ls == "" then null else $ls end),
         check_marker_warnings: $cw
       }')"
-    printf '%b[%s]%b %s %s: detached (mapping inactive)\n' "$(col_st detached)" "detached" "$(rst)" "${WHITE}" "$LOCAL_PATH"
+    file_sync_print_file_row "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH" "detached" ""
     continue
   fi
 
@@ -249,7 +252,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
         local_file_modified_at: (if $ls == "" then null else $ls end),
         check_marker_warnings: $cw
       }')"
-    printf '%b[%s]%b %s%s\n' "$(col_st error_master_marker)" "error_master_marker" "$(rst)" "${WHITE}" "$LOCAL_PATH"
+    file_sync_print_file_row "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH" "error_master_marker" "$(check_marker_warnings_csv)"
     continue
   fi
   set +e
@@ -288,7 +291,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
     BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
   fi
 
-  printf '%b[%s]%b %s%s\n' "$(col_st "$STATUS")" "$STATUS" "$(rst)" "${WHITE}" "$LOCAL_PATH"
+  file_sync_print_file_row "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH" "$STATUS" "$(check_marker_warnings_csv)"
 done
 
 ROOT_NOW=$(file_sync_now_iso)
@@ -308,7 +311,7 @@ if [[ -n "$FILE_FRAGMENT" ]] && [[ "$CHECKED" -eq 0 ]]; then
   echo -e "${YELLOW}No file rows matched --file=${FILE_FRAGMENT}${NC} (and repo filter if any)."
 fi
 if [[ "$MARKER_WARN_ROWS" -gt 0 ]]; then
-  echo -e "${YELLOW}Marker warning(s) on $MARKER_WARN_ROWS file row(s) (stderr above; codes in .filesync/files.json check_marker_warnings).${NC}"
+  echo -e "${YELLOW}Marker warning(s) on $MARKER_WARN_ROWS file row(s) (see ⚠ on lines above; codes in .filesync/files.json check_marker_warnings).${NC}"
 fi
 if [[ $BLOCKING_ISSUES -gt 0 ]]; then
   echo -e "${RED}Check completed with $BLOCKING_ISSUES blocking issue(s).${NC} ${WHITE}Rows updated: $CHECKED${NC}"
