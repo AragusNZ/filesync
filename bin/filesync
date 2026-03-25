@@ -38,7 +38,8 @@ help() {
   echo "  filesync p|push [--all] [<local_path> [local_path ...]]"
   echo "  filesync dd|detach <local_path> [local_path ...]"
   echo "  filesync da|attach <local_path> [local_path ...]   # re-couple detached rows + check each"
-  echo "  filesync rm|remove <local_path> [local_path ...]   # drop row; strip clone/detached marker, keep master"
+  echo "  filesync rmf|remove-file <local_path> [local_path ...]   # drop row; strip clone/detached marker, keep master"
+  echo "  filesync rmr|remove-repo <repo_name> [--force]   # drop repo from repos.json; --force unmaps files first"
   echo "  filesync ar|add-repo                 # interactive add repo"
   echo "  filesync er|edit-repo <name> [--rename=] [--path=] [--url=] [--branch=]"
   echo "           # edit repos.json; rename updates repo_name in all files.json rows"
@@ -94,8 +95,11 @@ main() {
     attach|da)
       exec "$ROOT/commands/attach.sh" "$@"
       ;;
-    remove|rm)
+    remove-file|rmf)
       exec "$ROOT/commands/rm.sh" "$@"
+      ;;
+    remove-repo|rmr)
+      exec "$ROOT/commands/remove-repo.sh" "$@"
       ;;
     add-repo|ar|repo)
       exec "$ROOT/commands/add-repo.sh" "$@"

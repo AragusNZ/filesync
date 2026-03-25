@@ -444,7 +444,7 @@ Re-couple detached rows and run
 .B check
 on each.
 .TP
-.BR rm ", " remove
+.BR rmf ", " remove-file
 .I local_path \fR[\fIlocal_path ...\fR]
 Remove the matching row(s) from
 .IR files.json .
@@ -455,6 +455,21 @@ or
 marker line(s) from each local file; leaves
 .B kind=master
 lines so a shared master copy can stay valid for other projects.
+.TP
+.BR rmr ", " remove-repo
+.I repo_name
+.RI [ \-\-force ]
+Remove the named repo from
+.IR repos.json .
+If
+.I files.json
+has no rows for that repo, the repo entry is removed. If there are still file mappings for that repo, the command fails unless
+.B \-\-force
+is given; with
+.BR \-\-force ,
+each such mapping is removed like
+.BR remove-file ,
+then the repo entry is removed. Local file contents are not deleted.
 .TP
 .B add-repo
 Also

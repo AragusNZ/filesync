@@ -65,7 +65,7 @@ mkdir -p "${proj}"
 	[[ -f public/page.html ]] || die "sync html"
 	grep -qF '<!-- filesync kind=clone' public/page.html || die "html clone marker"
 	filesync check --file=page.html >/dev/null || die "check html"
-	filesync rm public/page.html
+	filesync rmf public/page.html
 	grep -qF 'kind=master' "${master}/public/page.html" || die "rm must leave master repo marker"
 	! grep -q 'filesync kind=clone' public/page.html || die "rm should strip local clone marker"
 	{
@@ -80,7 +80,7 @@ mkdir -p "${proj}"
 	filesync add-file origin tools/extra.txt
 	filesync sync
 	[[ -f tools/extra.txt ]] || die "sync extra"
-	filesync rm tools/extra.txt
+	filesync rmf tools/extra.txt
 	[[ "$(jq '. | length' .filesync/files.json)" -eq 1 ]] || die "rm should leave one row"
 	filesync edit-repo origin --rename=upstream
 	jq -e '.[] | select(.local_path=="tools/demo.txt") | .repo_name == "upstream"' ".filesync/files.json" >/dev/null || die "edit-repo rename files.json"

@@ -66,7 +66,7 @@ filesync list-files
 
 **Development without install:** run `./bin/filesync` from this tree (or `bash /path/to/filesync/bin/filesync …`).
 
-Primary subcommands: `init`, `enable`, `disable`, `progress`, `show-progress`, `hide-progress`, `path-mode`, `sync`, `check`, `list-repos`, `list-files`, `add-file`, `add-master`, `add-clone`, `push`, `detach`, `attach`, `remove`, `add-repo`, `edit-repo`, `update`. Shorter aliases (`s`, `c`, `lr`, `lf`, `files`, `af`, `am`, `p`, `dd`, `da`, `ar`, `er`, `en`, `dis`, `pm`, …) are listed in the built-in help — run **`filesync`** with no arguments. Legacy names `repos`, `list`, `add`, `repo`, and `repo-edit` are still accepted.
+Primary subcommands: `init`, `enable`, `disable`, `progress`, `show-progress`, `hide-progress`, `path-mode`, `sync`, `check`, `list-repos`, `list-files`, `add-file`, `add-master`, `add-clone`, `push`, `detach`, `attach`, `remove-file`, `remove-repo`, `add-repo`, `edit-repo`, `update`. Shorter aliases (`s`, `c`, `lr`, `lf`, `files`, `af`, `am`, `p`, `dd`, `da`, `rmf`, `rmr`, `ar`, `er`, `en`, `dis`, `pm`, …) are listed in the built-in help — run **`filesync`** with no arguments. Legacy names `repos`, `list`, `add`, `repo`, and `repo-edit` are still accepted.
 
 **`check`**, **`sync`**, **`list-repos`**, and **`list-files`** accept optional **`--repo=name`**. **`check`**, **`sync`**, and **`list-files`** also accept **`--file=fragment`**: substring match on `local_path` or `repo_file_path` (case-sensitive). **`check`** also accepts **`--status=a,b,...`** (same token rules as `sync`/`list-files`) and matches against each row's current cached `sync_status` before re-checking selected rows. Combine filters to narrow scope.
 
