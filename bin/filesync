@@ -24,7 +24,7 @@ help() {
   echo "  filesync init [directory]   # create .filesync/ here (default: cwd); establishes project root"
   echo "  filesync en|enable | dis|disable"
   echo "  filesync progress [hidden|bar|percent]   # TTY progress on long loops (default percent; legacy show/hide-progress)"
-  echo "  filesync pm|path-mode [relative|absolute]   # show or set repo path resolution mode"
+  echo "  filesync path-mode [relative|absolute]   # show or set repo path resolution mode"
   echo "  filesync s|sync [--repo=name] [--file=path_fragment] [--dry-run|--force|--showall|--status=a,b,...|--include-detached|...]"
   echo "  filesync c|check [--repo=name] [--file=path_fragment] [--status=a,b,...]"
   echo "  filesync lr|repos|list-repos [--repo=name]   # list repos"
@@ -35,7 +35,7 @@ help() {
   echo "           # promote local file to master; omit :path_in_repo if master path matches local_path"
   echo "  filesync ac|add-clone <target_repo> <master_path>[:<local_path>] ... [--also=repo1,repo2]"
   echo "           # clone from kind=master file in this project into sibling project(s); fails if target exists"
-  echo "  filesync p|push [--all] [<local_path> [local_path ...]]"
+  echo "  filesync push [--all] [<local_path> [local_path ...]]"
   echo "  filesync ddf|detach-file <local_path> [local_path ...]"
   echo "  filesync daf|attach-file <local_path> [local_path ...]   # re-couple detached rows + check each"
   echo "  filesync ddr|detach-repo <repo_name>   # detach every mapping for that repo"
@@ -88,7 +88,7 @@ main() {
     add-clone|ac)
       exec "$ROOT/commands/add-clone.sh" "$@"
       ;;
-    push|p)
+    push)
       exec "$ROOT/commands/push.sh" "$@"
       ;;
     detach-file|ddf)
@@ -136,7 +136,7 @@ main() {
     hide-progress)
       exec "$ROOT/commands/progress.sh" hidden
       ;;
-    path-mode|pm)
+    path-mode)
       exec "$ROOT/commands/path-mode.sh" "$@"
       ;;
     update)

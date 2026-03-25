@@ -10,7 +10,7 @@ mkdir -p "${p}"
 	cd "${p}"
 	filesync init
 	[[ "$(filesync path-mode)" == relative ]] || die "default path-mode show"
-	filesync pm absolute
+	filesync path-mode absolute
 	[[ "$(filesync path-mode)" == absolute ]] || die "after set absolute"
 	jq -e '.path_mode == "absolute"' .filesync/config.json >/dev/null || die "config json"
 	filesync path-mode relative
