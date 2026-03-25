@@ -5,6 +5,22 @@ set -euo pipefail
 
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/cli-help.sh"
+if filesync_argv_wants_help "$@"; then
+  cat <<'EOF'
+Usage: filesync add-master <repo_name> <local_path>[:<path_in_repo>] ... [--also=repo1,repo2]
+Alias: am
+
+Promote local files as masters: add mappings with kind=master. If path_in_repo is omitted
+(no :suffix), it defaults to the same path as local_path.
+
+Options:
+  --also=repo1,repo2   Also append/update rows in sibling projects' files.json
+
+EOF
+  exit 0
+fi
+# shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/files-append.sh"

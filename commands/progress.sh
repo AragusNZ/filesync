@@ -6,6 +6,22 @@ set -euo pipefail
 
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/cli-help.sh"
+if filesync_argv_wants_help "$@"; then
+  cat <<'EOF'
+Usage: filesync progress [hidden|bar|percent]
+
+Show or set progress_display in .filesync/config.json for long TTY loops (default: percent).
+
+  hidden   Disable progress output
+  bar      Full bar on stderr (TTY, many items)
+  percent  Compact [NNN%] on stderr (TTY, many items)
+
+With no argument, prints the current effective value from merged config.
+EOF
+  exit 0
+fi
+# shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/config-merge.sh"

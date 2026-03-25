@@ -5,6 +5,18 @@ set -euo pipefail
 
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/cli-help.sh"
+if filesync_argv_wants_help "$@"; then
+  cat <<'EOF'
+Usage: filesync add-repo
+Alias: ar
+
+Interactively append a new repo entry to .filesync/repos.json (name, URL, local path, branch).
+Requires an existing repos.json in the discovered project.
+EOF
+  exit 0
+fi
+# shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
 filesync_command_init_lite "${BASH_SOURCE[0]}"
 

@@ -5,6 +5,17 @@ set -euo pipefail
 
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/cli-help.sh"
+if filesync_argv_wants_help "$@"; then
+  cat <<'EOF'
+Usage: filesync detach-file <local_path> [<local_path> ...]
+Alias: ddf
+
+Keep each mapping but set sync status to detached and write the detached marker on disk.
+EOF
+  exit 0
+fi
+# shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
 # shellcheck source=/dev/null

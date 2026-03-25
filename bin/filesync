@@ -82,10 +82,10 @@ main() {
       exec "$ROOT/commands/list.sh" list-files "$@"
       ;;
     enable)
-      exec "$ROOT/commands/enable-disable.sh" enable
+      exec "$ROOT/commands/enable-disable.sh" enable "$@"
       ;;
     disable)
-      exec "$ROOT/commands/enable-disable.sh" disable
+      exec "$ROOT/commands/enable-disable.sh" disable "$@"
       ;;
     progress)
       exec "$ROOT/commands/progress.sh" "$@"

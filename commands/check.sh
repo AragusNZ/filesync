@@ -7,6 +7,25 @@ set -euo pipefail
 
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/cli-help.sh"
+if filesync_argv_wants_help "$@"; then
+  cat <<'EOF'
+Usage: filesync check [option] ...
+Alias: c
+
+Verify mappings against disk and repo checkouts; refresh row status in .filesync/files.json
+and config metadata (e.g. last_check_at).
+
+Options:
+  --repo=name            Limit to mappings for this repo
+  --file=fragment        Substring match on local_path or repo_file_path (after --repo)
+  --status=a,b,...       Filter by row status (OR). Tokens: see main "filesync -h" or man filesync
+
+If file_sync_enabled is false in merged config, prints a hint and exits without scanning.
+EOF
+  exit 0
+fi
+# shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
 # shellcheck source=/dev/null

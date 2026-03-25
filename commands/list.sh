@@ -6,6 +6,42 @@ set -euo pipefail
 
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/cli-help.sh"
+
+sub="${1:-}"
+if filesync_argv_wants_help "$@"; then
+  case "$sub" in
+    list-repos | lr)
+      cat <<'EOF'
+Usage: filesync list-repos [--repo=name]
+Alias: lr
+
+List configured repos from merged config. With --repo=, show only that repo (errors if missing).
+EOF
+      ;;
+    list-files | lf)
+      cat <<'EOF'
+Usage: filesync list-files [--repo=name] [--file=fragment] [--status=a,b,...] [--include-detached]
+Alias: lf
+
+List file mappings and status. --file filters by substring on local_path or repo_file_path.
+--status uses the same token rules as sync/check (see main "filesync -h" or man filesync).
+EOF
+      ;;
+    *)
+      cat <<'EOF'
+Usage:
+  filesync list-repos [--repo=name]    (alias lr)
+  filesync list-files [options]        (alias lf)
+
+Run "filesync list-repos -h" or "filesync list-files -h" for details.
+EOF
+      ;;
+  esac
+  exit 0
+fi
+
+# shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
 # shellcheck source=/dev/null
@@ -15,7 +51,6 @@ trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
 _list_usage_pair='filesync list-repos [--repo=name] | filesync list-files [--repo=name] [--file=path_fragment] [--status=a,b,...] [--include-detached]'
 
-sub="${1:-}"
 if [[ -z "$sub" ]]; then
   echo -e "${RED}Usage: ${_list_usage_pair}${NC}" >&2
   exit 1

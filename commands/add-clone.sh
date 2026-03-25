@@ -5,6 +5,22 @@ set -euo pipefail
 
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/cli-help.sh"
+if filesync_argv_wants_help "$@"; then
+  cat <<'EOF'
+Usage: filesync add-clone <target_repo> <master_path>[:<local_path>] ... [--also=repo1,repo2]
+Alias: ac
+
+Clone mappings from a kind=master file in this project into a sibling repo: creates the
+target-side file and row. Fails if the target local file already exists.
+
+Options:
+  --also=repo1,repo2   Also append/update rows in additional sibling projects' files.json
+
+EOF
+  exit 0
+fi
+# shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/files-append.sh"

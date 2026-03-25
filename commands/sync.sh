@@ -7,6 +7,29 @@ set -euo pipefail
 
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/cli-help.sh"
+if filesync_argv_wants_help "$@"; then
+  cat <<'EOF'
+Usage: filesync sync [option] ...
+Alias: s
+
+Copy from master repos into the project and update .filesync/files.json row status.
+
+Options:
+  --repo=name            Limit to mappings for this repo
+  --file=fragment        Substring match on local_path or repo_file_path (after --repo)
+  --dry-run              Show actions without copying
+  --force                Also sync local_newer and conflict rows (default skips them)
+  --showall              Verbose per-file output
+  --status=a,b,...       Filter by row status (OR). Tokens: see main "filesync -h" or man filesync
+  --include-detached     Include detached rows (default skips them)
+
+When --status= is omitted: syncs unset, sync_required, and error_missing_local; skips detached
+unless --include-detached.
+EOF
+  exit 0
+fi
+# shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
 # shellcheck source=/dev/null

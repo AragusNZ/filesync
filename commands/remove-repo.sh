@@ -5,6 +5,21 @@ set -euo pipefail
 
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/cli-help.sh"
+if filesync_argv_wants_help "$@"; then
+  cat <<'EOF'
+Usage: filesync remove-repo <repo_name> [-y|--yes]
+Alias: rmr
+
+Remove a repo from repos.json when it has no file rows, or after confirmation unmap all
+its files (same as remove-file per row).
+
+  -y, --yes   Skip the prompt when file mappings still exist
+
+EOF
+  exit 0
+fi
+# shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
 # shellcheck source=/dev/null

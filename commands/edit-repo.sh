@@ -5,6 +5,24 @@ set -euo pipefail
 
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/cli-help.sh"
+if filesync_argv_wants_help "$@"; then
+  cat <<'EOF'
+Usage: filesync edit-repo <repo_name> [options]
+Alias: er
+
+Update a repo entry in .filesync/repos.json. At least one of the options below is required.
+
+Options:
+  --rename=new_name    Rename repo (updates repo_name in all files.json rows and repo= markers)
+  --path=new_path      Set checkout path
+  --url=new_url        Set remote URL
+  --branch=name        Set branch
+
+EOF
+  exit 0
+fi
+# shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
 

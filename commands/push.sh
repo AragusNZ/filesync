@@ -5,6 +5,20 @@ set -euo pipefail
 
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/cli-help.sh"
+if filesync_argv_wants_help "$@"; then
+  cat <<'EOF'
+Usage: filesync push [--all] [<local_path> ...]
+
+Copy local content to linked master paths in the repo checkout and update .filesync/files.json.
+
+  --all              Push every clone mapping in the project (otherwise list explicit paths)
+
+Either --all or at least one local_path is required.
+EOF
+  exit 0
+fi
+# shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
 # shellcheck source=/dev/null

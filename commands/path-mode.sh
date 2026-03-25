@@ -5,6 +5,17 @@ set -euo pipefail
 
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/cli-help.sh"
+if filesync_argv_wants_help "$@"; then
+  cat <<'EOF'
+Usage: filesync path-mode [relative|absolute]
+
+Show or set path_mode in merged .filesync/config.json. Values: relative (default) or absolute.
+When setting, updates the project config file (creating a minimal config if needed).
+EOF
+  exit 0
+fi
+# shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
 filesync_command_init_lite "${BASH_SOURCE[0]}"
 # shellcheck source=/dev/null

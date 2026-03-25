@@ -8,6 +8,20 @@ set -euo pipefail
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FILESYNC_PKG_ROOT="$(cd "${_CMD_ROOT}/.." && pwd)"
 # shellcheck source=/dev/null
+source "${FILESYNC_PKG_ROOT}/lib/cli-help.sh"
+if filesync_argv_wants_help "$@"; then
+  cat <<'EOF'
+Usage: filesync init [directory]
+
+Create .filesync/ with default config.json, repos.json, and files.json at the project root.
+Does not walk parent directories: the given directory (default: current working directory)
+becomes the filesync project root.
+
+If all three files already exist, init errors; if only some exist, it creates the missing ones.
+EOF
+  exit 0
+fi
+# shellcheck source=/dev/null
 source "${FILESYNC_PKG_ROOT}/lib/colors.sh"
 # shellcheck source=/dev/null
 source "${FILESYNC_PKG_ROOT}/lib/log.sh"

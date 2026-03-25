@@ -7,6 +7,22 @@ set -euo pipefail
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FILESYNC_PKG_ROOT="$(cd "${_CMD_ROOT}/.." && pwd)"
 # shellcheck source=/dev/null
+source "${FILESYNC_PKG_ROOT}/lib/cli-help.sh"
+if filesync_argv_wants_help "$@"; then
+	cat <<'EOF'
+Usage: filesync update [-y|--yes]
+
+Compare this install to the latest GitHub release on GitHub. If a newer release exists and can
+be installed from this layout (git clone or unpacked .deb), you are prompted to apply it
+(git pull + make install, or dpkg -i the release .deb).
+
+  -y, --yes   Apply immediately when an update is available (no prompt).
+
+Env: FILESYNC_INSTALL_PREFIX — override PREFIX for git+make install when autodetection is wrong.
+EOF
+	exit 0
+fi
+# shellcheck source=/dev/null
 source "${FILESYNC_PKG_ROOT}/lib/colors.sh"
 # shellcheck source=/dev/null
 source "${FILESYNC_PKG_ROOT}/lib/log.sh"
@@ -21,15 +37,6 @@ YES=false
 while [[ $# -gt 0 ]]; do
 	case "$1" in
 		-y | --yes) YES=true; shift ;;
-		-h | --help)
-			echo "Usage: filesync update [-y]" >&2
-			echo "  Compare this install to the latest GitHub release." >&2
-			echo "  If a newer release exists and can be installed from this layout (git clone or .deb)," >&2
-			echo "  you are prompted to apply it (git pull + make install, or dpkg -i the release .deb)." >&2
-			echo "  -y  Apply immediately when an update is available (no prompt)." >&2
-			echo "Env: FILESYNC_INSTALL_PREFIX (for git+make install PREFIX when autodetection is wrong)" >&2
-			exit 0
-			;;
 		*)
 			echo -e "${RED}Unknown option: $1${NC}" >&2
 			exit 1

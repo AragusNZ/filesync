@@ -8,6 +8,7 @@ _hm() { printf '%*s%s\n' $((2 + _w + 2)) '' "$1"; }
 
 echo 'Usage:  filesync [-V | --version]'
 echo '       filesync [help | -h | --help]'
+echo '       filesync <command> [-h | --help]'
 echo '       filesync <command> [arguments]'
 echo ''
 echo 'Map and sync files across git checkouts (.filesync/ per project).'
