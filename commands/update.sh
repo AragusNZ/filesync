@@ -87,8 +87,8 @@ fi
 LATEST="${TAG_RAW#v}"
 DEB_URL="$(jq -r '(.assets // [])[] | select(.name | test("^filesync_.+_all\\.deb$")) | .browser_download_url' "$TMP_JSON" | head -n1)"
 
-echo -e "${CYAN}filesync version${NC}  ${WHITE}${CURRENT}${NC}  (this install)"
-echo -e "${CYAN}Latest release${NC}    ${WHITE}${LATEST}${NC}  (${REPO_SLUG})"
+echo -e "${CYAN}filesync version${NC}  ${WHITE}${CURRENT}${NC}  (this install)" >&2
+echo -e "${CYAN}Latest release${NC}    ${WHITE}${LATEST}${NC}  (${REPO_SLUG})" >&2
 
 up_to_date=false
 if [[ "$CURRENT" == "$LATEST" ]]; then
@@ -100,32 +100,32 @@ elif [[ "$CURRENT" != "unknown" ]] && command -v dpkg >/dev/null 2>&1; then
 fi
 
 if [[ "$up_to_date" == true ]]; then
-	echo -e "${GREEN}You are on the latest release (or newer than the published release).${NC}"
+	echo -e "${GREEN}You are on the latest release (or newer than the published release).${NC}" >&2
 	exit 0
 fi
 
 if [[ "$CURRENT" == "unknown" ]]; then
-	echo -e "${YELLOW}Could not read installed version; latest published release is ${LATEST}.${NC}"
+	echo -e "${YELLOW}Could not read installed version; latest published release is ${LATEST}.${NC}" >&2
 else
-	echo -e "${YELLOW}A newer release is available (${CURRENT} -> ${LATEST}).${NC}"
+	echo -e "${YELLOW}A newer release is available (${CURRENT} -> ${LATEST}).${NC}" >&2
 fi
 
 if [[ "$APPLY" != true ]]; then
-	echo ""
+	echo "" >&2
 	if [[ -d "${FILESYNC_PKG_ROOT}/.git" ]]; then
 		PREFIX_HINT="${FILESYNC_INSTALL_PREFIX:-$(dirname "$(dirname "${FILESYNC_PKG_ROOT}")")}"
-		echo "This tree is a git checkout. To update:"
-		echo "  cd ${FILESYNC_PKG_ROOT} && git pull && sudo make install PREFIX=${PREFIX_HINT}"
-		echo "(Set FILESYNC_INSTALL_PREFIX if you originally used a different PREFIX.)"
+		echo "This tree is a git checkout. To update:" >&2
+		echo "  cd ${FILESYNC_PKG_ROOT} && git pull && sudo make install PREFIX=${PREFIX_HINT}" >&2
+		echo "(Set FILESYNC_INSTALL_PREFIX if you originally used a different PREFIX.)" >&2
 	else
 		if [[ -n "$DEB_URL" ]]; then
-			echo "Debian/Ubuntu (.deb from GitHub Releases):"
-			echo "  curl -fsSLO '$DEB_URL'"
-			echo "  sudo apt install -y ./\"$(basename "$DEB_URL")\""
-			echo "Or run: filesync update --apply"
+			echo "Debian/Ubuntu (.deb from GitHub Releases):" >&2
+			echo "  curl -fsSLO '$DEB_URL'" >&2
+			echo "  sudo apt install -y ./\"$(basename "$DEB_URL")\"" >&2
+			echo "Or run: filesync update --apply" >&2
 		else
-			echo "No .deb asset found on the latest release; see:"
-			echo "  https://github.com/${REPO_SLUG}/releases/latest"
+			echo "No .deb asset found on the latest release; see:" >&2
+			echo "  https://github.com/${REPO_SLUG}/releases/latest" >&2
 		fi
 	fi
 	exit 0
@@ -135,7 +135,7 @@ fi
 if [[ "$YES" != true ]]; then
 	read -rp "Apply update now? [y/N] " ans
 	if [[ "${ans,,}" != "y" && "${ans,,}" != "yes" ]]; then
-		echo "Aborted."
+		echo "Aborted." >&2
 		exit 0
 	fi
 fi
@@ -149,7 +149,7 @@ if [[ -d "${FILESYNC_PKG_ROOT}/.git" ]]; then
 	else
 		make install PREFIX="${PREFIX}"
 	fi
-	echo -e "${GREEN}Updated from git and reinstalled (PREFIX=${PREFIX}).${NC}"
+	echo -e "${GREEN}Updated from git and reinstalled (PREFIX=${PREFIX}).${NC}" >&2
 	exit 0
 fi
 
@@ -167,4 +167,4 @@ else
 	dpkg -i "$DEB_FILE"
 fi
 
-echo -e "${GREEN}Installed $(basename "$DEB_URL")${NC}"
+echo -e "${GREEN}Installed $(basename "$DEB_URL")${NC}" >&2

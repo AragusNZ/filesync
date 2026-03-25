@@ -9,6 +9,8 @@ _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/cli-banner.sh"
 
 col_st() { file_sync_status_color "$1"; }
 
@@ -38,7 +40,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if ! jq -e '.file_sync_enabled == true' "$CONFIG_FILE" &>/dev/null; then
-  echo -e "${YELLOW}filesync is disabled. Run 'filesync enable' to enable.${NC}"
+  filesync_print_disabled_hint
   exit 0
 fi
 
@@ -88,10 +90,9 @@ BLOCKING_ISSUES=0
 CHECKED=0
 MARKER_WARN_ROWS=0
 
-echo -e "${CYAN}Checking synced files (updating .filesync)...${NC}"
-[[ -n "$REPO_FILTER" ]] && echo -e "${CYAN}Filter: --repo=$REPO_FILTER${NC}"
-[[ -n "$FILE_FRAGMENT" ]] && echo -e "${CYAN}Filter: --file= substring on local_path or repo_file_path: ${FILE_FRAGMENT}${NC}"
-echo ""
+filesync_print_check_banner
+filesync_print_filter_context "$REPO_FILTER" "$FILE_FRAGMENT" "" false 0
+echo "" >&2
 
 PATCH_LINES_FILE=$(mktemp)
 
@@ -118,7 +119,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
   NOW_E=$(file_sync_now_epoch)
 
   if [[ -z "$REPO_NAME" ]] || [[ "$REPO_NAME" == "null" ]]; then
-    echo -e "${RED}✗ Entry $i: Invalid repo_name in config${NC}"
+    filesync_print_config_error_invalid_repo_name "$i"
     BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
     append_patch "$(jq -nc --argjson idx "$i" --arg now "$NOW_ISO" --argjson cw '[]' '{i: $idx, last_check_at: $now, sync_status: "error_invalid_repo", check_marker_warnings: $cw}')"
     continue
@@ -133,14 +134,14 @@ for ((i=0; i<FILES_COUNT; i++)); do
   fi
 
   if [[ -z "$LOCAL_PATH" ]] || [[ "$LOCAL_PATH" == "null" ]]; then
-    echo -e "${RED}✗ Entry $i: Invalid local_path in config${NC}"
+    filesync_print_config_error_invalid_local_path "$i"
     BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
     append_patch "$(jq -nc --argjson idx "$i" --arg now "$NOW_ISO" --argjson cw '[]' '{i: $idx, last_check_at: $now, sync_status: "error_invalid_local_path", check_marker_warnings: $cw}')"
     continue
   fi
 
   if [[ -z "$REPO_FILE_PATH" ]] || [[ "$REPO_FILE_PATH" == "null" ]]; then
-    echo -e "${RED}✗ $LOCAL_PATH: Invalid repo_file_path in config${NC}"
+    filesync_print_config_error_invalid_repo_file_path "$LOCAL_PATH"
     BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
     append_patch "$(jq -nc --argjson idx "$i" --arg now "$NOW_ISO" --argjson cw '[]' '{i: $idx, last_check_at: $now, sync_status: "error_invalid_repo_path", check_marker_warnings: $cw}')"
     continue
@@ -148,7 +149,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
 
   REPO_ROOT=""
   if ! REPO_ROOT=$(filesync_get_repo_dir "$REPO_NAME"); then
-    echo -e "${RED}✗ $LOCAL_PATH: Could not resolve repo $REPO_NAME${NC}"
+    echo -e "${RED}✗${NC} ${WHITE}$LOCAL_PATH: Could not resolve repo $REPO_NAME${NC}" >&2
     BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
     append_patch "$(jq -nc --argjson idx "$i" --arg now "$NOW_ISO" --argjson cw '[]' '{i: $idx, last_check_at: $now, sync_status: "error_repo_unavailable", check_marker_warnings: $cw}')"
     continue
@@ -192,7 +193,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
   fi
 
   if [[ ! -f "$FULL_MASTER_PATH" ]]; then
-    echo -e "$(col_st error_missing_master)${RED}✗${NC} ${WHITE}$LOCAL_PATH: Source not found in $REPO_NAME ($REPO_FILE_PATH)${NC}"
+    echo -e "$(col_st error_missing_master)${RED}✗${NC} ${WHITE}$LOCAL_PATH: Source not found in $REPO_NAME ($REPO_FILE_PATH)${NC}" >&2
     BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
     append_patch "$(jq -nc \
       --argjson idx "$i" \
@@ -211,7 +212,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
   fi
 
   if [[ ! -f "$FULL_LOCAL_PATH" ]]; then
-    echo -e "$(col_st error_missing_local)${RED}✗${NC} ${WHITE}$LOCAL_PATH: Local file not found${NC}"
+    echo -e "$(col_st error_missing_local)${RED}✗${NC} ${WHITE}$LOCAL_PATH: Local file not found${NC}" >&2
     BLOCKING_ISSUES=$((BLOCKING_ISSUES + 1))
     append_patch "$(jq -nc \
       --argjson idx "$i" \
@@ -306,18 +307,18 @@ if [[ -s "$PATCH_LINES_FILE" ]]; then
   filesync_user_config_set_last_check_at "$ROOT_NOW"
 fi
 
-echo ""
+echo "" >&2
 if [[ -n "$FILE_FRAGMENT" ]] && [[ "$CHECKED" -eq 0 ]]; then
-  echo -e "${YELLOW}No file rows matched --file=${FILE_FRAGMENT}${NC} (and repo filter if any)."
+  filesync_print_no_file_rows_for_fragment "$FILE_FRAGMENT"
 fi
 if [[ "$MARKER_WARN_ROWS" -gt 0 ]]; then
-  echo -e "${YELLOW}Marker warning(s) on $MARKER_WARN_ROWS file row(s) (see ⚠ on lines above; codes in .filesync/files.json check_marker_warnings).${NC}"
+  echo -e "${YELLOW}Marker warning(s) on $MARKER_WARN_ROWS file row(s) (see ⚠ on lines above; codes in .filesync/files.json check_marker_warnings).${NC}" >&2
 fi
 if [[ $BLOCKING_ISSUES -gt 0 ]]; then
-  echo -e "${RED}Check completed with $BLOCKING_ISSUES blocking issue(s).${NC} ${WHITE}Rows updated: $CHECKED${NC}"
+  echo -e "${RED}Check completed with $BLOCKING_ISSUES blocking issue(s).${NC} ${WHITE}Rows updated: $CHECKED${NC}" >&2
   filesync_error "exiting with status 1 because of $BLOCKING_ISSUES blocking issue(s)."
   exit 1
 fi
 
-echo -e "${GREEN}✓${NC} ${WHITE}Check OK ($CHECKED files updated).${NC}"
+echo -e "${GREEN}✓${NC} ${WHITE}Check OK ($CHECKED files updated).${NC}" >&2
 exit 0

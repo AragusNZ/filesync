@@ -5,6 +5,9 @@ TESTS="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=/dev/null
 source "${TESTS}/harness-lib.sh"
 : "${fail:=0}"
+unset NO_COLOR
+# shellcheck source=/dev/null
+source "${ROOT}/lib/colors.sh"
 # shellcheck source=/dev/null
 source "${ROOT}/lib/status.sh"
 
@@ -38,6 +41,17 @@ for _st in synced sync_required local_newer conflict detached error_x error_mast
 done
 [[ "${fail}" -eq 0 ]] && ok "status_color variants emit ansi"
 if [[ "$(file_sync_color_reset)" == *$'\033[0m'* ]]; then ok "color_reset"; else bad "color_reset"; fi
+
+(
+	NO_COLOR=1
+	# shellcheck source=/dev/null
+	source "${ROOT}/lib/colors.sh"
+	# shellcheck source=/dev/null
+	source "${ROOT}/lib/status.sh"
+	[[ "$(file_sync_status_color synced)" == "" ]] || exit 1
+	[[ "$(file_sync_color_reset)" == "" ]] || exit 1
+) || bad "NO_COLOR disables status ansi"
+[[ "${fail}" -eq 0 ]] && ok "NO_COLOR disables status ansi"
 
 nowe="$(file_sync_now_epoch)"
 if [[ "${nowe}" =~ ^[0-9]+$ ]]; then ok "now_epoch"; else bad "now_epoch ${nowe}"; fi

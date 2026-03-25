@@ -13,7 +13,7 @@ filesync_command_init "${BASH_SOURCE[0]}"
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
 if [[ $# -lt 2 ]]; then
-  echo -e "${RED}Usage: filesync add-master <repo_name> <local_path> ... [--also=repo1,repo2]${NC}"
+  echo -e "${RED}Usage: filesync add-master <repo_name> <local_path> ... [--also=repo1,repo2]${NC}" >&2
   exit 1
 fi
 
@@ -28,7 +28,7 @@ for arg in "$@"; do
   if [[ "$arg" == --also=* ]]; then
     TARGET_REPOS_RAW="${arg#--also=}"
   elif [[ "$arg" == --* ]]; then
-    echo -e "${RED}Error: Unknown option '$arg'.${NC}"
+    echo -e "${RED}Error: Unknown option '$arg'.${NC}" >&2
     exit 1
   else
     POSITIONAL+=("$arg")
@@ -36,7 +36,7 @@ for arg in "$@"; do
 done
 
 if [[ ${#POSITIONAL[@]} -eq 0 ]]; then
-  echo -e "${RED}Error: At least one local path is required.${NC}"
+  echo -e "${RED}Error: At least one local path is required.${NC}" >&2
   exit 1
 fi
 
@@ -53,26 +53,26 @@ done
 declare -A SEEN_LOCAL_PATHS=()
 for local_path in "${LOCAL_PATHS[@]}"; do
   if [[ -n "${SEEN_LOCAL_PATHS[$local_path]:-}" ]]; then
-    echo -e "${RED}Error: Duplicate local_path '$local_path'.${NC}"
+    echo -e "${RED}Error: Duplicate local_path '$local_path'.${NC}" >&2
     exit 1
   fi
   SEEN_LOCAL_PATHS["$local_path"]=1
 done
 
 if ! jq -e --arg n "$TARGET_REPO" 'any(.name == $n)' "$FILESYNC_REPOS_FILE" &>/dev/null; then
-  echo -e "${RED}Error: Target repo '$TARGET_REPO' is not in repos.${NC}"
+  echo -e "${RED}Error: Target repo '$TARGET_REPO' is not in repos.${NC}" >&2
   exit 1
 fi
 
 TARGET_REPO_PATH=$(jq -r --arg n "$TARGET_REPO" '.[] | select(.name == $n) | .path // ""' "$FILESYNC_REPOS_FILE" | head -1)
 if [[ -z "$TARGET_REPO_PATH" || "$TARGET_REPO_PATH" == "null" ]]; then
-  echo -e "${RED}Error: Target repo '$TARGET_REPO' has no local path.${NC}"
+  echo -e "${RED}Error: Target repo '$TARGET_REPO' has no local path.${NC}" >&2
   exit 1
 fi
 
 TARGET_FS="$PROJECT_ROOT/$TARGET_REPO_PATH/.filesync"
 if [[ ! -f "$TARGET_FS/$FILESYNC_FILES_NAME" || ! -f "$TARGET_FS/$FILESYNC_REPOS_NAME" ]]; then
-  echo -e "${RED}Error: Target project must have .filesync/$FILESYNC_FILES_NAME and $FILESYNC_REPOS_NAME: $TARGET_FS${NC}"
+  echo -e "${RED}Error: Target project must have .filesync/$FILESYNC_FILES_NAME and $FILESYNC_REPOS_NAME: $TARGET_FS${NC}" >&2
   exit 1
 fi
 
@@ -88,17 +88,17 @@ validate_can_add() {
   local label="$3"
   local local_path="$4"
   if ! jq -e --arg n "$TARGET_REPO" 'any(.name == $n)' "$repos_path" &>/dev/null; then
-    echo -e "${RED}Error: Repo '$TARGET_REPO' is not in $label repos.${NC}"
+    echo -e "${RED}Error: Repo '$TARGET_REPO' is not in $label repos.${NC}" >&2
     return 1
   fi
   if jq -e --arg local "$local_path" '.[] | select(.local_path == $local)' "$files_path" &>/dev/null; then
-    echo -e "${RED}Error: local_path '$local_path' already exists in $label.${NC}"
+    echo -e "${RED}Error: local_path '$local_path' already exists in $label.${NC}" >&2
     return 1
   fi
 }
 
 for i in "${!LOCAL_PATHS[@]}"; do
-  [[ -f "$PROJECT_ROOT/${LOCAL_PATHS[$i]}" ]] || { echo -e "${RED}Local file not found: ${LOCAL_PATHS[$i]}${NC}"; exit 1; }
+  [[ -f "$PROJECT_ROOT/${LOCAL_PATHS[$i]}" ]] || { echo -e "${RED}Local file not found: ${LOCAL_PATHS[$i]}${NC}" >&2; exit 1; }
 done
 
 for i in "${!LOCAL_PATHS[@]}"; do
@@ -107,12 +107,12 @@ done
 
 for extra_repo in "${TARGET_REPOS[@]}"; do
   jq -e --arg n "$extra_repo" 'any(.name == $n)' "$FILESYNC_REPOS_FILE" &>/dev/null || {
-    echo -e "${RED}Error: Extra repo '$extra_repo' not in repos.${NC}"; exit 1; }
+    echo -e "${RED}Error: Extra repo '$extra_repo' not in repos.${NC}" >&2; exit 1; }
   erp=$(jq -r --arg n "$extra_repo" '.[] | select(.name == $n) | .path // ""' "$FILESYNC_REPOS_FILE" | head -1)
-  [[ -n "$erp" && "$erp" != "null" ]] || { echo -e "${RED}Error: Extra repo '$extra_repo' has no path.${NC}"; exit 1; }
+  [[ -n "$erp" && "$erp" != "null" ]] || { echo -e "${RED}Error: Extra repo '$extra_repo' has no path.${NC}" >&2; exit 1; }
   efs="$PROJECT_ROOT/$erp/.filesync"
   [[ -f "$efs/$FILESYNC_FILES_NAME" && -f "$efs/$FILESYNC_REPOS_NAME" ]] || {
-    echo -e "${RED}Error: Missing $efs/$FILESYNC_FILES_NAME for --also=$extra_repo${NC}"; exit 1; }
+    echo -e "${RED}Error: Missing $efs/$FILESYNC_FILES_NAME for --also=$extra_repo${NC}" >&2; exit 1; }
   for i in "${!LOCAL_PATHS[@]}"; do
     validate_can_add "$efs/$FILESYNC_FILES_NAME" "$efs/$FILESYNC_REPOS_NAME" "$extra_repo" "${LOCAL_PATHS[$i]}" || filesync_die "add-master validation failed (see messages above)"
   done
@@ -141,7 +141,7 @@ append_minimal_then_synced() {
     '{repo_name: $repo, repo_file_path: $repo_path, local_path: $local}')
   filesync_files_append_entry "$files_path" "$repos_path" "$TARGET_REPO" "$new_entry" || return 1
   filesync_write_file_row "$files_path" "$PROJECT_ROOT" "$local_path" "$full_target_master_path" "synced"
-  echo -e "${GREEN}Added mapping ($label):${NC} repo=$TARGET_REPO local_path=$local_path"
+  echo -e "${GREEN}Added mapping ($label):${NC} repo=$TARGET_REPO local_path=$local_path" >&2
 }
 
 for i in "${!LOCAL_PATHS[@]}"; do
@@ -150,24 +150,24 @@ for i in "${!LOCAL_PATHS[@]}"; do
   full_local_path="$PROJECT_ROOT/$local_path"
 
   if ! render_master_marker_file "$full_local_path" "$TMP_MASTER"; then
-    echo -e "${RED}Error: Local file must include a filesync marker.${NC}"
+    echo -e "${RED}Error: Local file must include a filesync marker.${NC}" >&2
     exit 1
   fi
   if ! has_master_file_sync_marker "$TMP_MASTER"; then
-    echo -e "${RED}Error: Could not produce kind=master marker.${NC}"
+    echo -e "${RED}Error: Could not produce kind=master marker.${NC}" >&2
     exit 1
   fi
 
   full_target_master_path="$PROJECT_ROOT/$TARGET_REPO_PATH/$target_repo_file_path"
   mkdir -p "$(dirname "$full_target_master_path")"
   cp "$TMP_MASTER" "$full_target_master_path"
-  echo -e "${GREEN}Promoted to master:${NC} $target_repo_file_path"
+  echo -e "${GREEN}Promoted to master:${NC} $target_repo_file_path" >&2
 
   if ! render_clone_from_master_file "$TMP_MASTER" "$target_repo_file_path" "$TARGET_REPO" "$TMP_CLONE"; then
     filesync_die "${local_path}: could not render clone preview from promoted master (unexpected; report a bug if this persists)"
   fi
   cp "$TMP_CLONE" "$full_local_path"
-  echo -e "${GREEN}Updated local clone:${NC} $local_path"
+  echo -e "${GREEN}Updated local clone:${NC} $local_path" >&2
 
   append_minimal_then_synced "$FILESYNC_FILES_FILE" "$FILESYNC_REPOS_FILE" "$local_path" "$target_repo_file_path" "$full_target_master_path" "current" || filesync_die "add-master failed (see messages above)"
 
@@ -180,5 +180,5 @@ for i in "${!LOCAL_PATHS[@]}"; do
 done
 
 for extra_repo in "${TARGET_REPOS[@]}"; do
-  echo -e "${YELLOW}Note:${NC} also updated $extra_repo .filesync/$FILESYNC_FILES_NAME (master file may not exist there until you copy or sync)."
+  echo -e "${YELLOW}Note:${NC} also updated $extra_repo .filesync/$FILESYNC_FILES_NAME (master file may not exist there until you copy or sync)." >&2
 done

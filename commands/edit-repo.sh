@@ -52,13 +52,13 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$REPO_CURRENT" ]]; then
-  echo -e "${RED}Usage: filesync edit-repo <repo_name> [--rename=new] [--path=...] [--url=...] [--branch=...]${NC}"
-  echo "At least one of --rename, --path, --url, or --branch is required."
+  echo -e "${RED}Usage: filesync edit-repo <repo_name> [--rename=new] [--path=...] [--url=...] [--branch=...]${NC}" >&2
+  echo "At least one of --rename, --path, --url, or --branch is required." >&2
   exit 1
 fi
 
 if [[ -z "$RENAME" ]] && [[ -z "$PATH_NEW" ]] && [[ -z "$URL_NEW" ]] && [[ -z "$BRANCH_NEW" ]]; then
-  echo -e "${RED}Error: specify at least one of --rename, --path, --url, --branch${NC}"
+  echo -e "${RED}Error: specify at least one of --rename, --path, --url, --branch${NC}" >&2
   exit 1
 fi
 
@@ -66,13 +66,13 @@ repos="$FILESYNC_REPOS_FILE"
 files="$FILESYNC_FILES_FILE"
 
 if ! jq -e --arg c "$REPO_CURRENT" 'any(.name == $c)' "$repos" &>/dev/null; then
-  echo -e "${RED}Error: Repo '$REPO_CURRENT' not found in repos.${NC}"
+  echo -e "${RED}Error: Repo '$REPO_CURRENT' not found in repos.${NC}" >&2
   exit 1
 fi
 
 if [[ -n "$RENAME" ]] && [[ "$RENAME" != "$REPO_CURRENT" ]]; then
   if jq -e --arg n "$RENAME" 'any(.name == $n)' "$repos" &>/dev/null; then
-    echo -e "${RED}Error: Repo name '$RENAME' already exists.${NC}"
+    echo -e "${RED}Error: Repo name '$RENAME' already exists.${NC}" >&2
     exit 1
   fi
 fi
@@ -117,11 +117,11 @@ fi
 mv "$tmp_repos" "$repos"
 mv "$tmp_files" "$files"
 
-echo -e "${GREEN}Updated repo${NC} ${CYAN}$REPO_CURRENT${NC}:"
+echo -e "${GREEN}Updated repo${NC} ${CYAN}$REPO_CURRENT${NC}:" >&2
 if [[ -n "$RENAME" ]] && [[ "$RENAME" != "$REPO_CURRENT" ]]; then
-  echo "  Renamed to: $RENAME (files.json repo_name and local clone/detached markers updated)"
+  echo "  Renamed to: $RENAME (files.json repo_name and local clone/detached markers updated)" >&2
 fi
-[[ -n "$PATH_NEW" ]] && echo "  path: $PATH_NEW"
-[[ -n "$URL_NEW" ]] && echo "  url: $URL_NEW"
-[[ -n "$BRANCH_NEW" ]] && echo "  branch: $BRANCH_NEW"
+if [[ -n "$PATH_NEW" ]]; then echo "  path: $PATH_NEW" >&2; fi
+if [[ -n "$URL_NEW" ]]; then echo "  url: $URL_NEW" >&2; fi
+if [[ -n "$BRANCH_NEW" ]]; then echo "  branch: $BRANCH_NEW" >&2; fi
 exit 0

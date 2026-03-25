@@ -78,5 +78,5 @@ if [[ ! -f "$files" ]]; then
   printf '%s\n' '[]' | jq . > "$files"
 fi
 
-echo -e "${GREEN}filesync: initialized project root${NC} ${PROJECT_ROOT}"
-echo "  ${FILESYNC_DIR}/"
+echo -e "${GREEN}filesync: initialized project root${NC} ${PROJECT_ROOT}" >&2
+echo "  ${FILESYNC_DIR}/" >&2

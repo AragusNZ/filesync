@@ -10,15 +10,15 @@ filesync_command_init_lite "${BASH_SOURCE[0]}"
 
 repos="$FILESYNC_DIR/$FILESYNC_REPOS_NAME"
 if [[ ! -f "$repos" ]]; then
-  echo -e "${RED}Missing $repos — create it (JSON array of repos).${NC}"
+  echo -e "${RED}Missing $repos — create it (JSON array of repos).${NC}" >&2
   exit 1
 fi
 
-echo -e "${CYAN}Add a repo to .filesync/$FILESYNC_REPOS_NAME${NC}"
-echo ""
+echo -e "${CYAN}Add a repo to .filesync/$FILESYNC_REPOS_NAME${NC}" >&2
+echo "" >&2
 
 read -rp "Repo name (e.g. greenlit-api): " name
-[[ -n "$name" ]] || { echo -e "${RED}Name is required.${NC}"; exit 1; }
+[[ -n "$name" ]] || { echo -e "${RED}Name is required.${NC}" >&2; exit 1; }
 
 read -rp "URL (e.g. https://github.com/org/repo): " url
 
@@ -37,5 +37,5 @@ NEW_ENTRY=$(jq -n \
 jq --argjson entry "$NEW_ENTRY" '. + [$entry]' "$repos" > "${repos}.tmp"
 mv "${repos}.tmp" "$repos"
 
-echo ""
-echo -e "${GREEN}Added repo:${NC} name=$name url=$url path=$path branch=$branch"
+echo "" >&2
+echo -e "${GREEN}Added repo:${NC} name=$name url=$url path=$path branch=$branch" >&2

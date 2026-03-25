@@ -22,7 +22,7 @@ for arg in "$@"; do
   elif [[ "$arg" == --mark-master ]]; then
     MARK_MASTER=true
   elif [[ "$arg" == --* ]]; then
-    echo -e "${RED}Error: Unknown option '$arg'.${NC}"
+    echo -e "${RED}Error: Unknown option '$arg'.${NC}" >&2
     exit 1
   else
     POSITIONAL_RAW+=("$arg")
@@ -30,7 +30,7 @@ for arg in "$@"; do
 done
 
 if [[ ${#POSITIONAL_RAW[@]} -lt 2 ]]; then
-  echo -e "${RED}Usage: filesync add-file <repo_name> <path_in_repo> ... [--mark-master] [--also=repo1,repo2]${NC}"
+  echo -e "${RED}Usage: filesync add-file <repo_name> <path_in_repo> ... [--mark-master] [--also=repo1,repo2]${NC}" >&2
   exit 1
 fi
 
@@ -52,7 +52,7 @@ done
 declare -A SEEN_LOCAL_PATHS=()
 for local_path in "${LOCAL_PATHS[@]}"; do
   if [[ -n "${SEEN_LOCAL_PATHS[$local_path]:-}" ]]; then
-    echo -e "${RED}Error: Duplicate local_path '$local_path'.${NC}"
+    echo -e "${RED}Error: Duplicate local_path '$local_path'.${NC}" >&2
     exit 1
   fi
   SEEN_LOCAL_PATHS["$local_path"]=1
@@ -75,29 +75,29 @@ add_one() {
   local repo_disk_path rmi="" lmi=""
   repo_disk_path=$(jq -r --arg n "$repo_name" '.[] | select(.name == $n) | .path // ""' "$repos_path" | head -1)
   if [[ -z "$repo_disk_path" || "$repo_disk_path" == "null" ]]; then
-    echo -e "${RED}Error: Repo '$repo_name' has no local path (${label}).${NC}"
+    echo -e "${RED}Error: Repo '$repo_name' has no local path (${label}).${NC}" >&2
     return 1
   fi
 
   local full_master="$PROJECT_ROOT/$repo_disk_path/$repo_file_path"
   if [[ ! -f "$full_master" ]]; then
-    echo -e "${RED}Error: Master file not in repo checkout (${label}): $repo_file_path${NC}"
+    echo -e "${RED}Error: Master file not in repo checkout (${label}): $repo_file_path${NC}" >&2
     return 1
   fi
 
   if has_master_file_sync_marker "$full_master"; then
     :
   elif has_any_file_sync_marker "$full_master"; then
-    echo -e "${RED}Error: Master file has a filesync marker that is not kind=master: $repo_file_path${NC}"
+    echo -e "${RED}Error: Master file has a filesync marker that is not kind=master: $repo_file_path${NC}" >&2
     return 1
   elif [[ "$MARK_MASTER" == true ]]; then
     if ! prepend_master_marker_to_file "$full_master" "$repo_file_path"; then
-      echo -e "${RED}Error: Could not prepend kind=master marker to: $repo_file_path${NC}"
+      echo -e "${RED}Error: Could not prepend kind=master marker to: $repo_file_path${NC}" >&2
       return 1
     fi
-    echo -e "${GREEN}Prepended kind=master to master copy:${NC} $repo_file_path"
+    echo -e "${GREEN}Prepended kind=master to master copy:${NC} $repo_file_path" >&2
   else
-    echo -e "${RED}Error: Master file has no kind=master marker: $repo_file_path (use --mark-master to add one)${NC}"
+    echo -e "${RED}Error: Master file has no kind=master marker: $repo_file_path (use --mark-master to add one)${NC}" >&2
     return 1
   fi
 
@@ -107,7 +107,7 @@ add_one() {
   tmp_clone="$(mktemp)"
   if ! render_clone_from_master_file "$full_master" "$repo_file_path" "$repo_name" "$tmp_clone"; then
     rm -f "$tmp_clone"
-    echo -e "${RED}Error: Could not render clone from master: $repo_file_path${NC}"
+    echo -e "${RED}Error: Could not render clone from master: $repo_file_path${NC}" >&2
     return 1
   fi
   cp "$tmp_clone" "$full_local"
@@ -135,22 +135,22 @@ add_one() {
     }')
 
   filesync_files_append_entry "$files_path" "$repos_path" "$repo_name" "$new_entry" || return 1
-  echo -e "${GREEN}Added file to ${label}:${NC} repo=$repo_name repo_file_path=$repo_file_path local_path=$local_path"
+  echo -e "${GREEN}Added file to ${label}:${NC} repo=$repo_name repo_file_path=$repo_file_path local_path=$local_path" >&2
 }
 
 for target_repo in "${TARGET_REPOS[@]}"; do
   if ! jq -e --arg n "$target_repo" 'any(.name == $n)' "$FILESYNC_REPOS_FILE" &>/dev/null; then
-    echo -e "${RED}Error: Target repo '$target_repo' is not in current repos.${NC}"
+    echo -e "${RED}Error: Target repo '$target_repo' is not in current repos.${NC}" >&2
     exit 1
   fi
   target_repo_path=$(jq -r --arg n "$target_repo" '.[] | select(.name == $n) | .path // ""' "$FILESYNC_REPOS_FILE" | head -1)
   if [[ -z "$target_repo_path" || "$target_repo_path" == "null" ]]; then
-    echo -e "${RED}Error: Target repo '$target_repo' has no local path.${NC}"
+    echo -e "${RED}Error: Target repo '$target_repo' has no local path.${NC}" >&2
     exit 1
   fi
   ofs="$PROJECT_ROOT/$target_repo_path/.filesync"
   if [[ ! -f "$ofs/$FILESYNC_FILES_NAME" ]] || [[ ! -f "$ofs/$FILESYNC_REPOS_NAME" ]]; then
-    echo -e "${RED}Error: Expected $ofs/$FILESYNC_FILES_NAME and $FILESYNC_REPOS_NAME (create that project's .filesync data).${NC}"
+    echo -e "${RED}Error: Expected $ofs/$FILESYNC_FILES_NAME and $FILESYNC_REPOS_NAME (create that project's .filesync data).${NC}" >&2
     exit 1
   fi
 done

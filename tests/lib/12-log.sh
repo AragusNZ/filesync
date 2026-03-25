@@ -40,4 +40,16 @@ else
 	bad "filesync_info verbose: ${msgiv}"
 fi
 
+(
+	NO_COLOR=1
+	# shellcheck source=/dev/null
+	source "${ROOT}/lib/colors.sh"
+	# shellcheck source=/dev/null
+	source "${ROOT}/lib/log.sh"
+	_mnc="$(filesync_error "no color marker" 2>&1 || true)"
+	[[ "${_mnc}" == *$'\033'* ]] && exit 1
+	[[ "${_mnc}" == *filesync:* ]] || exit 1
+) || bad "filesync_error respects NO_COLOR"
+[[ "${fail}" -eq 0 ]] && ok "filesync_error respects NO_COLOR"
+
 if [[ "${fail}" -ne 0 ]]; then exit 1; fi

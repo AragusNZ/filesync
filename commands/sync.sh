@@ -9,6 +9,8 @@ _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/cli-banner.sh"
 
 REPO_FILTER=""
 FILE_FRAGMENT=""
@@ -34,11 +36,11 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     -*)
-      echo "Unknown option: $1"
+      echo -e "${RED}Unknown option: $1${NC}" >&2
       exit 1
       ;;
     *)
-      echo "Unknown argument: $1"
+      echo -e "${RED}Unexpected argument: $1${NC}" >&2
       exit 1
       ;;
   esac
@@ -71,12 +73,12 @@ cleanup_sync_exit() {
 trap cleanup_sync_exit EXIT
 
 if ! jq -e '.file_sync_enabled == true' "$CONFIG_FILE" &>/dev/null; then
-  echo -e "${YELLOW}filesync is disabled. Run 'filesync enable' to enable.${NC}"
+  filesync_print_disabled_hint
   exit 0
 fi
 
 if ! jq -e '.repos | length > 0' "$CONFIG_FILE" >/dev/null 2>&1; then
-  echo -e "${RED}Error: Config must have at least one entry in repos${NC}"
+  echo -e "${RED}Error: Config must have at least one entry in repos${NC}" >&2
   exit 1
 fi
 
@@ -88,17 +90,10 @@ STATUS_SKIPPED=0
 
 FILE_PATH_MATCHES=0
 
-echo -e "${CYAN}Syncing files from repo(s)...${NC}"
-[[ -n "$REPO_FILTER" ]] && echo -e "${CYAN}Filter: --repo=$REPO_FILTER${NC}"
-[[ -n "$FILE_FRAGMENT" ]] && echo -e "${CYAN}Filter: --file= substring on local_path or repo_file_path: ${FILE_FRAGMENT}${NC}"
-if [[ -n "$STATUS_CSV" ]]; then
-  echo -e "${CYAN}Filter: --status=${STATUS_CSV}${NC}"
-else
-  echo -e "${CYAN}Mode: unset or sync_required only (use ${YELLOW}--status=a,b,...${CYAN} to include other statuses)${NC}"
-fi
-[[ "$INCLUDE_DETACHED" == true ]] && echo -e "${CYAN}Also: --include-detached${NC}"
-[[ "$SHOWALL" == true ]] && echo -e "${CYAN}Also: --showall (per-file already-in-sync lines)${NC}"
-echo ""
+filesync_print_sync_banner
+filesync_print_filter_context "$REPO_FILTER" "$FILE_FRAGMENT" "$STATUS_CSV" "$INCLUDE_DETACHED" 1
+filesync_print_sync_showall_banner "$SHOWALL"
+echo "" >&2
 
 FILES_COUNT=$(jq '.files | length' "$CONFIG_FILE")
 
@@ -111,7 +106,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
   set -e
 
   if [[ -z "$REPO_NAME" ]] || [[ "$REPO_NAME" == "null" ]]; then
-    echo -e "${RED}✗${NC} ${WHITE}Entry $i: Invalid repo_name${NC} ${RED}[config]${NC}"
+    filesync_print_config_error_invalid_repo_name "$i"
     FAILED=$((FAILED + 1))
     continue
   fi
@@ -126,13 +121,13 @@ for ((i=0; i<FILES_COUNT; i++)); do
   FILE_PATH_MATCHES=$((FILE_PATH_MATCHES + 1))
 
   if [[ -z "$LOCAL_PATH" ]] || [[ "$LOCAL_PATH" == "null" ]]; then
-    echo -e "${RED}✗${NC} ${WHITE}Entry $i: Invalid local_path${NC} ${RED}[config]${NC}"
+    filesync_print_config_error_invalid_local_path "$i"
     FAILED=$((FAILED + 1))
     continue
   fi
 
   if [[ -z "$REPO_FILE_PATH" ]] || [[ "$REPO_FILE_PATH" == "null" ]]; then
-    echo -e "${RED}✗${NC} ${WHITE}$LOCAL_PATH: Invalid repo_file_path${NC} ${RED}[config]${NC}"
+    filesync_print_config_error_invalid_repo_file_path "$LOCAL_PATH"
     FAILED=$((FAILED + 1))
     continue
   fi
@@ -186,7 +181,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
     set -e
     rm -f "$EXPECTED_TMP"
     if [[ $DIFF_RESULT -eq 0 ]]; then
-      [[ "$SHOWALL" == true ]] && file_sync_print_sync_action_line "${GREEN}✓${NC}" "${CYAN}" "Already in sync" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
+      [[ "$SHOWALL" == true ]] && file_sync_print_sync_action_line "${GREEN}✓${NC}" "${GREEN}" "Already in sync" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
       ALREADY_SYNCED=$((ALREADY_SYNCED + 1))
       if [[ "$DRY_RUN" != true ]]; then
         filesync_write_file_row "$FILESYNC_FILES_FILE" "$PROJECT_ROOT" "$LOCAL_PATH" "$FULL_MASTER_PATH" "synced"
@@ -196,7 +191,7 @@ for ((i=0; i<FILES_COUNT; i++)); do
   fi
 
   if [[ "$DRY_RUN" == true ]]; then
-    file_sync_print_sync_action_line "${YELLOW}→${NC}" "${CYAN}" "dry-run" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
+    file_sync_print_sync_action_line "${YELLOW}→${NC}" "${YELLOW}" "dry-run" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
   else
     mkdir -p "$(dirname "$FULL_LOCAL_PATH")"
     if ! render_clone_from_master_file "$FULL_MASTER_PATH" "$REPO_FILE_PATH" "$REPO_NAME" "$FULL_LOCAL_PATH"; then
@@ -205,35 +200,35 @@ for ((i=0; i<FILES_COUNT; i++)); do
       FAILED=$((FAILED + 1))
       continue
     fi
-    file_sync_print_sync_action_line "${GREEN}✓${NC}" "${CYAN}" "synced" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
+    file_sync_print_sync_action_line "${GREEN}✓${NC}" "${GREEN}" "synced" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
     filesync_write_file_row "$FILESYNC_FILES_FILE" "$PROJECT_ROOT" "$LOCAL_PATH" "$FULL_MASTER_PATH" "synced"
   fi
   SYNCED=$((SYNCED + 1))
 done
 
 if [[ -n "$FILE_FRAGMENT" ]] && [[ "$FILE_PATH_MATCHES" -eq 0 ]]; then
-  echo ""
-  echo -e "${YELLOW}No file rows matched --file=${FILE_FRAGMENT}${NC} (and repo filter if any)."
+  echo "" >&2
+  filesync_print_no_file_rows_for_fragment "$FILE_FRAGMENT"
 fi
 
 if [[ $FAILED -gt 0 ]]; then
-  echo ""
-  echo -e "${RED}Failed: $FAILED${NC} ${WHITE}| Synced: $SYNCED | Already in sync: $ALREADY_SYNCED | Skipped: $SKIPPED | Status-filtered: $STATUS_SKIPPED${NC}"
+  echo "" >&2
+  echo -e "${RED}Failed: $FAILED${NC} ${WHITE}| Synced: $SYNCED | Already in sync: $ALREADY_SYNCED | Skipped: $SKIPPED | Status-filtered: $STATUS_SKIPPED${NC}" >&2
   filesync_error "exiting with status 1 because $FAILED file(s) failed to sync."
   exit 1
 elif [[ "$DRY_RUN" == true ]]; then
-  echo ""
+  echo "" >&2
   if [[ $SYNCED -gt 0 ]]; then
-    echo -e "${YELLOW}Dry run: $SYNCED files would be synced${NC}"
+    echo -e "${YELLOW}Dry run: $SYNCED files would be synced${NC}" >&2
   else
-    echo -e "${GREEN}✓${NC} ${WHITE}Nothing to sync ($ALREADY_SYNCED already in sync, $STATUS_SKIPPED status-skipped)${NC}"
+    echo -e "${GREEN}✓${NC} ${WHITE}Nothing to sync ($ALREADY_SYNCED already in sync, $STATUS_SKIPPED status-skipped)${NC}" >&2
   fi
 else
-  echo ""
+  echo "" >&2
   if [[ $SYNCED -gt 0 ]]; then
-    echo -e "${GREEN}✓ Success: $SYNCED files synced${NC}"
+    echo -e "${GREEN}✓ Success: $SYNCED files synced${NC}" >&2
   else
-    echo -e "${GREEN}✓${NC} ${WHITE}Nothing to sync ($ALREADY_SYNCED already in sync, $STATUS_SKIPPED status-skipped)${NC}"
+    echo -e "${GREEN}✓${NC} ${WHITE}Nothing to sync ($ALREADY_SYNCED already in sync, $STATUS_SKIPPED status-skipped)${NC}" >&2
   fi
 fi
 

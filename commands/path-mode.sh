@@ -47,4 +47,4 @@ fi
 
 jq --arg m "$MODE_LC" '.path_mode = $m' "$cfg" >"${cfg}.tmp"
 mv "${cfg}.tmp" "$cfg"
-echo -e "${GREEN}path_mode set to ${MODE_LC}.${NC}"
+echo -e "${GREEN}path_mode set to ${MODE_LC}.${NC}" >&2

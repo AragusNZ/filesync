@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# Shared CLI banners, filter context, and common messages (stderr).
+# Requires lib/colors.sh.
+
+# shellcheck disable=SC2154
+
+filesync_print_disabled_hint() {
+  echo -e "${YELLOW}filesync is disabled. Run 'filesync enable' to enable.${NC}" >&2
+}
+
+filesync_print_sync_banner() {
+  echo -e "${CYAN}Syncing files from repo(s)...${NC}" >&2
+}
+
+filesync_print_check_banner() {
+  echo -e "${CYAN}Checking synced files (updating .filesync)...${NC}" >&2
+}
+
+# Args: repo_filter file_fragment status_csv include_detached [is_sync]
+# When is_sync is 1 and status_csv is empty, prints sync default status mode line.
+filesync_print_filter_context() {
+  local repo="${1:-}" frag="${2:-}" status_csv="${3:-}" inc_det="${4:-false}" is_sync="${5:-0}"
+  if [[ -n "$repo" ]]; then
+    echo -e "${CYAN}Filter: --repo=$repo${NC}" >&2
+  fi
+  if [[ -n "$frag" ]]; then
+    echo -e "${CYAN}Filter: --file= substring on local_path or repo_file_path: ${frag}${NC}" >&2
+  fi
+  if [[ -n "$status_csv" ]]; then
+    echo -e "${CYAN}Filter: --status=${status_csv}${NC}" >&2
+  elif [[ "$is_sync" == 1 ]]; then
+    echo -e "${CYAN}Mode: unset or sync_required only (use ${YELLOW}--status=a,b,...${CYAN} to include other statuses)${NC}" >&2
+  fi
+  if [[ "$inc_det" == true ]]; then
+    echo -e "${CYAN}Also: --include-detached${NC}" >&2
+  fi
+}
+
+filesync_print_sync_showall_banner() {
+  if [[ "${1:-false}" == true ]]; then
+    echo -e "${CYAN}Also: --showall (per-file already-in-sync lines)${NC}" >&2
+  fi
+}
+
+filesync_print_section_title() {
+  echo -e "${CYAN}$1${NC}" >&2
+  echo "------" >&2
+}
+
+filesync_print_list_files_heading() {
+  echo -e "${CYAN}Files${NC} (run ${YELLOW}filesync check${CYAN} to refresh status)" >&2
+  echo "------" >&2
+}
+
+filesync_print_no_file_rows_for_fragment() {
+  echo -e "${YELLOW}No file rows matched --file=$1${NC} (and repo filter if any)." >&2
+}
+
+filesync_print_no_file_rows_for_status() {
+  echo -e "${YELLOW}No file rows matched --status=$1${NC} (and other filters if any)." >&2
+}
+
+filesync_print_config_error_invalid_repo_name() {
+  echo -e "${RED}✗${NC} ${WHITE}Entry $1: Invalid repo_name${NC} ${RED}[config]${NC}" >&2
+}
+
+filesync_print_config_error_invalid_local_path() {
+  echo -e "${RED}✗${NC} ${WHITE}Entry $1: Invalid local_path${NC} ${RED}[config]${NC}" >&2
+}
+
+filesync_print_config_error_invalid_repo_file_path() {
+  echo -e "${RED}✗${NC} ${WHITE}$1: Invalid repo_file_path${NC} ${RED}[config]${NC}" >&2
+}

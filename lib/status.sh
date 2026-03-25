@@ -136,21 +136,24 @@ file_sync_status_matches_csv() {
   return 1
 }
 
+# Requires lib/colors.sh (same codes as GREEN, YELLOW, CYAN, etc.).
 file_sync_status_color() {
+  # shellcheck disable=SC2154
   local st="$1"
   case "$st" in
-    synced) printf '%s' $'\033[0;32m' ;;
-    sync_required) printf '%s' $'\033[1;33m' ;;
-    local_newer) printf '%s' $'\033[0;36m' ;;
-    conflict) printf '%s' $'\033[0;31m' ;;
-    detached) printf '%s' $'\033[0;35m' ;;
-    error_*) printf '%s' $'\033[0;31m' ;;
-    *) printf '%s' $'\033[0;37m' ;;
+    synced) printf '%s' "${GREEN}" ;;
+    sync_required) printf '%s' "${YELLOW}" ;;
+    local_newer) printf '%s' "${CYAN}" ;;
+    conflict) printf '%s' "${RED}" ;;
+    detached) printf '%s' "${MAGENTA}" ;;
+    error_*) printf '%s' "${RED}" ;;
+    *) printf '%s' "${WHITE}" ;;
   esac
 }
 
 file_sync_color_reset() {
-  printf '%s' $'\033[0m'
+  # shellcheck disable=SC2154
+  printf '%s' "${NC}"
 }
 
 # Colored repo | path mapping (no newline); same body as list-files / sync.

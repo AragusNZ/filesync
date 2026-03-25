@@ -8,6 +8,8 @@ _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/cli-banner.sh"
 
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
@@ -15,7 +17,7 @@ _list_usage_pair='filesync list-repos [--repo=name] | filesync list-files [--rep
 
 sub="${1:-}"
 if [[ -z "$sub" ]]; then
-  echo -e "${RED}Usage: ${_list_usage_pair}${NC}"
+  echo -e "${RED}Usage: ${_list_usage_pair}${NC}" >&2
   exit 1
 fi
 shift
@@ -59,7 +61,7 @@ case "$sub" in
   list-repos|repos|lr) ;;
   list-files|list|lf|files) ;;
   *)
-    echo -e "${RED}Usage: ${_list_usage_pair}${NC}"
+    echo -e "${RED}Usage: ${_list_usage_pair}${NC}" >&2
     exit 1
     ;;
 esac
@@ -84,13 +86,14 @@ fi
 
 case "$sub" in
   list-repos|repos|lr)
-    echo -e "${CYAN}Repos${NC}"
-    echo "------"
-    [[ -n "$REPO_FILTER" ]] && echo -e "${CYAN}Filter: --repo=$REPO_FILTER${NC}"
+    filesync_print_section_title "Repos"
+    if [[ -n "$REPO_FILTER" ]]; then
+      echo -e "${CYAN}Filter: --repo=$REPO_FILTER${NC}" >&2
+    fi
     if [[ -n "$REPO_FILTER" ]]; then
       found=$(jq -e --arg n "$REPO_FILTER" '.repos[] | select(.name == $n)' "$CONFIG_FILE" 2>/dev/null || true)
       if [[ -z "$found" ]]; then
-        echo -e "${RED}No repo named '$REPO_FILTER'${NC}"
+        echo -e "${RED}No repo named '$REPO_FILTER'${NC}" >&2
         exit 1
       fi
       jq -r --arg n "$REPO_FILTER" '.repos[] | select(.name == $n) | "name:   \(.name)\nurl:    \(.url)\npath:   \(.path)\nbranch: \(.branch)\n"' "$CONFIG_FILE"
@@ -99,19 +102,15 @@ case "$sub" in
     fi
     ;;
   list-files|list|lf|files)
-    echo -e "${CYAN}Files${NC} (run ${YELLOW}filesync check${CYAN} to refresh status)"
-    echo "------"
-    [[ -n "$REPO_FILTER" ]] && echo -e "${CYAN}Filter: --repo=$REPO_FILTER${NC}"
-    [[ -n "$FILE_FRAGMENT" ]] && echo -e "${CYAN}Filter: --file= substring on local_path or repo_file_path: ${FILE_FRAGMENT}${NC}"
-    [[ -n "$STATUS_CSV" ]] && echo -e "${CYAN}Filter: --status=${STATUS_CSV}${NC}"
-    [[ "$INCLUDE_DETACHED" == true ]] && echo -e "${CYAN}Also: --include-detached${NC}"
+    filesync_print_list_files_heading
+    filesync_print_filter_context "$REPO_FILTER" "$FILE_FRAGMENT" "$STATUS_CSV" "$INCLUDE_DETACHED" 0
     print_file_line() {
       file_sync_print_file_row "$1" "$2" "$3" "${4:-unset}" "${5:-}"
     }
     if [[ -n "$REPO_FILTER" ]]; then
       count=$(jq --arg n "$REPO_FILTER" '[.files[] | select(.repo_name == $n)] | length' "$CONFIG_FILE")
       if [[ "$count" -eq 0 ]]; then
-        echo -e "${RED}No files for repo '$REPO_FILTER'${NC}"
+        echo -e "${RED}No files for repo '$REPO_FILTER'${NC}" >&2
         exit 1
       fi
       TOTAL_FOR_LIST=$count
@@ -139,10 +138,10 @@ case "$sub" in
       done < <(jq -r '.files[] | "\(.repo_name)\t\(.repo_file_path)\t\(.local_path)\t\(.sync_status // "")\t\(.check_marker_warnings // [] | join(","))"' "$CONFIG_FILE")
     fi
     if [[ -n "$FILE_FRAGMENT" ]] && [[ "$printed" -eq 0 ]] && [[ "$TOTAL_FOR_LIST" -gt 0 ]]; then
-      echo -e "${YELLOW}No file rows matched --file=${FILE_FRAGMENT}${NC} (and repo filter if any)."
+      filesync_print_no_file_rows_for_fragment "$FILE_FRAGMENT"
     fi
     if [[ -n "$STATUS_CSV" ]] && [[ "$printed" -eq 0 ]] && [[ "$TOTAL_FOR_LIST" -gt 0 ]]; then
-      echo -e "${YELLOW}No file rows matched --status=${STATUS_CSV}${NC} (and other filters if any)."
+      filesync_print_no_file_rows_for_status "$STATUS_CSV"
     fi
     ;;
 esac
