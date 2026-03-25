@@ -84,6 +84,15 @@ Internally, commands build a **temporary** JSON file (merged top-level config + 
 
 **`attach`**: re-couples rows with `sync_status: detached` by rewriting the local file from master (clone marker), clearing `sync_status`, then running **`check`** for that repo and path so status is recomputed.
 
+## Cross-project mirroring (`--also`)
+
+**`add-file`** and **`add-master`** accept **`--also=repo1,repo2`** to mirror mappings into sibling initialized projects.
+
+- Each value is a repo name from the **current** project’s `.filesync/repos.json`.
+- That repo’s configured **`path`** must point at a directory that is itself an initialized filesync project (it contains its own `.filesync/`).
+- For each sibling project, filesync uses that sibling’s configuration (including **`path_mode`**) when resolving the master repo checkout.
+- For `add-master --also`, mirrored rows in sibling projects are initialized as **`sync_required`** so each project can run **`check`** / **`sync`** to compute timestamps and verify status in its own context.
+
 ## `sync` / `list-files` status filter (`--status`)
 
 **`list-files`**: optional **`--status=a,b,...`** and optional **`--include-detached`** (with **`--status`** only). Omit **`--status`** to list every row (after **`--repo`** / **`--file`** filters).

@@ -56,6 +56,10 @@ sync_entry_allowed() {
       [[ "$INCLUDE_DETACHED" == true ]] && return 0
       return 1
     fi
+    # Missing local files should be pulled from master by default.
+    if [[ "$status" == "error_missing_local" ]]; then
+      return 0
+    fi
     # --force: pull from master even when check reported local_newer / conflict.
     if [[ "$FORCE" == true ]]; then
       [[ "$status" == "local_newer" || "$status" == "conflict" ]] && return 0
