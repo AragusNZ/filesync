@@ -183,4 +183,69 @@ else
 	ok "prepend_master_marker_to_file rejects already marked"
 fi
 
+phpf="${td}/plain.php"
+{
+	echo "<?php"
+	echo 'echo "ok";'
+} >"${phpf}"
+if prepend_master_marker_to_file "${phpf}" "tests/Feature/Site/QueueMetricsEndpointTest.php" \
+	&& sed -n '1p' "${phpf}" | grep -q '^<?php$' \
+	&& sed -n '2p' "${phpf}" | grep -qE '^// filesync kind=master$'; then
+	ok "prepend_master_marker_to_file php after open tag"
+else
+	bad "prepend_master_marker_to_file php placement"
+fi
+
+shf="${td}/plain.sh"
+{
+	echo "#!/usr/bin/env bash"
+	echo 'echo "ok"'
+} >"${shf}"
+if prepend_master_marker_to_file "${shf}" "scripts/demo.sh" \
+	&& sed -n '1p' "${shf}" | grep -q '^#!/usr/bin/env bash$' \
+	&& sed -n '2p' "${shf}" | grep -qE '^# filesync kind=master$'; then
+	ok "prepend_master_marker_to_file keeps shebang first"
+else
+	bad "prepend_master_marker_to_file shebang placement"
+fi
+
+jsf="${td}/plain.js"
+{
+	echo "#!/usr/bin/env node"
+	echo 'console.log("ok")'
+} >"${jsf}"
+if prepend_master_marker_to_file "${jsf}" "bin/tool.js" \
+	&& sed -n '1p' "${jsf}" | grep -q '^#!/usr/bin/env node$' \
+	&& sed -n '2p' "${jsf}" | grep -qE '^// filesync kind=master$'; then
+	ok "prepend_master_marker_to_file keeps node shebang first"
+else
+	bad "prepend_master_marker_to_file node shebang placement"
+fi
+
+xmlf="${td}/plain.xml"
+{
+	echo '<?xml version="1.0"?>'
+	echo "<root/>"
+} >"${xmlf}"
+if prepend_master_marker_to_file "${xmlf}" "config/thing.xml" \
+	&& sed -n '1p' "${xmlf}" | grep -q '^<?xml version="1.0"?>$' \
+	&& sed -n '2p' "${xmlf}" | grep -qE '^<!-- filesync kind=master -->$'; then
+	ok "prepend_master_marker_to_file keeps xml declaration first"
+else
+	bad "prepend_master_marker_to_file xml placement"
+fi
+
+cssf="${td}/plain.css"
+{
+	echo '@charset "UTF-8";'
+	echo "body { color: red; }"
+} >"${cssf}"
+if prepend_master_marker_to_file "${cssf}" "assets/site.css" \
+	&& sed -n '1p' "${cssf}" | grep -q '^@charset "UTF-8";$' \
+	&& sed -n '2p' "${cssf}" | grep -qE '^/\* filesync kind=master \*/$'; then
+	ok "prepend_master_marker_to_file keeps css charset first"
+else
+	bad "prepend_master_marker_to_file css charset placement"
+fi
+
 if [[ "${fail}" -ne 0 ]]; then exit 1; fi

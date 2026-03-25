@@ -16,43 +16,45 @@ filesync_print_check_banner() {
   echo -e "${BOLD}${WHITE}Checking synced files (updating .filesync)...${NC}" >&2
 }
 
+filesync_print_filter_note() {
+  echo -e "${GRAY}---- $1 ----${NC}" >&2
+}
+
 # Args: repo_filter file_fragment status_csv include_detached [is_sync] [force]
 # When is_sync is 1 and status_csv is empty, prints sync default status mode line.
 filesync_print_filter_context() {
   local repo="${1:-}" frag="${2:-}" status_csv="${3:-}" inc_det="${4:-false}" is_sync="${5:-0}" force="${6:-false}"
   if [[ -n "$repo" ]]; then
-    echo -e "${BOLD}${WHITE}Filter: --repo=$repo${NC}" >&2
+    filesync_print_filter_note "Filter: --repo=$repo"
   fi
   if [[ -n "$frag" ]]; then
-    echo -e "${BOLD}${WHITE}Filter: --file= substring on local_path or repo_file_path: ${frag}${NC}" >&2
+    filesync_print_filter_note "Filter: --file= substring on local_path or repo_file_path: ${frag}"
   fi
   if [[ -n "$status_csv" ]]; then
-    echo -e "${BOLD}${WHITE}Filter: --status=${status_csv}${NC}" >&2
+    filesync_print_filter_note "Filter: --status=${status_csv}"
   elif [[ "$is_sync" == 1 ]]; then
-    echo -e "${BOLD}${WHITE}Mode: unset or sync_required only (use ${YELLOW}--status=a,b,...${BOLD}${WHITE} to include other statuses)${NC}" >&2
+    filesync_print_filter_note "Mode: unset or sync_required only (use --status=a,b,... to include other statuses)"
     if [[ "$force" == true ]]; then
-      echo -e "${BOLD}${WHITE}Also: ${YELLOW}--force${BOLD}${WHITE} additionally selects local_newer and conflict (overwrite from master)${NC}" >&2
+      filesync_print_filter_note "Also: --force additionally selects local_newer and conflict (overwrite from master)"
     fi
   fi
   if [[ "$inc_det" == true ]]; then
-    echo -e "${BOLD}${WHITE}Also: --include-detached${NC}" >&2
+    filesync_print_filter_note "Also: --include-detached"
   fi
 }
 
 filesync_print_sync_showall_banner() {
   if [[ "${1:-false}" == true ]]; then
-    echo -e "${BOLD}${WHITE}Also: --showall (per-file already-in-sync lines)${NC}" >&2
+    filesync_print_filter_note "Also: --showall (per-file already-in-sync lines)"
   fi
 }
 
 filesync_print_section_title() {
-  echo -e "${BOLD}${WHITE}$1${NC}" >&2
-  echo "------" >&2
+  echo -e "${BOLD}${WHITE}$1...${NC}" >&2
 }
 
 filesync_print_list_files_heading() {
-  echo -e "${BOLD}${WHITE}Files (run ${YELLOW}FILESYNC check${BOLD}${WHITE} to refresh status)${NC}" >&2
-  echo "------" >&2
+  echo -e "${BOLD}${WHITE}Listing files (run FILESYNC check to refresh status)...${NC}" >&2
 }
 
 filesync_print_no_file_rows_for_fragment() {

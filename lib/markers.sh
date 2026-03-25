@@ -243,11 +243,53 @@ prepend_master_marker_to_file() {
   st=$(filesync_marker_style_resolve "$style_hint_path" "")
   line="$(filesync_marker_format_line "$st" "filesync kind=master")"
   tmp="$(mktemp)"
+  if filesync_marker_preserve_first_line "$file_path" "$style_hint_path" "$st"; then
+    local first_line
+    IFS= read -r first_line <"$file_path" || true
+    {
+      printf '%s\n' "$first_line"
+      printf '%s\n' "$line"
+      tail -n +2 "$file_path"
+    } >"$tmp" || {
+      rm -f "$tmp"
+      return 1
+    }
+    mv "$tmp" "$file_path"
+    return 0
+  fi
   { printf '%s\n' "$line"; cat -- "$file_path"; } >"$tmp" || {
     rm -f "$tmp"
     return 1
   }
   mv "$tmp" "$file_path"
+}
+
+# Returns 0 when marker insertion should preserve line 1.
+# Rules protect required first-line directives in known formats.
+filesync_marker_preserve_first_line() {
+  local file_path="${1:?}" style_hint_path="${2:?}" st="${3:?}"
+  local first_line hint_lc file_lc
+  IFS= read -r first_line <"$file_path" || return 1
+  hint_lc="$(printf '%s' "$style_hint_path" | tr '[:upper:]' '[:lower:]')"
+  file_lc="$(printf '%s' "$file_path" | tr '[:upper:]' '[:lower:]')"
+
+  # Shebang must stay first for executable scripts.
+  if [[ "$first_line" == '#!'* && ( "$st" == "line_hash" || "$st" == "line_slash" ) ]]; then
+    return 0
+  fi
+  # PHP opening tag should stay first in PHP source.
+  if [[ "$first_line" == "<?php"* && "$st" == "line_slash" && ( "$hint_lc" == *.php || "$file_lc" == *.php ) ]]; then
+    return 0
+  fi
+  # XML declaration is expected first in XML-family documents.
+  if [[ "$first_line" == "<?xml"* && "$st" == "html" ]]; then
+    return 0
+  fi
+  # CSS charset declaration should remain the first statement.
+  if [[ "$first_line" =~ ^[[:space:]]*@charset[[:space:]] && "$st" == "block_c" && ( "$hint_lc" == *.css || "$hint_lc" == *.scss || "$file_lc" == *.css || "$file_lc" == *.scss ) ]]; then
+    return 0
+  fi
+  return 1
 }
 
 render_clone_from_master_file() {

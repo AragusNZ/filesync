@@ -88,7 +88,7 @@ case "$sub" in
   list-repos|repos|lr)
     filesync_print_section_title "Repos"
     if [[ -n "$REPO_FILTER" ]]; then
-      echo -e "${BOLD}${WHITE}Filter: --repo=$REPO_FILTER${NC}" >&2
+      filesync_print_filter_note "Filter: --repo=$REPO_FILTER"
     fi
     if [[ -n "$REPO_FILTER" ]]; then
       found=$(jq -e --arg n "$REPO_FILTER" '.repos[] | select(.name == $n)' "$CONFIG_FILE" 2>/dev/null || true)
