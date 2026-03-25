@@ -21,4 +21,5 @@ install:
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/filesync
 	rm -rf $(DESTDIR)$(PREFIX)/lib/filesync
-	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/filesync.1
+	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/filesync.1 \
+		$(DESTDIR)$(PREFIX)/share/man/man1/filesync.1.gz

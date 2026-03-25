@@ -1,0 +1,12 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: filesync
+Upstream-Contact: AragusNZ <AragusNZ@users.noreply.github.com>
+Source: https://github.com/AragusNZ/filesync
+
+Files: *
+Copyright: AragusNZ
+License: MIT
+
+License: MIT
+ On Debian systems, the complete text of the MIT license can be found in
+ "/usr/share/common-licenses/MIT".

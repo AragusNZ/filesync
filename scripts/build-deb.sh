@@ -10,13 +10,24 @@ OUTPUT_DIR="${OUTPUT_DIR:-${ROOT}}"
 
 make -C "${ROOT}" install DESTDIR="${PKGROOT}" PREFIX=/usr
 
+gzip -9n "${PKGROOT}/usr/share/man/man1/filesync.1"
+
 # Ensure installed CLI reports the same version as the .deb (e.g. CI tag).
 install -d "${PKGROOT}/usr/lib/filesync/share"
 printf '%s\n' "${VERSION}" >"${PKGROOT}/usr/lib/filesync/share/VERSION"
 
 DOCDIR="${PKGROOT}/usr/share/doc/filesync"
 mkdir -p "${DOCDIR}"
-install -m644 "${ROOT}/LICENSE" "${DOCDIR}/copyright"
+install -m644 "${ROOT}/debian/copyright" "${DOCDIR}/copyright"
+
+install -d "${PKGROOT}/usr/share/lintian/overrides"
+cat >"${WORKDIR}/filesync.lintian-overrides" <<'LINTIAN'
+# Libraries under usr/lib/filesync/lib are dot-sourced by the dispatcher; they
+# are intentionally not executable.
+filesync: script-not-executable
+LINTIAN
+install -m644 "${WORKDIR}/filesync.lintian-overrides" \
+	"${PKGROOT}/usr/share/lintian/overrides/filesync"
 
 deb_version="${VERSION//[^a-zA-Z0-9.+~-]/}"
 
@@ -38,10 +49,7 @@ Priority: optional
 Architecture: all
 Maintainer: AragusNZ <AragusNZ@users.noreply.github.com>
 Homepage: https://github.com/AragusNZ/filesync
-Vcs-Git: https://github.com/AragusNZ/filesync.git
-Vcs-Browser: https://github.com/AragusNZ/filesync
-Standards-Version: 4.7.0
-Depends: bash, jq, git
+Depends: jq, git
 Description: map and sync files across git checkouts
  This package provides a Bash CLI that maps and synchronizes files across
  multiple git checkouts using a per-project .filesync/ directory (JSON
