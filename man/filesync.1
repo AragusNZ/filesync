@@ -73,13 +73,9 @@ all already exist,
 exits with an error; if only some exist, it creates whichever files are missing.
 .TP
 .B enable
-Also
-.BR en .
 Turn on file sync in merged config.
 .TP
 .B disable
-Also
-.BR dis .
 Turn off file sync in merged config.
 .TP
 .B path-mode
@@ -478,18 +474,18 @@ lines so a shared master copy can stay valid for other projects.
 .TP
 .BR rmr ", " remove-repo
 .I repo_name
-.RI [ \-\-force ]
+.RI [ \-y ]
 Remove the named repo from
 .IR repos.json .
 If
 .I files.json
-has no rows for that repo, the repo entry is removed. If there are still file mappings for that repo, the command fails unless
-.B \-\-force
-is given; with
-.BR \-\-force ,
-each such mapping is removed like
+has no rows for that repo, the repo entry is removed. If there are still file mappings for that repo, the command prompts for confirmation; if you agree, each such mapping is removed like
 .BR remove-file ,
-then the repo entry is removed. Local file contents are not deleted.
+then the repo entry is removed. Local file contents are not deleted. Answer
+.B n
+or press Enter to abort without changes.
+.B \-y
+skips that prompt (non-interactive / scripting).
 .TP
 .B add-repo
 Also
@@ -515,18 +511,18 @@ token in local clone/detached sync markers for those rows.
 .SS "Self-update"
 .TP
 .B update
-.RI [ \-\-check ]
-.RI [ \-\-apply ]
-.RI [ \-y | \-\-yes ]
-Compare the installed version with the latest GitHub release; with
-.B \-\-apply
-install via
+.RI [ \-y ]
+Compare the installed version with the latest GitHub release. If a newer release exists and this install can be upgraded automatically (a git checkout of filesync, or a matching
+.B .deb
+on the release), prompts whether to apply the update:
 .B git
 pull and
 .B make install
-(from a clone) or the latest
+from a clone, or
+.B dpkg \-i
+for the release
 .B .deb
-package (uses
+(uses
 .B sudo
 for
 .B make install
@@ -536,11 +532,9 @@ when
 .B sudo
 is on
 .BR PATH ,
-otherwise runs them without elevation).
+otherwise runs them without elevation). If no update is needed, prints that and exits. If an update is available but cannot be installed automatically from this layout, prints a link to the release page.
 .B \-y
-or
-.B \-\-yes
-skips the confirmation prompt before apply.
+skips the confirmation prompt and applies immediately when an update is available.
 .SH FILES
 .TP
 .I .filesync/config.json
@@ -566,8 +560,8 @@ directory.
 .TP
 .B FILESYNC_INSTALL_PREFIX
 For
-.BR "filesync update --apply"
-from a git checkout,
+.B "filesync update"
+from a git checkout when applying an update,
 .B PREFIX
 passed to
 .BR "make install"

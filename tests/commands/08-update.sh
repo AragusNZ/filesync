@@ -5,4 +5,4 @@ set -euo pipefail
 source "${ROOT}/tests/harness-command.sh"
 
 _uh="$(filesync update --help 2>&1)" || die "update --help"
-[[ "${_uh}" == *apply* ]] || die "update --help body"
+[[ "${_uh}" == *GitHub* ]] || die "update --help body"

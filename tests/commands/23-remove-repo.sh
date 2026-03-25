@@ -22,15 +22,17 @@ mkdir -p "${p}"
 
 	filesync remove-repo nosuch 2>/dev/null && die "remove-repo missing repo should fail"
 
-	filesync remove-repo busy 2>/dev/null && die "remove-repo with files should fail without --force"
+	printf 'n\n' | filesync remove-repo busy >/dev/null || die "remove-repo decline should exit 0"
+	jq -e 'length == 2' ".filesync/repos.json" >/dev/null || die "both repos should remain after decline"
+	jq -e 'length == 1' ".filesync/files.json" >/dev/null || die "files.json unchanged after decline"
 
 	filesync remove-repo empty
 	jq -e '[.[] | select(.name == "empty")] | length == 0' ".filesync/repos.json" >/dev/null || die "empty repo should be gone"
 	jq -e 'length == 1' ".filesync/repos.json" >/dev/null || die "busy repo should remain"
 
-	filesync remove-repo busy --force
+	filesync remove-repo busy -y >/dev/null || die "remove-repo -y should succeed without prompt"
 	jq -e 'length == 0' ".filesync/repos.json" >/dev/null || die "repos.json should be empty"
-	jq -e 'length == 0' ".filesync/files.json" >/dev/null || die "files.json should be empty after --force"
+	jq -e 'length == 0' ".filesync/files.json" >/dev/null || die "files.json should be empty after confirm"
 )
 # re-init a fresh tree for rmr-only path
 p2="${TMP}/rmr-proj2"
