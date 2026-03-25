@@ -13,7 +13,7 @@ source "${FILESYNC_PKG_ROOT}/lib/deps.sh"
 
 filesync_require_jq
 
-REPO_SLUG="${FILESYNC_UPDATE_REPO:-AragusNZ/filesync}"
+REPO_SLUG="AragusNZ/filesync"
 APPLY=false
 YES=false
 
@@ -27,7 +27,7 @@ while [[ $# -gt 0 ]]; do
 			echo "  --check   Only show current vs latest (default if no --apply)" >&2
 			echo "  --apply   Install update (git pull + make install, or latest .deb)" >&2
 			echo "  -y        Do not prompt before --apply" >&2
-			echo "Env: FILESYNC_UPDATE_REPO (owner/repo), FILESYNC_INSTALL_PREFIX (for git+make path)" >&2
+			echo "Env: FILESYNC_INSTALL_PREFIX (for git+make install PREFIX when autodetection is wrong)" >&2
 			exit 0
 			;;
 		*)
@@ -67,13 +67,11 @@ if command -v curl >/dev/null 2>&1; then
 		else
 			echo -e "${RED}filesync update: could not fetch ${API_URL} (HTTP ${_http}).${NC}" >&2
 		fi
-		echo "Set FILESYNC_UPDATE_REPO if you use a fork (owner/repo)." >&2
 		exit 1
 	fi
 else
 	if ! filesync_download "$API_URL" "$TMP_JSON" 2>/dev/null; then
 		echo -e "${RED}filesync update: could not fetch ${API_URL}${NC}" >&2
-		echo "Set FILESYNC_UPDATE_REPO if you use a fork (owner/repo)." >&2
 		exit 1
 	fi
 fi

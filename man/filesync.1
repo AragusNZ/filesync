@@ -225,13 +225,6 @@ Path to the
 .B .filesync
 directory.
 .TP
-.B FILESYNC_UPDATE_REPO
-For
-.BR "filesync update" ,
-GitHub
-.I owner/repo
-(default: upstream).
-.TP
 .B FILESYNC_INSTALL_PREFIX
 For
 .BR "filesync update --apply"
@@ -241,7 +234,10 @@ passed to
 .BR "make install"
 when autodetection is wrong.
 .SH SEE ALSO
-Full configuration notes are in the installed documentation or upstream
-.I docs/configuration.md .
+Extended configuration and environment notes live in
+.I docs/configuration.md
+in the source repository (the
+.B .deb
+package ships this manual page, changelog, and copyright; it does not install that Markdown file).
 .SH AUTHORS
 Written by AragusNZ; see upstream repository for details.

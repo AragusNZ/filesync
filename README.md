@@ -43,9 +43,7 @@ GitHub Releases publish a **source tarball** (`make install` from the extracted 
 ### Updating filesync
 
 - **`filesync update`** — compares your install to the [latest GitHub release](https://github.com/AragusNZ/filesync/releases/latest) and prints upgrade steps.
-- **`filesync update --apply`** — from a **git clone**, runs `git pull` then **`sudo make install`** (default `PREFIX` is derived from the install path; override with **`FILESYNC_INSTALL_PREFIX`** if you used a custom prefix). From a **`.deb`** install, downloads the release `.deb` and runs **`sudo dpkg -i`**. Use **`-y`** to skip the confirmation prompt.
-
-Forks: set **`FILESYNC_UPDATE_REPO=owner/repo`** so the check targets your releases.
+- **`filesync update --apply`** — from a **git clone**, runs `git pull` then **`make install`** (via **`sudo`** when `sudo` is on `PATH`; default `PREFIX` is derived from the install path; override with **`FILESYNC_INSTALL_PREFIX`** if you used a custom prefix). From a **`.deb`** install, downloads the release `.deb` and runs **`dpkg -i`** (via **`sudo`** when available). Use **`-y`** to skip the confirmation prompt.
 
 ## Usage
 
@@ -72,7 +70,7 @@ Subcommands: `init`, `check`, `sync`, `list`, `repos`, `add`, `add-master`, `pus
 
 **`check`**, **`sync`**, **`repos`**, and **`list`** accept optional **`--repo=name`**. **`check`**, **`sync`**, and **`list`** also accept **`--file=fragment`**: substring match on `local_path` or `repo_file_path` (case-sensitive). Combine **`--repo`** and **`--file`** to scope to one repo and matching paths.
 
-When **`file_sync_enabled`** is false (see `filesync disable`), **`check`** and **`sync`** print a message and exit successfully without doing work.
+When file sync is off in **merged** config (`file_sync_enabled` is not boolean `true` — e.g. after **`filesync disable`**, or `enabled: false` normalized from `config.json`), **`check`** and **`sync`** print a message and exit **0** without doing work.
 
 ## Markers
 
@@ -82,7 +80,7 @@ Each tracked text file contains one line with **`filesync:sync`**, **`kind=maste
 
 If the first argument starts with `-` but is not a known subcommand, it is treated as a **`sync`** option (same as calling `sync` first).
 
-Run `filesync` with no arguments to print full help. **`filesync --version`** / **`filesync -V`** print the version; **`man filesync`** is available after install.
+Run `filesync` with no arguments to print a short usage summary (same idea as **`filesync help`**). **`filesync --version`** / **`filesync -V`** print the version; **`man filesync`** is available after install.
 
 ## Layout (source / install tree)
 
@@ -113,10 +111,12 @@ Discovery: walk parents from the current working directory until a directory `D`
 
 ## Developing
 
-CI runs **`shellcheck`**, **`bash scripts/ci-test.sh`** (staged installs, CLI matrix, git-backed integration, and lib checks), builds a **`VERSION=0.0.0-ci`** `.deb`, and runs **`lintian --fail-on warning`**. To reproduce locally:
+- **Tests**: `tests/lib/*.sh` exercise `lib/*.sh` (no install); `tests/commands/*.sh` exercise the staged CLI. Run **`bash tests/run-lib-tests.sh --list /path/to/repo`** or **`bash tests/run-command-tests.sh --list /path/to/repo`** to see files; **`--filter SUBSTR`** limits runs (substring match on each script basename).
+
+CI runs **`shellcheck`**, **`bash scripts/ci-test.sh`** (orchestrates `tests/run-command-tests.sh` then `tests/run-lib-tests.sh`), builds a **`VERSION=0.0.0-ci`** `.deb`, and runs **`lintian --fail-on warning`**. To reproduce locally:
 
 ```bash
-shellcheck -x bin/filesync commands/*.sh lib/*.sh scripts/ci-test.sh tests/run-lib-tests.sh scripts/build-deb.sh
+shellcheck -x bin/filesync commands/*.sh lib/*.sh scripts/ci-test.sh scripts/build-deb.sh tests/run-lib-tests.sh tests/run-command-tests.sh tests/harness-lib.sh tests/harness-command.sh tests/lib/*.sh tests/commands/*.sh
 bash scripts/ci-test.sh
 VERSION=0.0.0-ci bash scripts/build-deb.sh
 lintian --fail-on warning filesync_0.0.0-ci_all.deb

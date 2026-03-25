@@ -97,4 +97,4 @@ Master files must contain **`filesync:sync kind=master`** or the row is skipped 
 
 ## Dependencies
 
-`jq` is required. Git is required for sync/push flows.
+`jq` is required. **`git`** must be on `PATH` for: `check`, `sync`, `list`, `add`, `add-master`, `push`, `detach`, `attach`, `rm`, and `repo-edit` (the shared runtime checks for `git` even when a given command does not invoke it). Other commands (`init`, `update`, `enable`, `disable`, `repo`) only require `jq` (and `curl` or `wget` for `update` when fetching release metadata or assets).

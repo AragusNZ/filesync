@@ -103,7 +103,7 @@ if [[ "$SYNC_ALL" == true ]]; then
 elif [[ -n "$INCLUDE_STATUS_EXTRA" ]]; then
   echo -e "${CYAN}Extra statuses: $INCLUDE_STATUS_EXTRA${NC}"
 else
-  echo -e "${CYAN}Mode: sync_required only (use --all or --include-status=...)${NC}"
+  echo -e "${CYAN}Mode: unset or sync_required only (use --all or --include-status=...)${NC}"
 fi
 echo ""
 
