@@ -17,6 +17,29 @@ is a Bash CLI that keeps file mappings in a per-project
 .B .filesync/
 directory (configuration, repos, and file rows). It discovers the project by walking parent directories from the current working directory, similar to
 .BR git .
+With no arguments,
+.B filesync
+prints a short usage summary and exits.
+
+The dispatcher resolves its install root via
+.B BASH_SOURCE
+and
+.B readlink
+or
+.B realpath
+so a symlinked
+.B PREFIX/bin/filesync
+still finds package
+.B lib/
+and
+.BR share/ .
+
+If the first argument begins with a hyphen and is not a known subcommand (for example
+.BR \-\-dry\-run ),
+it is passed to
+.B sync
+as if you had run
+.BR "filesync sync" .
 .SH OPTIONS
 .TP
 .BR \-V ", " \-\-version
@@ -25,37 +48,163 @@ Print the program version and exit.
 .BR help ", " \-h ", " \-\-help
 Print usage and exit.
 .SH SUBCOMMANDS
-Common subcommands include
-.BR init ,
-.BR check ,
-.BR sync ,
-.BR list ,
-repo management
-.RB ( repos ", " repo ", " repo-edit ),
-and file mapping commands
-.RB ( add ", " add-master ", " push ", " attach ", " detach ", " rm ),
-and
-.B update
-to compare with upstream releases and optionally reinstall.
-Run
-.B filesync
-with no arguments for a short summary.
-.PP
-.BR check ,
-.BR sync ,
-and
-.BR list
-accept optional
-.BI \-\-repo= name
-and
-.BI \-\-file= fragment
-filters (substring match on
+.SS "Project setup"
+.TP
+.B init
+.RI [ directory ]
+Create
+.B .filesync/
+with default
+.IR config.json ", " repos.json ", and " files.json
+at the project root. Default directory is the current working directory.
+.B init
+does not walk parents; the given directory establishes the project root.
+.TP
+.B enable
+Turn on file sync in merged config.
+.TP
+.B disable
+Turn off file sync in merged config.
+.SS "Inspect and sync"
+.TP
+.B check
+.RI [ \-\-repo= name ]
+.RI [ \-\-file= fragment ]
+Verify mappings, refresh
+.I files.json
+row status, and update
+.I last_check_at
+in config. Optional
+.BI \-\-repo=
+filters to one repo by name.
+.BI \-\-file=
+matches rows where
 .I local_path
 or
-.IR repo_file_path ).
+.I repo_file_path
+contains the fragment (substring).
+.TP
+.B sync
+.RI [ \-\-repo= name ]
+.RI [ \-\-file= fragment ]
+.RI [ \-\-dry\-run ]
+.RI [ \-\-force ]
+.RI [ \-\-all ]
+.RI [ \-\-include-status= list ]
+.RI [ \-\-include-detached ]
+Copy from master repos into the project and update
+.IR files.json .
+Filters
+.BI \-\-repo=
+and
+.BI \-\-file=
+match
+.BR check .
+By default only rows with unset or
+.I sync_required
+status are considered; detached rows are skipped unless
+.BR \-\-include-detached .
+.B \-\-all
+includes every coupled status;
+.BI \-\-include-status=
+adds comma-separated
+.I sync_status
+values.
+.B \-\-dry-run
+prints planned work without writing files or status.
+.B \-\-force
+overwrites a local file that lacks a clone marker.
+Coupled sync requires a master marker on the repo file.
+.TP
+.B repos
+.RI [ \-\-repo= name ]
+List configured repos or details for one repo by name.
 .B repos
 accepts only
-.BR \-\-repo= .
+.BR \-\-repo= ;
+it does not accept
+.BR \-\-file= .
+.TP
+.B list
+.RI [ \-\-repo= name ]
+.RI [ \-\-file= fragment ]
+List file mappings and cached status; run
+.B check
+to refresh status fields. Filters match
+.BR check .
+.SS "Mappings and repos"
+.TP
+.B add
+.I repo_name path_in_repo \fR[\fI:local_path\fR] \fR...
+.RI [ \-\-also= repo1,repo2 ]
+Track files from a repo checkout into the project. Each path token is relative to the repo; append
+.IB : local_path
+when the project-relative path differs.
+.B \-\-also=
+mirrors rows into sibling projects'
+.B .filesync/
+trees.
+.TP
+.B add-master
+.I target_repo local_path \fR[\fI:path_in_repo\fR] \fR...
+.RI [ \-\-also= repo1,repo2 ]
+Promote local files into the master repo and add mappings. Omit
+.IB : path_in_repo
+when the master path matches
+.IR local_path .
+.TP
+.B push
+.I local_path \fR[\fIlocal_path ...\fR]
+Push local content to the master path in the linked repo.
+.TP
+.B detach
+.I local_path \fR[\fIlocal_path ...\fR]
+Detach mappings (leave marker content).
+.TP
+.B attach
+.I local_path \fR[\fIlocal_path ...\fR]
+Re-couple detached rows and run
+.B check
+on each.
+.TP
+.BR rm ", " remove
+.I local_path \fR[\fIlocal_path ...\fR]
+Remove mapping rows.
+.TP
+.B repo
+Interactively add a repo definition to
+.IR repos.json .
+.TP
+.B repo-edit
+.I repo_name
+.RI [ \-\-rename= name ]
+.RI [ \-\-path= path ]
+.RI [ \-\-url= url ]
+.RI [ \-\-branch= branch ]
+Edit a repo entry. Renaming updates
+.I repo_name
+in every
+.I files.json
+row.
+.SS "Self-update"
+.TP
+.B update
+.RI [ \-\-check ]
+.RI [ \-\-apply ]
+.RI [ \-y | \-\-yes ]
+Compare the installed version with the latest GitHub release; with
+.B \-\-apply
+install via
+.B git
+pull and
+.B make install
+(from a clone) or the latest
+.B .deb
+package.
+.B \-y
+or
+.B \-\-yes
+skips the confirmation prompt before apply.
 .SH FILES
 .TP
 .I .filesync/config.json
