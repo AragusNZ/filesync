@@ -132,7 +132,7 @@ Examples: **`--status=all`** (all non-detached); **`--status=all --include-detac
 
 ## `sync` behavior and flags
 
-- **`--check`**: run `filesync check` first with matching `--repo`, `--file`, and `--status` filters before syncing. If that preflight check fails, sync exits without copying.
+- **`-c`** / **`--check`**: run `filesync check` first with matching `--repo`, `--file`, and `--status` filters before syncing. If that preflight check fails, sync exits without copying.
 - **`--include-detached`**: allow **`sync_status: detached`** rows when using the default status filter, or include them when **`--status=`** contains **`all`** (without adding the **`detached`** token).
 - **`--dry-run`**: report what would be copied; do not write files or update `files.json`.
 - **`--force`**: if the local file exists but lacks the **`filesync kind=clone`** marker, sync anyway (default is to skip those paths). When no **`--status`** filter is given, **`--force`** also selects **`local_newer`** and **`conflict`** rows so master replaces local.

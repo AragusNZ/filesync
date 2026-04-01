@@ -68,7 +68,7 @@ mkdir -p "${proj}"
 	git -C "${master}" commit -q -m v2
 	_out_stale="$(filesync sync --file=x.txt 2>&1)" || true
 	[[ "${_out_stale}" == *"not selected; status=synced"* ]] || die "without --check, stale synced status should skip"
-	_out_checked="$(filesync sync --check --file=x.txt 2>&1)" || die "sync --check should run check then sync"
-	[[ "${_out_checked}" == *"Check"* ]] || die "sync --check should run check output first"
-	grep -q '^v2$' tools/x.txt || die "sync --check should pull updated master content"
+	_out_checked="$(filesync sync -c --file=x.txt 2>&1)" || die "sync -c should run check then sync"
+	[[ "${_out_checked}" == *"Check"* ]] || die "sync -c should run check output first"
+	grep -q '^v2$' tools/x.txt || die "sync -c should pull updated master content"
 )

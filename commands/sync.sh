@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Sync from master repos into project (updates .filesync/files.json rows).
-# Usage: sync.sh [--repo=name] [--file=path_fragment] [--check] [--dry-run] [--force] [--showall] [--status=a,b,...] [--include-detached]
+# Usage: sync.sh [--repo=name] [--file=path_fragment] [-c|--check] [--dry-run] [--force] [--showall] [--status=a,b,...] [--include-detached]
 # Path fragment: substring match on local_path or repo_file_path (after optional --repo filter).
 
 set -euo pipefail
@@ -18,7 +18,7 @@ Copy from master repos into the project and update .filesync/files.json row stat
 Options:
   --repo=name            Limit to mappings for this repo
   --file=fragment        Substring match on local_path or repo_file_path (after --repo)
-  --check                Run "filesync check" with matching filters before syncing
+  -c, --check            Run "filesync check" with matching filters before syncing
   --dry-run              Show actions without copying
   --force                Also sync local_newer and conflict rows (default skips them)
   --showall              Verbose per-file output
@@ -52,7 +52,7 @@ while [[ $# -gt 0 ]]; do
     --dry-run) DRY_RUN=true; shift ;;
     --force) FORCE=true; shift ;;
     --showall) SHOWALL=true; shift ;;
-    --check) RUN_CHECK=true; shift ;;
+    -c|--check) RUN_CHECK=true; shift ;;
     --include-detached) INCLUDE_DETACHED=true; shift ;;
     --status=*) STATUS_CSV="${1#*=}"; shift ;;
     --repo=*)

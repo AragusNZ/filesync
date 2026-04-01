@@ -16,6 +16,7 @@ assert_help() {
 }
 
 assert_help "sync --help" "--dry-run" sync --help
+assert_help "sync --help" "-c, --check" sync --help
 assert_help "sync alias s -h" "master repos" s -h
 assert_help "check --help" "last_check_at" check --help
 assert_help "check alias c -h" "Verify mappings" c -h
