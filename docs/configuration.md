@@ -88,7 +88,7 @@ Internally, commands build a **temporary** JSON file (merged top-level config + 
 ## Removing mappings
 
 - **`detach-file`** / **`detach-repo`**: the row stays in **`files.json`** with **`sync_status: detached`**; the local file’s marker becomes **`kind=detached`**. Use when you want to pause syncing but keep the mapping.
-- **`remove-file`**: removes the row from **`files.json`** and strips **`kind=clone`** or **`kind=detached`** markers from the local file; **`kind=master`** in the repo checkout is unchanged.
+- **`remove-file`** (alias **`rmf`**): removes the row from **`files.json`** and strips **`kind=clone`** or **`kind=detached`** markers from the local file; **`kind=master`** in the repo checkout is unchanged. Pass **`--all-missing`** to also remove every mapping whose cached **`sync_status`** is **`error_missing_master`**, unioned with any explicit paths (similar to how **`push --all`** adds all **`local_newer`** rows). If only **`--all-missing`** is given and no rows match, the command exits **0** after a short message. Full syntax is in **`man filesync`**.
 - **`remove-repo`**: removes a repo from **`repos.json`**; if **`files.json`** still references that repo, the command confirms, then removes each mapping like **`remove-file`**. See the next section.
 
 ## Removing a repo (`remove-repo`)

@@ -36,6 +36,8 @@ assert_help "attach-file --help" "Re-couple" attach-file --help
 assert_help "detach-repo --help" "detach-repo" detach-repo --help
 assert_help "attach-repo -h" "attach-repo" attach-repo -h
 assert_help "remove-file --help" "files.json" remove-file --help
+assert_help "remove-file --help" "--all-missing" remove-file --help
+assert_help "rmf --help" "--all-missing" rmf --help
 assert_help "remove-repo --help" "repos.json" remove-repo --help
 assert_help "add-repo --help" "Interactively" add-repo --help
 assert_help "edit-repo --help" "--rename" edit-repo --help

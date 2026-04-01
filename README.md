@@ -73,6 +73,8 @@ Primary subcommands: `init`, `enable`, `disable`, `progress`, `path-mode`, `sync
 
 **`filesync push`** copies local content to the linked master paths (reverse of default **`sync`**). Use **`--all`** to include every mapping whose status is **`local_newer`**, combined with any explicit paths you list; see [docs/configuration.md](docs/configuration.md) and **`man filesync`** for details.
 
+**`filesync remove-file`** (alias **`rmf`**) accepts **`--all-missing`** to remove every mapping whose cached **`sync_status`** is **`error_missing_master`**, combined with any explicit paths; see [docs/configuration.md](docs/configuration.md#removing-mappings) and **`man filesync`**.
+
 **Detach** vs **remove**: **`detach-file`** / **`detach-repo`** keep the row but mark it **`detached`**; **`remove-file`** drops the mapping and strips clone/detached markers on disk; **`remove-repo`** drops a repo after optionally clearing its mappings. See [docs/configuration.md](docs/configuration.md#removing-mappings).
 
 When file sync is off in **merged** config (`file_sync_enabled` is not boolean `true` — e.g. after **`filesync disable`**), **`check`** and **`sync`** print a message and exit **0** without doing work.

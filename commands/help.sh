@@ -46,7 +46,7 @@ _hcd 'detach-file (ddf)' 'Set detached status and kind=detached marker' '<local_
 _hcd 'attach-file (daf)' 'Re-couple detached rows; check each' '<local_path> …'
 _hcd 'detach-repo (ddr)' 'Detach every mapping for that repo' '<repo_name>'
 _hcd 'attach-repo (dar)' 'Attach every mapping for that repo' '<repo_name>'
-_hcd 'remove-file (rmf)' 'Drop row; strip clone/detached marker; keep master' '<local_path> …'
+_hcd 'remove-file (rmf)' 'Drop row; strip clone/detached marker; keep master' '[--all-missing] [<local_path> …]'
 _hcd 'remove-repo (rmr)' 'Drop repo (prompts if file mappings remain; -y/--yes skips prompt)' '<repo_name> [-y|--yes]'
 _hcd 'add-repo (ar)' 'Interactively add a repo' ''
 _hcd 'edit-repo (er)' 'Rename updates repo_name in all files.json rows and marker lines' '<name> [--rename=] [--path=] [--url=] [--branch=]'

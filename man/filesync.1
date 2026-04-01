@@ -459,6 +459,7 @@ For every such row, run the same operation as
 .BR attach-file ).
 .TP
 .BR rmf ", " remove-file
+.RI [ \-\-all-missing ]
 .I local_path \fR[\fIlocal_path ...\fR]
 Remove the matching row(s) from
 .IR files.json .
@@ -469,6 +470,14 @@ or
 marker line(s) from each local file; leaves
 .B kind=master
 lines so a shared master copy can stay valid for other projects.
+.B \-\-all-missing
+adds every mapping whose cached
+.I sync_status
+is
+.BR error_missing_master
+(union with any explicit
+.IR local_path
+arguments); if it is the only selector and there are no such rows, the command exits successfully after a short message.
 .TP
 .BR rmr ", " remove-repo
 .I repo_name
