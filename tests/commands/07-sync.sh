@@ -59,4 +59,16 @@ mkdir -p "${proj}"
 	[[ "${_out_none}" == *"Sync report:"* ]] || die "status-filtered sync should print Sync report summary"
 	[[ "${_out_none}" == *"Nothing to sync (1 already in sync, 1 status-skipped)"* ]] \
 		|| die "status-filtered synced rows should contribute to already in sync summary"
+
+	# --check refreshes stale status before selection, so sync_required can be synced.
+	sleep 1
+	echo "v2" >"${master}/tools/x.txt"
+	echo "# filesync kind=master" >>"${master}/tools/x.txt"
+	git -C "${master}" add tools/x.txt
+	git -C "${master}" commit -q -m v2
+	_out_stale="$(filesync sync --file=x.txt 2>&1)" || true
+	[[ "${_out_stale}" == *"not selected; status=synced"* ]] || die "without --check, stale synced status should skip"
+	_out_checked="$(filesync sync --check --file=x.txt 2>&1)" || die "sync --check should run check then sync"
+	[[ "${_out_checked}" == *"Check"* ]] || die "sync --check should run check output first"
+	grep -q '^v2$' tools/x.txt || die "sync --check should pull updated master content"
 )

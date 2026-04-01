@@ -193,6 +193,7 @@ Also
 .BR s .
 .RI [ \-\-repo= name ]
 .RI [ \-\-file= fragment ]
+.RI [ \-\-check ]
 .RI [ \-\-dry\-run ]
 .RI [ \-\-force ]
 .RI [ \-\-showall ]
@@ -206,6 +207,15 @@ and
 .BI \-\-file=
 match
 .BR check .
+.B \-\-check
+runs
+.B check
+first using matching
+.BI \-\-repo= ,
+.BI \-\-file= ,
+and
+.BI \-\-status=
+filters; if that preflight fails, sync exits without copying.
 By default only rows with unset,
 .I sync_required
 or

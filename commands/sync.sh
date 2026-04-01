@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Sync from master repos into project (updates .filesync/files.json rows).
-# Usage: sync.sh [--repo=name] [--file=path_fragment] [--dry-run] [--force] [--showall] [--status=a,b,...] [--include-detached]
+# Usage: sync.sh [--repo=name] [--file=path_fragment] [--check] [--dry-run] [--force] [--showall] [--status=a,b,...] [--include-detached]
 # Path fragment: substring match on local_path or repo_file_path (after optional --repo filter).
 
 set -euo pipefail
@@ -18,6 +18,7 @@ Copy from master repos into the project and update .filesync/files.json row stat
 Options:
   --repo=name            Limit to mappings for this repo
   --file=fragment        Substring match on local_path or repo_file_path (after --repo)
+  --check                Run "filesync check" with matching filters before syncing
   --dry-run              Show actions without copying
   --force                Also sync local_newer and conflict rows (default skips them)
   --showall              Verbose per-file output
@@ -44,12 +45,14 @@ FORCE=false
 STATUS_CSV=""
 INCLUDE_DETACHED=false
 SHOWALL=false
+RUN_CHECK=false
 
 while [[ $# -gt 0 ]]; do
   case $1 in
     --dry-run) DRY_RUN=true; shift ;;
     --force) FORCE=true; shift ;;
     --showall) SHOWALL=true; shift ;;
+    --check) RUN_CHECK=true; shift ;;
     --include-detached) INCLUDE_DETACHED=true; shift ;;
     --status=*) STATUS_CSV="${1#*=}"; shift ;;
     --repo=*)
@@ -70,6 +73,18 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+if [[ "$RUN_CHECK" == true ]]; then
+  CHECK_ARGS=()
+  [[ -n "$REPO_FILTER" ]] && CHECK_ARGS+=("--repo=$REPO_FILTER")
+  [[ -n "$FILE_FRAGMENT" ]] && CHECK_ARGS+=("--file=$FILE_FRAGMENT")
+  [[ -n "$STATUS_CSV" ]] && CHECK_ARGS+=("--status=$STATUS_CSV")
+  if ! "$_CMD_ROOT/check.sh" "${CHECK_ARGS[@]}"; then
+    filesync_error "--check failed; not running sync."
+    exit 1
+  fi
+  filesync_assemble_state_to "$FILESYNC_STATE_FILE" || filesync_die "could not reload project configuration after --check"
+fi
 
 sync_entry_allowed() {
   local status="${1:-}"

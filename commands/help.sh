@@ -33,7 +33,7 @@ _hcd 'progress' 'TTY progress on long loops (default percent)' '[hidden|bar|perc
 echo ''
 echo 'Inspect and sync:'
 _hcd 'check (c)' 'Verify mappings; refresh row status' '[--repo=] [--file=] [--status=]'
-_hcd 'sync (s)' 'Copy from masters into the project; update files.json' '[--repo=] [--file=] [--dry-run] [--force] [--showall] [--status=] [--include-detached|…]'
+_hcd 'sync (s)' 'Copy from masters into the project; update files.json' '[--repo=] [--file=] [--check] [--dry-run] [--force] [--showall] [--status=] [--include-detached|…]'
 _hcd 'list-repos (lr)' 'List configured repos' '[--repo=]'
 _hcd 'list-files (lf)' 'List mappings' '[--repo=] [--file=] [--status=] [--include-detached]'
 echo ''
