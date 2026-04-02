@@ -35,7 +35,7 @@ filesync_print_filter_context() {
   elif [[ "$is_sync" == 1 ]]; then
     filesync_print_filter_note "Mode: unset or sync_required only (use --status=a,b,... to include other statuses)"
     if [[ "$force" == true ]]; then
-      filesync_print_filter_note "Also: --force additionally selects local_newer and conflict (overwrite from master)"
+      filesync_print_filter_note "Also: -f/--force additionally selects local_newer and conflict (overwrite from master)"
     fi
   fi
   if [[ "$inc_det" == true ]]; then

@@ -19,7 +19,7 @@ prefix_smoke() {
 	(
 		cd "${TMP}/proj-${label}"
 		PATH="${dest}${prefix}/bin:${PATH}" filesync init
-		[[ -f .filesync/config.json && -f .filesync/repos.json && -f .filesync/files.json ]] || die "init missing json (${label})"
+		[[ -f .filesync/config.json && -f .filesync/repos.json && -f .filesync/files.json && -f .filesync/collections.json ]] || die "init missing json (${label})"
 		[[ "$(PATH="${dest}${prefix}/bin:${PATH}" filesync help 2>&1)" == *filesync* ]] || die "help (${label})"
 		PATH="${dest}${prefix}/bin:${PATH}" filesync check >/dev/null || die "check empty project (${label})"
 		[[ "$(PATH="${dest}${prefix}/bin:${PATH}" filesync --version 2>&1)" == *"filesync ${EXPECTED_VERSION}"* ]] || die "--version (${label})"

@@ -8,14 +8,14 @@ _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_CMD_ROOT/../lib/cli-help.sh"
 if filesync_argv_wants_help "$@"; then
   cat <<'EOF'
-Usage: filesync add-clone <target_repo> <master_path>[:<local_path>] ... [--also=repo1,repo2]
+Usage: filesync add-clone <target_repo> <master_path>[:<local_path>] ... [--also=names]
 Alias: ac
 
 Clone mappings from a kind=master file in this project into a sibling repo: creates the
 target-side file and row. Fails if the target local file already exists.
 
 Options:
-  --also=repo1,repo2   Also append/update rows in additional sibling projects' files.json
+  --also=names         Comma-separated repo names and/or collection names
 
 EOF
   exit 0
@@ -24,6 +24,8 @@ fi
 source "$_CMD_ROOT/../lib/runtime.sh"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/files-append.sh"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/collections.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
 
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
@@ -43,7 +45,7 @@ for arg in "$@"; do
 done
 
 if [[ ${#POSITIONAL_RAW[@]} -lt 2 ]]; then
-  echo -e "${RED}Usage: filesync add-clone <target_repo> <master_path>[:<local_path_in_target>] ... [--also=repo1,repo2]${NC}" >&2
+  echo -e "${RED}Usage: filesync add-clone <target_repo> <master_path>[:<local_path_in_target>] ... [--also=names]${NC}" >&2
   exit 1
 fi
 
@@ -72,11 +74,10 @@ for i in "${!TARGET_LOCAL_PATHS[@]}"; do
   SEEN_TARGET_LOCAL["$lp"]=1
 done
 
-mapfile -t ALSO_REPOS < <(
-  if [[ -n "$TARGET_REPOS_RAW" ]]; then
-    echo "$TARGET_REPOS_RAW" | tr ',' '\n' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | sed '/^$/d' | awk '!seen[$0]++'
-  fi
-)
+declare -a ALSO_REPOS=()
+if ! filesync_also_expand_to_array "$TARGET_REPOS_RAW" "$FILESYNC_REPOS_FILE" "$FILESYNC_COLLECTIONS_FILE" ALSO_REPOS; then
+  exit 1
+fi
 
 declare -a ALL_TARGET_REPOS=("$PRIMARY_TARGET_REPO")
 for r in "${ALSO_REPOS[@]}"; do

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Usage: list.sh list-repos [--repo=name] | list.sh list-files [--repo=name] [--file=path_fragment] [--status=a,b,...] [--include-detached]
-# Dispatcher always passes list-repos or list-files as argv1; lr|lf are accepted for direct script invocation.
+# Usage: list.sh list-repos | list-files | list-collections (see dispatcher).
+# Dispatcher passes argv1; lr|lf|lcol accepted for direct script invocation.
 
 set -euo pipefail
 
@@ -28,13 +28,22 @@ List file mappings and status. --file filters by substring on local_path or repo
 --status uses the same token rules as sync/check (see main "filesync -h" or man filesync).
 EOF
       ;;
+    list-collections | lcol)
+      cat <<'EOF'
+Usage: filesync list-collections
+Alias: lcol
+
+List named repo collections from .filesync/collections.json (for use with --also=).
+EOF
+      ;;
     *)
       cat <<'EOF'
 Usage:
   filesync list-repos [--repo=name]    (alias lr)
   filesync list-files [options]        (alias lf)
+  filesync list-collections             (alias lcol)
 
-Run "filesync list-repos -h" or "filesync list-files -h" for details.
+Run "filesync list-repos -h", "filesync list-files -h", or "filesync list-collections -h" for details.
 EOF
       ;;
   esac
@@ -49,10 +58,10 @@ source "$_CMD_ROOT/../lib/cli-banner.sh"
 
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
-_list_usage_pair='filesync list-repos [--repo=name] | filesync list-files [--repo=name] [--file=path_fragment] [--status=a,b,...] [--include-detached]'
+_list_usage_triple='filesync list-repos [--repo=name] | filesync list-files [--repo=name] [--file=path_fragment] [--status=a,b,...] [--include-detached] | filesync list-collections'
 
 if [[ -z "$sub" ]]; then
-  echo -e "${RED}Usage: ${_list_usage_pair}${NC}" >&2
+  echo -e "${RED}Usage: ${_list_usage_triple}${NC}" >&2
   exit 1
 fi
 shift
@@ -81,12 +90,12 @@ while [[ $# -gt 0 ]]; do
       ;;
     -*)
       echo -e "${RED}Unknown option: $1${NC}" >&2
-      echo "Usage: ${_list_usage_pair}" >&2
+      echo "Usage: ${_list_usage_triple}" >&2
       exit 1
       ;;
     *)
       echo -e "${RED}Unexpected argument: $1${NC}" >&2
-      echo "Usage: ${_list_usage_pair}" >&2
+      echo "Usage: ${_list_usage_triple}" >&2
       exit 1
       ;;
   esac
@@ -95,8 +104,9 @@ done
 case "$sub" in
   list-repos|lr) ;;
   list-files|lf) ;;
+  list-collections|lcol) ;;
   *)
-    echo -e "${RED}Usage: ${_list_usage_pair}${NC}" >&2
+    echo -e "${RED}Usage: ${_list_usage_triple}${NC}" >&2
     exit 1
     ;;
 esac
@@ -117,6 +127,29 @@ if [[ "$sub" == list-repos || "$sub" == lr ]] && [[ "$INCLUDE_DETACHED" == true 
   echo -e "${RED}filesync list-repos does not accept --include-detached${NC}" >&2
   echo "Usage: filesync list-repos [--repo=name]" >&2
   exit 1
+fi
+
+if [[ "$sub" == list-collections || "$sub" == lcol ]]; then
+  if [[ -n "$REPO_FILTER" ]]; then
+    echo -e "${RED}filesync list-collections does not accept --repo${NC}" >&2
+    echo "Usage: filesync list-collections" >&2
+    exit 1
+  fi
+  if [[ -n "$FILE_FRAGMENT" ]]; then
+    echo -e "${RED}filesync list-collections does not accept --file${NC}" >&2
+    echo "Usage: filesync list-collections" >&2
+    exit 1
+  fi
+  if [[ -n "$STATUS_CSV" ]]; then
+    echo -e "${RED}filesync list-collections does not accept --status${NC}" >&2
+    echo "Usage: filesync list-collections" >&2
+    exit 1
+  fi
+  if [[ "$INCLUDE_DETACHED" == true ]]; then
+    echo -e "${RED}filesync list-collections does not accept --include-detached${NC}" >&2
+    echo "Usage: filesync list-collections" >&2
+    exit 1
+  fi
 fi
 
 case "$sub" in
@@ -185,5 +218,21 @@ case "$sub" in
     if [[ "$printed" -gt 0 ]]; then
       filesync_print_status_summary "rows listed" "$printed" LIST_STATUS_COUNTS
     fi
+    ;;
+  list-collections|lcol)
+    filesync_print_section_title "Collections"
+    if [[ ! -f "$FILESYNC_COLLECTIONS_FILE" ]]; then
+      echo "(no collections.json)" >&2
+      exit 0
+    fi
+    if ! jq -e 'type == "array"' "$FILESYNC_COLLECTIONS_FILE" &>/dev/null; then
+      echo -e "${RED}Invalid collections.json (expected JSON array)${NC}" >&2
+      exit 1
+    fi
+    if [[ "$(jq 'length' "$FILESYNC_COLLECTIONS_FILE")" -eq 0 ]]; then
+      echo "(no collections defined)" >&2
+      exit 0
+    fi
+    jq -r '.[] | "\(.name)\n  repos: \(.repos // [] | join(", "))\n"' "$FILESYNC_COLLECTIONS_FILE"
     ;;
 esac

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Sync from master repos into project (updates .filesync/files.json rows).
-# Usage: sync.sh [--repo=name] [--file=path_fragment] [-c|--check] [--dry-run] [--force] [--showall] [--status=a,b,...] [--include-detached]
+# Usage: sync.sh [--repo=name] [--file=path_fragment] [-c|--check] [--dry-run] [-f|--force] [--showall] [--status=a,b,...] [--include-detached]
 # Path fragment: substring match on local_path or repo_file_path (after optional --repo filter).
 
 set -euo pipefail
@@ -20,7 +20,7 @@ Options:
   --file=fragment        Substring match on local_path or repo_file_path (after --repo)
   -c, --check            Run "filesync check" with matching filters before syncing
   --dry-run              Show actions without copying
-  --force                Also sync local_newer and conflict rows (default skips them)
+  -f, --force            Also sync local_newer and conflict rows (default skips them)
   --showall              Verbose per-file output
   --status=a,b,...       Filter by row status (OR). Tokens: see main "filesync -h" or man filesync
   --include-detached     Include detached rows (default skips them)
@@ -50,7 +50,7 @@ RUN_CHECK=false
 while [[ $# -gt 0 ]]; do
   case $1 in
     --dry-run) DRY_RUN=true; shift ;;
-    --force) FORCE=true; shift ;;
+    -f|--force) FORCE=true; shift ;;
     --showall) SHOWALL=true; shift ;;
     -c|--check) RUN_CHECK=true; shift ;;
     --include-detached) INCLUDE_DETACHED=true; shift ;;
@@ -222,7 +222,7 @@ while IFS=$'\t' read -r i REPO_NAME LOCAL_PATH REPO_FILE_PATH ROW_STATUS _last_s
   if [[ -f "$FULL_LOCAL_PATH" ]]; then
     if ! has_clone_file_sync_marker "$FULL_LOCAL_PATH" 2>/dev/null; then
       if [[ "$FORCE" != true ]]; then
-        file_sync_print_sync_skip_line "⚠" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH" "no clone marker (--force to overwrite)"
+        file_sync_print_sync_skip_line "⚠" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH" "no clone marker (-f/--force to overwrite)"
         SKIPPED=$((SKIPPED + 1))
         filesync_sync_iter_progress
         continue

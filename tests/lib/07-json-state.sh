@@ -47,7 +47,7 @@ fi
 printf '%s\n' '{}' >"${FILESYNC_DIR}/config.json"
 
 filesync_export_data_paths
-if [[ "${FILESYNC_REPOS_FILE}" == "${FILESYNC_DIR}/repos.json" ]]; then ok "export_data_paths"; else bad "export_data_paths"; fi
+if [[ "${FILESYNC_REPOS_FILE}" == "${FILESYNC_DIR}/repos.json" ]] && [[ "${FILESYNC_COLLECTIONS_FILE}" == "${FILESYNC_DIR}/collections.json" ]]; then ok "export_data_paths"; else bad "export_data_paths"; fi
 
 export FILESYNC_USER_CONFIG="${FILESYNC_DIR}/touchcfg.json"
 filesync_user_config_set_last_check_at "2021-06-15T12:00:00Z"

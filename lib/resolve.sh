@@ -43,7 +43,7 @@ filesync_resolve_or_exit() {
   done
 
   filesync_error "no .filesync directory found (walked up from $(pwd -P))"
-  filesync_error "create .filesync/${FILESYNC_CONFIG_NAME}, ${FILESYNC_REPOS_NAME}, and ${FILESYNC_FILES_NAME} — see docs/configuration.md in the filesync repository."
+  filesync_error "create .filesync/${FILESYNC_CONFIG_NAME}, ${FILESYNC_REPOS_NAME}, and ${FILESYNC_FILES_NAME} (and optionally ${FILESYNC_COLLECTIONS_NAME}) — see docs/configuration.md in the filesync repository."
   exit 1
 }
 

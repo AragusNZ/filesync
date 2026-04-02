@@ -65,11 +65,11 @@ filesync list-files
 
 **Development without install:** run `./bin/filesync` from this tree (or `bash /path/to/filesync/bin/filesync …`).
 
-Primary subcommands: `init`, `enable`, `disable`, `progress`, `path-mode`, `sync`, `check`, `list-repos`, `list-files`, `add-file`, `add-master`, `add-clone`, `push`, `detach-file`, `attach-file`, `detach-repo`, `attach-repo`, `remove-file`, `remove-repo`, `add-repo`, `edit-repo`, `update`. Shorter aliases (`s`, `c`, `lr`, `lf`, `af`, `am`, `ac`, `ddf`, `daf`, `ddr`, `dar`, `rmf`, `rmr`, `ar`, `er`, …) are listed in the built-in help — run **`filesync`** with no arguments.
+Primary subcommands: `init`, `enable`, `disable`, `progress`, `path-mode`, `sync`, `check`, `list-repos`, `list-files`, `list-collections`, `add-file`, `add-master`, `add-clone`, `push`, `detach-file`, `attach-file`, `detach-repo`, `attach-repo`, `remove-file`, `remove-repo`, `add-repo`, `edit-repo`, `add-collection`, `remove-collection`, `edit-collection`, `update`. Shorter aliases (`s`, `c`, `lr`, `lf`, `lcol`, `af`, `am`, `ac`, `ddf`, `daf`, `ddr`, `dar`, `rmf`, `rmr`, `ar`, `er`, `acol`, `rmcol`, `ecol`, …) are listed in the built-in help — run **`filesync`** with no arguments.
 
 **`check`**, **`sync`**, **`list-repos`**, and **`list-files`** accept optional **`--repo=name`**. **`check`**, **`sync`**, and **`list-files`** also accept **`--file=fragment`**: substring match on `local_path` or `repo_file_path` (case-sensitive). **`check`** also accepts **`--status=a,b,...`** (same token rules as `sync`/`list-files`) and matches against each row's current cached `sync_status` before re-checking selected rows. Combine filters to narrow scope.
 
-**`add-file`**, **`add-master`**, and **`add-clone`** support **`--also=repo1,repo2`** to mirror into sibling projects. Each value is a repo name from the current project's `.filesync/repos.json` whose configured `path` points at another initialized project root (a directory containing its own `.filesync/`). For **`add-file`**, the path in the repo must already have a **`kind=master`** marker unless you pass **`--mark-master`**, which prepends one when the repo file has no filesync marker yet.
+**`add-file`**, **`add-master`**, and **`add-clone`** support **`--also=`** with comma-separated **repo names** and/or **collection names** from `.filesync/collections.json`. Define groups with **`add-collection`** (**`acol`**), **`edit-collection`** (**`ecol`**), **`remove-collection`** (**`rmcol`**); list them with **`list-collections`** (**`lcol`**). Each resolved repo must appear in the current project's `.filesync/repos.json` with `path` pointing at another initialized project root (its own `.filesync/`). Collection and repo names share one namespace (no duplicate names across the two). Empty collections cannot be used with **`--also=`**. For **`add-file`**, the path in the repo must already have a **`kind=master`** marker unless you pass **`--mark-master`**, which prepends one when the repo file has no filesync marker yet.
 
 **`filesync push`** copies local content to the linked master paths (reverse of default **`sync`**). Use **`--all`** to include every mapping whose status is **`local_newer`**, combined with any explicit paths you list; see [docs/configuration.md](docs/configuration.md) and **`man filesync`** for details.
 
@@ -83,7 +83,7 @@ When file sync is off in **merged** config (`file_sync_enabled` is not boolean `
 
 Each tracked text file contains one line with **`filesync`**, **`kind=master`** (in the upstream repo) or **`kind=clone`** plus **`path=`** and **`repo=`** (local copy). After **`detach-file`**, **`kind=detached`**. The comment wrapper matches the file type (`#`, `//`, `<!-- … -->`, `/* … */`, `--`, etc.); optional per-row **`marker_style`** in `files.json` overrides inference. Plain **`.json`** cannot carry comments—see [docs/configuration.md](docs/configuration.md).
 
-**`check`** / **`sync`** / **`list-files`** status filter **`--status=a,b,...`** (see [docs/configuration.md](docs/configuration.md)): same tokens for all three; **`all`** is every status except **`detached`** unless **`--include-detached`** or **`detached`** is listed; **`error`** matches any **`error_*`**; **`unset`** is empty status. In `check`, status matching uses the cached row status to select which rows to re-check. **`sync`** default (no **`--status`**) includes **`unset`**, **`sync_required`**, and **`error_missing_local`** (so missing local files are recreated from master); add **`--include-detached`** to allow **`detached`** there too. **`sync`** also supports **`-c`** / **`--check`** (run `check` first with matching `--repo`, `--file`, and `--status` filters), **`--dry-run`**, **`--force`** (overwrite locals that lack the clone marker; and when no **`--status`** is given, also selects **`local_newer`** and **`conflict`** so master replaces local), **`--showall`** (print per-file lines for files already in sync; default hides them).
+**`check`** / **`sync`** / **`list-files`** status filter **`--status=a,b,...`** (see [docs/configuration.md](docs/configuration.md)): same tokens for all three; **`all`** is every status except **`detached`** unless **`--include-detached`** or **`detached`** is listed; **`error`** matches any **`error_*`**; **`unset`** is empty status. In `check`, status matching uses the cached row status to select which rows to re-check. **`sync`** default (no **`--status`**) includes **`unset`**, **`sync_required`**, and **`error_missing_local`** (so missing local files are recreated from master); add **`--include-detached`** to allow **`detached`** there too. **`sync`** also supports **`-c`** / **`--check`** (run `check` first with matching `--repo`, `--file`, and `--status` filters), **`--dry-run`**, **`-f`** / **`--force`** (overwrite locals that lack the clone marker; and when no **`--status`** is given, also selects **`local_newer`** and **`conflict`** so master replaces local), **`--showall`** (print per-file lines for files already in sync; default hides them).
 
 If the first argument starts with `-` but is not a known subcommand, it is treated as a **`sync`** option (same as calling `sync` first).
 
@@ -94,7 +94,7 @@ Run `filesync` with no arguments to print a short usage summary (same idea as **
 | Path | Role |
 |------|------|
 | `bin/filesync` | Dispatcher |
-| `commands/*.sh` | Subcommand implementations (e.g. `list.sh` handles both `list-repos` and `list-files`) |
+| `commands/*.sh` | Subcommand implementations (e.g. `list.sh` handles `list-repos`, `list-files`, and `list-collections`) |
 | `lib/*.sh` | Resolve project, merge config, assemble state JSON, paths, status |
 | `share/defaults/config.default.json` | Shallow-merge defaults for `.filesync/config.json` |
 | `share/VERSION` | Single-line version for `filesync --version` |
@@ -107,6 +107,7 @@ Run `filesync` with no arguments to print a short usage summary (same idea as **
 | `config.json` | JSON object (partial); merged over package defaults |
 | `repos.json` | JSON **array** of repo objects (`name`, `url`, `path`, `branch`, …) |
 | `files.json` | JSON **array** of file rows |
+| `collections.json` | JSON **array** of `{ "name", "repos": [repo names…] }` for **`--also=`** expansion; present after **`init`**; legacy trees may lack it until the first collection command or a partial **`init`** |
 
 Basenames are defined in `lib/data-names.sh` if you need to change them in a fork.
 

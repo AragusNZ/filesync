@@ -15,7 +15,7 @@ filesync \- map and sync files across git checkouts
 .B filesync
 is a Bash CLI that keeps file mappings in a per-project
 .B .filesync/
-directory (configuration, repos, and file rows). It discovers the project by walking parent directories from the current working directory, similar to
+directory (configuration, repos, optional named repo collections, and file rows). It discovers the project by walking parent directories from the current working directory, similar to
 .BR git .
 With no arguments,
 .B filesync
@@ -64,7 +64,7 @@ flags print extended usage for that subcommand only (see each command below).
 Create
 .B .filesync/
 with default
-.IR config.json ", " repos.json ", and " files.json
+.IR config.json ", " repos.json ", " files.json ", and " collections.json
 at the project root. Default directory is the current working directory.
 .B init
 does not walk parents; the given directory establishes the project root.
@@ -76,7 +76,10 @@ and
 .B .filesync/files.json
 all already exist,
 .B init
-exits with an error; if only some exist, it creates whichever files are missing.
+exits with an error; if only some exist, it creates whichever files are missing
+(including
+.B collections.json
+when absent).
 .TP
 .B enable
 Turn on file sync in merged config.
@@ -195,7 +198,7 @@ Also
 .RI [ \-\-file= fragment ]
 .RI [ \-c " | " \-\-check ]
 .RI [ \-\-dry\-run ]
-.RI [ \-\-force ]
+.RI [ \-f " | " \-\-force ]
 .RI [ \-\-showall ]
 .RI [ \-\-status= list ]
 .RI [ \-\-include\-detached ]
@@ -242,12 +245,12 @@ for any status whose name starts with
 .IR error_ .
 .B \-\-dry-run
 prints planned work without writing files or status.
-.B \-\-force
+.BR \-f ", " \-\-force
 overwrites a local file that lacks a clone marker.
 When no
 .B \-\-status
 filter is given,
-.B \-\-force
+.BR \-f ", " \-\-force
 also selects
 .I local_newer
 and
@@ -308,6 +311,18 @@ with
 Non-empty
 .I check_marker_warnings
 for a row are summarized on the line after the status.
+.TP
+.B list-collections
+Also
+.BR lcol .
+List named repo collections from
+.IR collections.json .
+These names can be used in
+.B \-\-also=
+with
+.BR add-file ", " add-master ", and " add-clone .
+.B list-collections
+accepts no options.
 .SS "Mappings and repos"
 .TP
 .B add-file
@@ -315,7 +330,7 @@ Also
 .BR af .
 .I repo_name path_in_repo \fR[\fI:local_path\fR] \fR...
 .RI [ \-\-mark\-master ]
-.RI [ \-\-also= repo1,repo2 ]
+.RI [ \-\-also= names ]
 Track files from a repo checkout into the project. Each path token is relative to the repo; append
 .IB : local_path
 when the project-relative path differs.
@@ -331,12 +346,16 @@ The local file is written (or overwritten) with content rendered from the master
 .B kind=clone
 marker.
 .B \-\-also=
-mirrors the mapping into other initialized projects. Each value is a repo name from the current project's
+mirrors the mapping into other initialized projects. Each comma-separated token is either a repo name from the current project's
 .B repos.json
 whose
 .B path
 points at a sibling project root containing its own
-.BR .filesync/ .
+.BR .filesync/ ,
+or a collection name defined in
+.BR collections.json
+(expanded to that collection's repo names in order). Collection and repo names share a single namespace (no name may be both). Empty collections cannot be used with
+.BR \-\-also= .
 For each sibling project, filesync uses that project's configuration (including
 .BR path_mode )
 and writes/overwrites the clone file under that sibling project's root.
@@ -345,7 +364,7 @@ and writes/overwrites the clone file under that sibling project's root.
 Also
 .BR am .
 .I target_repo local_path \fR[\fI:path_in_repo\fR] \fR...
-.RI [ \-\-also= repo1,repo2 ]
+.RI [ \-\-also= names ]
 Promote local files into the master repo and add mappings. Omit
 .IB : path_in_repo
 when the master path matches
@@ -362,7 +381,7 @@ to validate timestamps and status in its own context.
 .TP
 .B add-clone
 .I target_repo master_path \fR[\fI:local_path\fR] \fR...
-.RI [ \-\-also= repo1,repo2 ]
+.RI [ \-\-also= names ]
 Add a
 .B kind=clone
 copy and
@@ -494,6 +513,9 @@ arguments); if it is the only selector and there are no such rows, the command e
 .RI [ \-y " | " \-\-yes ]
 Remove the named repo from
 .IR repos.json .
+The repo name is also removed from every entry in
+.I collections.json
+and any collection that becomes empty is dropped.
 If
 .I files.json
 has no rows for that repo, the repo entry is removed. If there are still file mappings for that repo, the command prompts for confirmation; if you agree, each such mapping is removed like
@@ -511,6 +533,8 @@ Also
 .BR ar .
 Interactively add a repo definition to
 .IR repos.json .
+The name must not duplicate an existing repo entry and must not match a collection name in
+.IR collections.json .
 .TP
 .B edit-repo
 Also
@@ -527,6 +551,41 @@ in every
 row and the
 .B repo=
 token in local clone/detached sync markers for those rows.
+The new name must not match another repo or any collection name.
+.TP
+.B add-collection
+Also
+.BR acol .
+.I name
+.RI [ \-\-repos= repo1,repo2 ]
+Create a named collection in
+.IR collections.json .
+Optional
+.B \-\-repos=
+lists initial members; each must exist in
+.IR repos.json .
+The name must not match an existing repo or collection.
+.TP
+.B remove-collection
+Also
+.BR rmcol .
+.I name
+Remove a collection from
+.IR collections.json .
+.TP
+.B edit-collection
+Also
+.BR ecol .
+.I name
+.RI [ \-\-rename= new ]
+.RI [ \-\-add\-repo= name ]
+.RI [ \-\-remove\-repo= name ]
+Change a collection; at least one option is required.
+.B \-\-add\-repo=
+requires the repo in
+.IR repos.json .
+.B \-\-remove\-repo=
+is a no-op if the repo is not listed.
 .SS "Self-update"
 .TP
 .B update
@@ -569,6 +628,14 @@ Array of repo definitions.
 .TP
 .I .filesync/files.json
 Array of file mapping rows.
+.TP
+.I .filesync/collections.json
+Optional array of
+.B { "name", "repos" }
+objects; repo names only (no nesting). Used to expand
+.B \-\-also=
+tokens on
+.BR add-file ", " add-master ", and " add-clone .
 .SH ENVIRONMENT
 .TP
 .B FILESYNC_PROJECT_ROOT

@@ -2,7 +2,7 @@
 
 ## `.filesync/` files
 
-All three are **JSON** files with a **`.json`** extension (`config.json`, `repos.json`, `files.json`). Basenames are centralized in `lib/data-names.sh`.
+Project data is **JSON** under `.filesync/` (`config.json`, `repos.json`, `files.json`, and optional **`collections.json`**). Basenames are centralized in `lib/data-names.sh`.
 
 ### `config.json`
 
@@ -30,11 +30,19 @@ JSON **array** of objects, for example:
 ]
 ```
 
+**`filesync add-repo`** appends interactively; the new **`name`** must be unique among repos and must not match any **collection** name in **`collections.json`**.
+
 ### `files.json`
 
 JSON **array** of file row objects (paths, `repo_name`, `sync_status`, marker-related fields, mtimes, etc.).
 
 Optional **`marker_style`** per row overrides comment wrapping for that path when the tool must emit a marker line without an existing comment wrapper on the line (rare). Allowed values: **`line_slash`** (`//`), **`line_hash`** (`#`), **`line_dash`** (`--`), **`block_c`** (`/* … */` on one line), **`html`** (`<!-- … -->`). If omitted, style is inferred from the file extension or basename (e.g. `Dockerfile` → hash, `.vue` / `.html` → html, `.css` → block, `.sql` → dash; unknown extension defaults to **`line_hash`**).
+
+### `collections.json`
+
+JSON **array** of objects `{ "name": "<collection_name>", "repos": ["repoA", "repoB", …] }`. Each **`repos`** entry must be a **`name`** from **`repos.json`** (not another collection). **Collection names** and **repo names** must not overlap — the same string cannot name both.
+
+Manage with **`filesync add-collection`** (alias **`acol`**), **`remove-collection`** (**`rmcol`**), **`edit-collection`** (**`ecol`**), and **`list-collections`** (**`lcol`**). If the file is missing, commands treat it as an empty array until you create a collection; **`filesync init`** on a new tree writes an empty **`collections.json`** alongside the other defaults. Older projects may lack the file until you add a collection or run **`init`** when some of the core files are still missing (see **`filesync init`** below).
 
 ### Sync markers (text files)
 
@@ -63,7 +71,7 @@ They do **not** rewrite a single monolithic config file at the project root.
 
 ### `filesync init`
 
-**`filesync init`** (optional path; default: current directory) creates **`<dir>/.filesync/`** with `config.json` (copied from package defaults), `repos.json`, and `files.json` (empty arrays). It does **not** walk parents — the directory you pass (or `cwd`) is the project root you are establishing. Other commands then find that root when your shell is under that tree (or via `FILESYNC_PROJECT_ROOT`). If **all three** JSON files already exist, `init` exits with an error; if only some exist, it creates whichever files are still missing.
+**`filesync init`** (optional path; default: current directory) creates **`<dir>/.filesync/`** with `config.json` (shallow merge defaults), and empty JSON arrays in `repos.json`, `files.json`, and `collections.json`. It does **not** walk parents — the directory you pass (or `cwd`) is the project root you are establishing. Other commands then find that root when your shell is under that tree (or via `FILESYNC_PROJECT_ROOT`). If **`config.json`**, **`repos.json`**, and **`files.json`** already exist, `init` exits with an error; if only some exist, it creates whichever files are still missing (including **`collections.json`** when absent).
 
 ### Enable / disable
 
@@ -75,7 +83,7 @@ Internally, commands build a **temporary** JSON file (merged top-level config + 
 
 ## Repo metadata (`edit-repo`)
 
-**`filesync edit-repo <repo_name>`** updates **`repos.json`**. Pass any of **`--rename=new_name`**, **`--path=...`**, **`--url=...`**, **`--branch=...`** (at least one required). Renaming a repo rewrites **`repo_name`** on every row in **`files.json`** that referenced the old name, and updates the **`repo=`** field in the first **`filesync`** marker on each affected local file (clone or detached copies). Use **`--branch=`** to change the configured branch.
+**`filesync edit-repo <repo_name>`** updates **`repos.json`**. Pass any of **`--rename=new_name`**, **`--path=...`**, **`--url=...`**, **`--branch=...`** (at least one required). Renaming a repo rewrites **`repo_name`** on every row in **`files.json`** that referenced the old name, and updates the **`repo=`** field in the first **`filesync`** marker on each affected local file (clone or detached copies). The new name must not match any **collection** name in **`collections.json`**. Use **`--branch=`** to change the configured branch.
 
 ## Adding mappings (`add-file`, `add-master`, `add-clone`)
 
@@ -93,12 +101,13 @@ Internally, commands build a **temporary** JSON file (merged top-level config + 
 
 ## Removing a repo (`remove-repo`)
 
-**`filesync remove-repo`** (alias **`rmr`**) drops an entry from **`repos.json`**. If **`files.json`** still has rows for that repo, the command asks for confirmation; if you confirm, each mapping is removed the same way as **`remove-file`** (row deleted; clone/detached markers stripped on disk; master marker kept), then the repo entry is removed. **`rmr -y`** or **`--yes`** skips the prompt. See **`man filesync`** for details.
+**`filesync remove-repo`** (alias **`rmr`**) drops an entry from **`repos.json`**. The repo name is removed from every **`collections.json`** entry, and collections that become empty are removed. If **`files.json`** still has rows for that repo, the command asks for confirmation; if you confirm, each mapping is removed the same way as **`remove-file`** (row deleted; clone/detached markers stripped on disk; master marker kept), then the repo entry is removed. **`rmr -y`** or **`--yes`** skips the prompt. See **`man filesync`** for details.
 
-## `check` / `sync` / `list-repos` / `list-files` filters
+## `check` / `sync` / `list-repos` / `list-files` / `list-collections` filters
 
 - **`--repo=name`**: for **`check`**, **`sync`**, and **`list-files`**, only rows where `repo_name` equals this name. For **`list-repos`**, show only that repo’s entry.
-- **`--file=fragment`**: for **`check`**, **`sync`**, and **`list-files`**, only rows where `local_path` **or** `repo_file_path` contains the fragment (substring / “like” match). Whitespace is trimmed from the fragment; an empty value matches all rows. Not valid for **`list-repos`**.
+- **`--file=fragment`**: for **`check`**, **`sync`**, and **`list-files`**, only rows where `local_path` **or** `repo_file_path` contains the fragment (substring / “like” match). Whitespace is trimmed from the fragment; an empty value matches all rows. Not valid for **`list-repos`** or **`list-collections`**.
+- **`list-collections`** accepts no options (no **`--repo`**, **`--file`**, **`--status`**, or **`--include-detached`**).
 
 **`attach-file`** (and **`attach-repo`**, which runs it for every row for a repo): re-couples rows with `sync_status: detached` by rewriting the local file from master (clone marker), clearing `sync_status`, then running **`check`** for that repo and path so status is recomputed. **`detach-repo`** runs **`detach-file`** for every mapping with that **`repo_name`**.
 
@@ -108,9 +117,9 @@ Internally, commands build a **temporary** JSON file (merged top-level config + 
 
 ## Cross-project mirroring (`--also`)
 
-**`add-file`**, **`add-master`**, and **`add-clone`** accept **`--also=repo1,repo2`** to mirror mappings into sibling initialized projects.
+**`add-file`**, **`add-master`**, and **`add-clone`** accept **`--also=`** with comma-separated **repo names** and/or **collection names** (from `.filesync/collections.json`) to mirror mappings into sibling initialized projects.
 
-- Each value is a repo name from the **current** project’s `.filesync/repos.json`.
+- After expanding collection names to their **`repos`** lists (order preserved; duplicates removed), every target must be a repo name in the **current** project’s `.filesync/repos.json`.
 - That repo’s configured **`path`** must point at a directory that is itself an initialized filesync project (it contains its own `.filesync/`).
 - For each sibling project, filesync uses that sibling’s configuration (including **`path_mode`**) when resolving the master repo checkout.
 - For `add-master --also` and `add-clone --also`, mirrored rows in sibling projects are initialized as **`sync_required`** so each project can run **`check`** / **`sync`** to compute timestamps and verify status in its own context.
@@ -151,4 +160,4 @@ Master files must contain **`filesync kind=master`** or the row is skipped (with
 
 ## Dependencies
 
-`jq` is required. **`git`** must be on `PATH` for: `check`, `sync`, `list-files`, `list-repos`, `add-file`, `add-master`, `add-clone`, `push`, `detach-file`, `attach-file`, `detach-repo`, `attach-repo`, `remove-file`, `remove-repo`, and `edit-repo` (the shared runtime checks for `git` even when a given command does not invoke it). Other commands (`init`, `update`, `enable`, `disable`, `progress`, `path-mode`, `add-repo`) only require `jq` (and `curl` or `wget` for `update` when fetching release metadata or assets).
+`jq` is required. **`git`** must be on `PATH` for: `check`, `sync`, `list-files`, `list-repos`, `add-file`, `add-master`, `add-clone`, `push`, `detach-file`, `attach-file`, `detach-repo`, `attach-repo`, `remove-file`, `remove-repo`, and `edit-repo` (the shared runtime checks for `git` even when a given command does not invoke it). Other commands (`init`, `update`, `enable`, `disable`, `progress`, `path-mode`, `add-repo`, `add-collection`, `remove-collection`, `edit-collection`, `list-collections`) only require `jq` (and `curl` or `wget` for `update` when fetching release metadata or assets).

@@ -26,6 +26,8 @@ filesync_command_init "${BASH_SOURCE[0]}"
 source "$_CMD_ROOT/../lib/progress.sh"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/rm-mapping.sh"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/collections.sh"
 
 trap 'filesync_progress_end || true; rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
@@ -72,6 +74,7 @@ count=$(jq --arg r "$REPO" '[.[] | select(.repo_name == $r)] | length' "$files")
 remove_repo_entry() {
   jq --arg n "$REPO" 'map(select(.name != $n))' "$repos" > "${repos}.tmp"
   mv "${repos}.tmp" "$repos"
+  filesync_collections_prune_repo "$FILESYNC_COLLECTIONS_FILE" "$REPO" || filesync_die "could not update collections.json"
   echo -e "${GREEN}Removed repo:${NC} $REPO" >&2
 }
 

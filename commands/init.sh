@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Create .filesync/ with config.json, repos.json, files.json at the project root (cwd or path).
+# Create .filesync/ with config.json, repos.json, files.json, collections.json at the project root (cwd or path).
 # Does not walk parents — the given directory (default: cwd) becomes the filesync project root.
 # Usage: filesync init [directory]
 
@@ -13,11 +13,11 @@ if filesync_argv_wants_help "$@"; then
   cat <<'EOF'
 Usage: filesync init [directory]
 
-Create .filesync/ with default config.json, repos.json, and files.json at the project root.
+Create .filesync/ with default config.json, repos.json, files.json, and collections.json at the project root.
 Does not walk parent directories: the given directory (default: current working directory)
 becomes the filesync project root.
 
-If all three files already exist, init errors; if only some exist, it creates the missing ones.
+If config.json, repos.json, and files.json already exist, init errors; if only some exist, it creates the missing ones.
 EOF
   exit 0
 fi
@@ -68,6 +68,7 @@ DEFAULT_CFG="${FILESYNC_PKG_ROOT}/share/defaults/config.default.json"
 cfg="${FILESYNC_DIR}/${FILESYNC_CONFIG_NAME}"
 repos="${FILESYNC_DIR}/${FILESYNC_REPOS_NAME}"
 files="${FILESYNC_DIR}/${FILESYNC_FILES_NAME}"
+coll="${FILESYNC_DIR}/${FILESYNC_COLLECTIONS_NAME}"
 
 if [[ -f "$cfg" && -f "$repos" && -f "$files" ]]; then
   echo -e "${YELLOW}filesync: already initialized at ${FILESYNC_DIR}${NC}" >&2
@@ -90,6 +91,10 @@ fi
 
 if [[ ! -f "$files" ]]; then
   printf '%s\n' '[]' | jq . > "$files"
+fi
+
+if [[ ! -f "$coll" ]]; then
+  printf '%s\n' '[]' | jq . > "$coll"
 fi
 
 echo -e "${GREEN}filesync: initialized project root${NC} ${PROJECT_ROOT}" >&2

@@ -24,6 +24,8 @@ EOF
 fi
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/collections.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
 
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
@@ -91,6 +93,10 @@ fi
 if [[ -n "$RENAME" ]] && [[ "$RENAME" != "$REPO_CURRENT" ]]; then
   if jq -e --arg n "$RENAME" 'any(.name == $n)' "$repos" &>/dev/null; then
     echo -e "${RED}Error: Repo name '$RENAME' already exists.${NC}" >&2
+    exit 1
+  fi
+  if [[ -f "$FILESYNC_COLLECTIONS_FILE" ]] && filesync_collections_name_taken "$FILESYNC_COLLECTIONS_FILE" "$RENAME"; then
+    echo -e "${RED}Error: '$RENAME' is already a collection name.${NC}" >&2
     exit 1
   fi
 fi

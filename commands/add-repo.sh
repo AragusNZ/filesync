@@ -18,9 +18,14 @@ EOF
 fi
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/data-names.sh"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/collections.sh"
 filesync_command_init_lite "${BASH_SOURCE[0]}"
 
 repos="$FILESYNC_DIR/$FILESYNC_REPOS_NAME"
+coll="$FILESYNC_DIR/$FILESYNC_COLLECTIONS_NAME"
 if [[ ! -f "$repos" ]]; then
   echo -e "${RED}Missing $repos — create it (JSON array of repos).${NC}" >&2
   exit 1
@@ -31,6 +36,15 @@ echo "" >&2
 
 read -rp "Repo name (e.g. greenlit-api): " name
 [[ -n "$name" ]] || { echo -e "${RED}Name is required.${NC}" >&2; exit 1; }
+
+if jq -e --arg n "$name" 'any(.name == $n)' "$repos" &>/dev/null; then
+  echo -e "${RED}Error: Repo '$name' already exists in repos.json.${NC}" >&2
+  exit 1
+fi
+if [[ -f "$coll" ]] && filesync_collections_name_taken "$coll" "$name"; then
+  echo -e "${RED}Error: '$name' is already a collection name; repo names must be distinct from collection names.${NC}" >&2
+  exit 1
+fi
 
 read -rp "URL (e.g. https://github.com/org/repo): " url
 

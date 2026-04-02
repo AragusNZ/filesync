@@ -69,17 +69,29 @@ main() {
     remove-repo|rmr)
       exec "$ROOT/commands/remove-repo.sh" "$@"
       ;;
+    remove-collection|rmcol)
+      exec "$ROOT/commands/remove-collection.sh" "$@"
+      ;;
     add-repo|ar)
       exec "$ROOT/commands/add-repo.sh" "$@"
       ;;
     edit-repo|er)
       exec "$ROOT/commands/edit-repo.sh" "$@"
       ;;
+    add-collection|acol)
+      exec "$ROOT/commands/add-collection.sh" "$@"
+      ;;
+    edit-collection|ecol)
+      exec "$ROOT/commands/edit-collection.sh" "$@"
+      ;;
     list-repos|lr)
       exec "$ROOT/commands/list.sh" list-repos "$@"
       ;;
     list-files|lf)
       exec "$ROOT/commands/list.sh" list-files "$@"
+      ;;
+    list-collections|lcol)
+      exec "$ROOT/commands/list.sh" list-collections "$@"
       ;;
     enable)
       exec "$ROOT/commands/enable-disable.sh" enable "$@"

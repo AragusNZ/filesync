@@ -42,3 +42,8 @@ assert_help "rmf --help" "--all-missing" rmf --help
 assert_help "remove-repo --help" "repos.json" remove-repo --help
 assert_help "add-repo --help" "Interactively" add-repo --help
 assert_help "edit-repo --help" "--rename" edit-repo --help
+assert_help "add-collection --help" "collections.json" add-collection --help
+assert_help "remove-collection --help" "collections.json" remove-collection --help
+assert_help "list-collections -h" "list-collections" list-collections -h
+assert_help "list-collections alias lcol -h" "list-collections" lcol -h
+assert_help "edit-collection --help" "--add-repo" edit-collection --help

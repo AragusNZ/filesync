@@ -5,3 +5,4 @@
 FILESYNC_CONFIG_NAME="config.json"
 FILESYNC_REPOS_NAME="repos.json"
 FILESYNC_FILES_NAME="files.json"
+FILESYNC_COLLECTIONS_NAME="collections.json"

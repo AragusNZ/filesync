@@ -16,7 +16,7 @@ is omitted (no :suffix), it defaults to the same path as path_in_repo.
 
 Options:
   --mark-master        Set kind=master on the local file (promote as master source)
-  --also=repo1,repo2   Also append/update rows in sibling projects' files.json
+  --also=names         Comma-separated repo names and/or collection names (see collections.json)
 
 EOF
   exit 0
@@ -25,6 +25,8 @@ fi
 source "$_CMD_ROOT/../lib/runtime.sh"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/files-append.sh"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/collections.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
 
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
@@ -47,7 +49,7 @@ for arg in "$@"; do
 done
 
 if [[ ${#POSITIONAL_RAW[@]} -lt 2 ]]; then
-  echo -e "${RED}Usage: filesync add-file <repo_name> <path_in_repo> ... [--mark-master] [--also=repo1,repo2]${NC}" >&2
+  echo -e "${RED}Usage: filesync add-file <repo_name> <path_in_repo> ... [--mark-master] [--also=names]${NC}" >&2
   exit 1
 fi
 
@@ -75,11 +77,10 @@ for local_path in "${LOCAL_PATHS[@]}"; do
   SEEN_LOCAL_PATHS["$local_path"]=1
 done
 
-mapfile -t TARGET_REPOS < <(
-  if [[ -n "$TARGET_REPOS_RAW" ]]; then
-    echo "$TARGET_REPOS_RAW" | tr ',' '\n' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | sed '/^$/d' | awk '!seen[$0]++'
-  fi
-)
+declare -a TARGET_REPOS=()
+if ! filesync_also_expand_to_array "$TARGET_REPOS_RAW" "$FILESYNC_REPOS_FILE" "$FILESYNC_COLLECTIONS_FILE" TARGET_REPOS; then
+  exit 1
+fi
 
 add_one() {
   local project_root="$1"

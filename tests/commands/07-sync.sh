@@ -50,9 +50,9 @@ mkdir -p "${proj}"
 	_skip="$(filesync sync --file=x.txt 2>&1)" || true
 	[[ "${_skip}" == *"not selected; status=local_newer"* ]] || die "sync without --force should skip local_newer"
 	[[ "${_skip}" == *"Sync report:"* ]] || die "sync should print Sync report summary"
-	filesync sync --force --file=x.txt
+	filesync sync -f --file=x.txt
 	if grep -q "LOCAL_LINE" tools/x.txt; then
-		die "--force sync should replace file from master"
+		die "sync with -f/--force should replace file from master"
 	fi
 	grep -q '^v1$' tools/x.txt || die "local file should match master content"
 	_out_none="$(filesync sync --status=conflict --file=x.txt 2>&1)" || true
