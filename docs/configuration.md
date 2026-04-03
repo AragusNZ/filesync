@@ -32,7 +32,7 @@ Optional **`marker_style`** per row overrides comment wrapping for that path whe
 
 ### Legacy per-project files
 
-If **`repos.json`**, **`collections.json`**, or **`config.json`** still exist under `.filesync/`, run **`filesync migrate`** once to import them into the global store (backups under **`.filesync/legacy-backup/`**). **`migrate`** also assigns missing **`id`** values on global repos, **`repo_id`** on **`files.json`** rows in every known project, and **`merge_using_git`** on global repo rows when missing. Afterwards the project should keep **`files.json`** only.
+If **`repos.json`**, **`collections.json`**, or **`config.json`** still exist under `.filesync/`, run **`filesync migrate`** once to import them into the global store (backups under **`.filesync/legacy-backup/`**). Legacy **`repos.json`** rows are merged by **`name`**: if that name already exists in the global catalog, the global row is left unchanged (per-project path/URL/branch are not applied), with a stderr notice when they differ; only new names are appended. **`migrate`** also assigns missing **`id`** values on global repos, **`repo_id`** on **`files.json`** rows in every known project, and **`merge_using_git`** on global repo rows when missing. Afterwards the project should keep **`files.json`** only.
 
 ### Sync markers (text files)
 
@@ -109,9 +109,13 @@ Internally, project commands build a **temporary** JSON file with **`repos`**, *
 
 **`attach file`** (and **`attach files-in-repo`**, which runs it for every row for a repo): re-couples rows with `sync_status: detached` by rewriting the local file from master (clone marker), clearing `sync_status`, then running **`check`** for that repo and path so status is recomputed. **`detach files-in-repo`** runs **`detach file`** for every mapping with that **`repo_name`**.
 
-## Inspecting one path (`info`)
+## Inspecting (`info`)
 
-**`filesync info`** (short: **`i`**) takes **`[file | -f] <local-path>`** or, equivalently, **`filesync i <local-path>`** with no extra keyword. From the current project it resolves the path to either a tracked clone (**`files.json`** row) or a file under a registered repo checkout (**master-at-checkout**). It gathers every **`files.json`** row across the same **project union** as **`remove repo`** that shares that master (**`repo_file_path`** + **`repo_id`** / legacy **`repo_name`**), runs **`check --exact-local=`** for the affected rows in each project, prints a summary on stderr, then optionally prompts (if stdin is a TTY) or accepts **`--fix-marker`** to align **`kind=master`** on the canonical master file with whether any clones are tracked. Exit status follows **`check`** when **`check`** reports blocking issues. See **`man filesync`** and **`filesync info file --help`**.
+**File (same master):** **`filesync info [file | -f] <local-path>`** or **`filesync i <local-path>`** with no keyword. From the current project it resolves the path to either a tracked clone (**`files.json`** row) or a file under a registered repo checkout (**master-at-checkout**). It gathers every **`files.json`** row across the same **project union** as **`remove repo`** that shares that master (**`repo_file_path`** + **`repo_id`** / legacy **`repo_name`**), runs **`check --exact-local=`** for the affected rows in each project, prints a summary on stderr, then optionally prompts (if stdin is a TTY) or accepts **`--fix-marker`** to align **`kind=master`** on the canonical master file with whether any clones are tracked. Exit status follows **`check`** when **`check`** reports blocking issues.
+
+**Repo:** **`filesync info repo <name>`** or **`filesync info -r <name>`** (also **`i repo`** / **`i -r`**) prints global catalog fields for that repo, checks that the configured checkout path exists on disk (same resolution as **`config doctor`**), and summarizes **`files.json`** rows in the **current** project for that repo (cached **`sync_status`**; run **`check --repo=`** to refresh). Exits unsuccessfully if the name is missing from global **`repos.json`**.
+
+**Help:** **`filesync info --help`** or **`i --help`** (no other arguments) prints combined usage for both forms above. **`filesync info file --help`** and **`filesync info repo --help`** print each form alone. See **`man filesync`**.
 
 ## Push (`push`)
 

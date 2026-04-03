@@ -22,8 +22,12 @@ assert_help "check --help" "last_check_at" check --help
 assert_help "check --help" "exact-local" check --help
 assert_help "check alias c -h" "Verify mappings" c -h
 assert_help "info file --help" "fix-marker" info file --help
+assert_help "info repo --help" "config doctor" info repo --help
 assert_help "info --help" "fix-marker" info --help
+assert_help "info --help" "info repo" info --help
+assert_help "info --help" "--- info file" info --help
 assert_help "i --help" "fix-marker" i --help
+assert_help "i --help" "info repo" i --help
 assert_help "init --help" ".filesync/" init --help
 assert_help "init --help" "--no-repo" init --help
 assert_help "list repos --help" "list repos" list repos --help
@@ -44,7 +48,13 @@ assert_help "remove file --help" "files.json" remove file --help
 assert_help "remove file --help" "--all-missing" remove file --help
 assert_help "rm --help" "--all-missing" rm --help
 assert_help "remove repo --help" "repos.json" remove repo --help
+assert_help "new --help" "--- new repo" new --help
+assert_help "new --help" "--- new collection" new --help
+assert_help "n --help" "new collection" n --help
 assert_help "new repo --help" "Interactively" new repo --help
+assert_help "edit --help" "--- edit repo" edit --help
+assert_help "edit --help" "--- edit collection" edit --help
+assert_help "e --help" "edit collection" e --help
 assert_help "edit repo --help" "--rename" edit repo --help
 assert_help "new collection --help" "collections.json" new collection --help
 assert_help "remove collection --help" "collections.json" remove collection --help

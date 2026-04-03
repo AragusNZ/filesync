@@ -22,6 +22,8 @@ If the canonical master file's marker does not match whether any clones are trac
 prompted to add or strip kind=master (TTY). Non-interactive: prints a hint; use --fix-marker
 to perform the update without prompting.
 
+See also: filesync info repo <name>; filesync info --help (file + repo).
+
 Options:
   --fix-marker   Add or remove kind=master on the master file without a TTY prompt
 EOF

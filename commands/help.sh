@@ -32,7 +32,7 @@ _hcd 'handle-missing' 'Repair rows when master or local paths are missing (non-i
 echo ''
 echo 'Inspect and sync:'
 _hcd 'check (c)' 'Verify mappings; refresh row status' '[--repo=] [--file= | --exact-local=path …] [--status=]'
-_hcd 'info | i [-f]' 'Show mapping + siblings for same master; check; optional master marker fix' '[file|-f] <local-path> [--fix-marker]; i <path> omits file/-f'
+_hcd 'info | i [-f]' 'Inspect file (same master) or repo (catalog, checkout, project rows)' '[file|-f] <path> [--fix-marker] | repo|-r <name>; i <path> omits file/-f'
 _hcd 'sync (s)' 'Copy from masters into the project; update files.json' '[--repo=] [--file=] [-c|--check] [--dry-run] [-f|--force] [--showall] [--status=] [--include-detached|…]'
 _hcd 'list repos (l -r)' 'List configured repos' '[--repo=]'
 _hcd 'list files (l | l -f)' 'List mappings' '[--repo=] [--file=] [--status=] [--include-detached]'

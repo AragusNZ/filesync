@@ -31,6 +31,14 @@ _out="$(filesync edit repo --help 2>&1)" || die "edit repo --help"
 _out="$(filesync e -r --help 2>&1)" || die "e -r --help"
 [[ "${_out}" == *"--disable"* ]] || die "e -r help"
 
+_out="$(filesync new --help 2>&1)" || die "new --help"
+[[ "${_out}" == *"--- new repo"* ]] || die "new --help should include repo section"
+[[ "${_out}" == *"--- new collection"* ]] || die "new --help should include collection section"
+
+_out="$(filesync edit --help 2>&1)" || die "edit --help"
+[[ "${_out}" == *"--- edit repo"* ]] || die "edit --help should include repo section"
+[[ "${_out}" == *"--- edit collection"* ]] || die "edit --help should include collection section"
+
 _out="$(filesync info file --help 2>&1)" || die "info file --help"
 [[ "${_out}" == *"fix-marker"* ]] || die "info file help should mention fix-marker"
 
@@ -39,6 +47,14 @@ _out="$(filesync i file --help 2>&1)" || die "i file --help"
 
 _out="$(filesync i --help 2>&1)" || die "i --help"
 [[ "${_out}" == *"fix-marker"* ]] || die "i --help should mention fix-marker"
+[[ "${_out}" == *"--- info repo"* ]] || die "i --help should include combined repo section"
+
+_out="$(filesync info --help 2>&1)" || die "info --help"
+[[ "${_out}" == *"--- info file"* ]] || die "info --help should include file section"
+[[ "${_out}" == *"--- info repo"* ]] || die "info --help should include repo section"
+
+_out="$(filesync info repo --help 2>&1)" || die "info repo --help"
+[[ "${_out}" == *"config doctor"* ]] || die "info repo help should mention doctor path check"
 
 if filesync info 2>/dev/null; then
 	die "info with no args should fail"

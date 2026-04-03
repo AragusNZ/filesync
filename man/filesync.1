@@ -145,6 +145,9 @@ If the discovered project still has per-project
 .BR config.json ,
 merge them into the global store and remove those files after backup under
 .BR .filesync/legacy-backup/ .
+Repos already present in the global catalog are matched by
+.B name
+only; the existing global row is kept when path, URL, or branch differ (a notice is printed).
 Also ensures every global repo has an
 .B id
 and every known
@@ -235,6 +238,19 @@ may draw a scanning progress indicator on standard error; per-row lines go to st
 .B info
 Also
 .BR i .
+.PP
+With
+.B \-\-help
+or
+.B \-h
+as the only argument
+.RI ( e.g. \*(lqfilesync info \-\-help\*(rq " or \*(lqi \-h\*(rq),
+prints combined usage for
+.I info file
+and
+.I info repo
+forms.
+.PP
 .RI [ file " | " \-f ]
 .I path
 .RI [ \-\-fix\-marker ]
@@ -271,6 +287,29 @@ Exits with the same status as
 when
 .B check
 reported blocking issues (after printing).
+.RS
+.PP
+.BR "info repo" ", " "info \-r"
+.I repo-name
+.RI ( "and " "i repo" / "i \-r" )
+prints global catalog fields for
+.IR repo-name ,
+verifies the checkout directory exists (same path resolution as
+.BR "config doctor" ),
+reports how many
+.I files.json
+rows in the current project reference that repo, and summarizes their
+.B sync_status
+values (run
+.B check
+with
+.BI \-\-repo=
+to refresh).
+Exits unsuccessfully if
+.I repo-name
+is not in global
+.BR repos.json .
+.RE
 .TP
 .B sync
 Also

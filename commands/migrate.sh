@@ -14,6 +14,10 @@ Run from inside a filesync project. If .filesync/repos.json exists, merge its re
 collections into the global store (see docs), back up under .filesync/legacy-backup/<ts>/,
 then remove those legacy files.
 
+Repos are matched to the global catalog by name only: if a name already exists globally, that
+row is kept (path/url/branch from the legacy file are ignored) and a notice is printed when
+they differ.
+
 Always ensures every global repo has a stable id and every known files.json row has repo_id.
 
 Also sets boolean merge_using_git on every global repo row (git work tree probe at checkout path)
@@ -94,15 +98,31 @@ if [[ -f "$LEGACY_REPOS" ]]; then
       (map(select(.name == $row.name)) | .[0] // null) as $ex |
       if $ex == null then
         . + [($row | norm) + {check_sync_enabled: $cs, mirror_in_enabled: true}]
-      elif ($ex | norm) == ($row | norm) then
-        .
       else
-        error("repo \($row.name): global entry differs from project copy (path/url/branch)")
+        .
       end)
     ' >"$tmp_r"; then
     echo "filesync: repos merge failed. Restore from $BK if needed." >&2
     exit 1
   fi
+
+  while IFS= read -r _migrate_repo_warn || [[ -n "${_migrate_repo_warn:-}" ]]; do
+    [[ -z "${_migrate_repo_warn}" ]] && continue
+    echo "${_migrate_repo_warn}" >&2
+  done < <(
+    jq -r -n \
+      --slurpfile g "$G_REPOS" \
+      --slurpfile l "$LEGACY_REPOS" '
+      def norm:
+        {name, url: (.url // null), path: (.path // null), branch: (.branch // "main")};
+      ($g[0] // []) as $G |
+      ($l[0] // []) as $L |
+      $L[] | . as $row |
+      ($G | map(select(.name == $row.name)) | .[0] // null) as $ex |
+      select($ex != null and (($ex | norm) != ($row | norm)))
+      | "filesync: repo \($row.name): keeping global catalog entry (legacy path/url/branch differed)"
+    '
+  )
 
   mv "$tmp_r" "$G_REPOS"
 
@@ -176,7 +196,15 @@ _migrate_files_json() {
     ($r[0]) as $R
     | map(
         if (.repo_id // "") != "" and .repo_id != null then .
-        else . + {repo_id: (($R[] | select(.name == .repo_name) | .id) // "")}
+        else
+          . as $row
+          | . + {
+              repo_id: (
+                $R
+                | map(select(.name == $row.repo_name))
+                | (.[0].id // "")
+              )
+            }
         end
       )' "$fp" >"$tmpf"; then
     rm -f "$tmpf"
