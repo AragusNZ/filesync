@@ -99,10 +99,13 @@ Inspect or change system metadata:
 .B show
 prints effective system home, repo path anchor, and global JSON paths;
 .B doctor
-summarizes environment overrides and reports duplicate
+summarizes environment overrides, reports duplicate
 .B name
 entries in global
-.BR repos.json ;
+.BR repos.json ,
+and checks that each
+.B path
+field resolves to an existing directory (relative paths use the repo path anchor);
 .B set progress
 .RI ( hidden | bar | percent ;
 TTY progress style in

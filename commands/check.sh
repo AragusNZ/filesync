@@ -250,6 +250,12 @@ while IFS=$'\t' read -r i REPO_ID REPO_NAME LOCAL_PATH REPO_FILE_PATH PRIOR_STAT
     continue
   fi
 
+  # After a fresh git clone, master files often have mtimes at clone completion. NOW_E was
+  # captured at loop start (before clone), so it can be older than REPO_E and falsely yield
+  # sync_required despite identical content (file_sync_compute_status requires now>=repo).
+  NOW_ISO=$(file_sync_now_iso)
+  NOW_E=$(file_sync_now_epoch)
+
   FULL_LOCAL_PATH="$PROJECT_ROOT/$LOCAL_PATH"
   FULL_MASTER_PATH="$REPO_ROOT/$REPO_FILE_PATH"
 

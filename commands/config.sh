@@ -14,7 +14,7 @@ Usage:
   filesync config set progress <hidden|bar|percent>
 
 show    Effective system home, repo path anchor, global JSON paths, preferences.
-doctor  Report FILESYNC_HOME override and duplicate repo names in repos.json.
+doctor  Report FILESYNC_HOME override, duplicate repo names, and missing repo checkout directories.
 set     progress (preferences.json).
 
 Per-repo check_sync_enabled / mirror_in_enabled: use filesync edit repo (see filesync edit repo -h).
@@ -76,6 +76,16 @@ case "$cmd" in
         done <<<"$dup_lines"
       else
         echo "Global repos.json: no duplicate repo names." >&2
+      fi
+      rroot="$(filesync_read_repo_path_root "$FILESYNC_SYSTEM_HOME")"
+      path_lines="$(filesync_global_repos_missing_checkout_lines "$repos" "$rroot")"
+      if [[ -n "$path_lines" ]]; then
+        echo "Warning: repo checkout path missing or not a directory:" >&2
+        while IFS= read -r line; do
+          echo "  $line" >&2
+        done <<<"$path_lines"
+      else
+        echo "Global repos.json: all checkout directories exist." >&2
       fi
     fi
     ;;

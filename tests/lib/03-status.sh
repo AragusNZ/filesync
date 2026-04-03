@@ -26,6 +26,11 @@ if [[ "${st}" == "conflict" ]]; then ok "compute_status conflict"; else bad "con
 st="$(file_sync_compute_status 0 100 100 100 200)"
 if [[ "${st}" == "sync_required" ]]; then ok "compute_status sync_required (tie diff_ok=0)"; else bad "tie diff_ok=0 got ${st}"; fi
 
+# Identical content (diff_ok=1) but "now" older than repo mtime → not "synced"; check.sh
+# refreshes now after clone so REPO_E does not exceed NOW_E spuriously.
+st="$(file_sync_compute_status 1 200 100 0 150)"
+if [[ "${st}" == "sync_required" ]]; then ok "compute_status sync_required (diff_ok=1 stale now)"; else bad "stale now got ${st}"; fi
+
 pe="$(file_sync_parse_to_epoch "")"
 if [[ "${pe}" == "0" ]]; then ok "parse_to_epoch empty"; else bad "empty epoch got ${pe}"; fi
 pe="$(file_sync_parse_to_epoch "null")"
