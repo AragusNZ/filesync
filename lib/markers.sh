@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Shared filesync marker helpers (sourced; no set -e at top level).
-# Inner payload format: filesync kind=master|clone|detached [path=...] [repo=...] [detached=true on kind=clone]
+# Inner payload format: filesync kind=master|clone|detached [path=...] [repo=...] [repo_id=...] [detached=true on kind=clone]
 
 # shellcheck source=/dev/null
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/marker-style.sh"
@@ -116,10 +116,9 @@ filesync_marker_rename_repo_in_file() {
         did=1
         new_inner=""
         for tok in $FILESYNC_M_INNER; do
-          if [[ "$tok" == "repo=${old_name}" ]]; then
-            tok="repo=${new_name}"
-            changed=1
-          fi
+          case "$tok" in
+            repo="${old_name}") tok="repo=${new_name}"; changed=1 ;;
+          esac
           new_inner="${new_inner:+$new_inner }${tok}"
         done
         if [[ $changed -eq 1 ]]; then
@@ -302,7 +301,11 @@ render_clone_from_master_file() {
   local master_repo_path="$2"
   local repo_name="$3"
   local output_file="$4"
+  local repo_id="${5:-}"
   local inner="filesync kind=clone path=${master_repo_path} repo=${repo_name}"
+  if [[ -n "$repo_id" ]]; then
+    inner="${inner} repo_id=${repo_id}"
+  fi
 
   filesync_marker_transform_file "$master_file" "$output_file" "$inner" "$master_file"
 }
@@ -316,8 +319,12 @@ render_detached_marker_file() {
   local style_ov="${5:-}"
   local inner="filesync kind=detached"
 
+  local repo_id="${6:-}"
   if [[ -n "$repo_file_path" && -n "$repo_name" ]]; then
     inner="filesync kind=detached path=${repo_file_path} repo=${repo_name}"
+    if [[ -n "$repo_id" ]]; then
+      inner="${inner} repo_id=${repo_id}"
+    fi
   fi
 
   if has_any_file_sync_marker "$input_file"; then

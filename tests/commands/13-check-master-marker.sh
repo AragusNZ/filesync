@@ -19,7 +19,8 @@ mkdir -p "${proj}/tools"
 	filesync init
 	jq -n \
 		--arg p "${master}" \
-		'[{"name":"origin","path":$p,"url":"","branch":"main"}]' >".filesync/repos.json"
+		'[{"name":"origin","path":$p,"url":"","branch":"main"}]' >"${TMP}/seed-13a.json"
+	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-13a.json"
 	jq -n \
 		'[{"repo_name":"origin","repo_file_path":"tools/plain.txt","local_path":"tools/plain.txt","sync_status":"synced"}]' \
 		>".filesync/files.json"
@@ -32,6 +33,8 @@ mkdir -p "${proj}/tools"
 	jq -e '.[] | select(.local_path=="tools/plain.txt") | .check_marker_warnings | index("master_no_master_marker") != null' ".filesync/files.json" >/dev/null \
 		|| die "files.json should record check_marker_warnings master_no_master_marker"
 )
+
+printf '%s\n' '[]' | jq . >"${FILESYNC_HOME}/repos.json"
 
 # Master checkout wrongly still has kind=clone — check warns but can still render/diff.
 (
@@ -48,7 +51,8 @@ mkdir -p "${proj}/tools"
 	} >"${p2}/tools/wrong.txt"
 	cd "${p2}"
 	filesync init
-	jq -n --arg p "${m2}" '[{"name":"origin","path":$p,"url":"","branch":"main"}]' >".filesync/repos.json"
+	jq -n --arg p "${m2}" '[{"name":"origin","path":$p,"url":"","branch":"main"}]' >"${TMP}/seed-13b.json"
+	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-13b.json"
 	jq -n '[{"repo_name":"origin","repo_file_path":"tools/wrong.txt","local_path":"tools/wrong.txt","sync_status":"synced"}]' \
 		>".filesync/files.json"
 	filesync check >/dev/null 2>&1 || die "check should succeed"

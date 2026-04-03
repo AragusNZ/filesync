@@ -30,7 +30,8 @@ mkdir -p "${proj}"
 	filesync init
 	jq -n \
 		--arg url "file://${master}" \
-		'[{"name":"origin","path":"../dar-master","url":$url,"branch":"main"}]' >".filesync/repos.json"
+		'[{"name":"origin","path":"../dar-master","url":$url,"branch":"main"}]' >"${TMP}/seed-24.json"
+	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-24.json"
 	filesync add-file origin tools/a.txt
 	filesync add-file origin tools/b.txt
 	filesync sync

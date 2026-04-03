@@ -27,10 +27,10 @@ mkdir -p "${proj}"
 (
 	cd "${proj}"
 	filesync init
-	jq -n '{"path_mode":"absolute"}' >".filesync/config.json"
 	jq -n \
 		--arg p "${master}" \
-		'[{"name":"origin","path":$p,"url":null,"branch":"main"}]' >".filesync/repos.json"
+		'[{"name":"origin","path":$p,"url":null,"branch":"main"}]' >"${TMP}/seed-19.json"
+	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-19.json"
 
 	filesync add-file origin tools/p.txt
 	echo "LOCAL_EDIT" >>"tools/p.txt"

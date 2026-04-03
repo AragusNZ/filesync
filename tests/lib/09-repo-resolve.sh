@@ -13,14 +13,16 @@ source "${ROOT}/lib/repo-resolve.sh"
 td="${LIB_TEST_TMP}"
 PROJECT_ROOT="${td}/stproj"
 mkdir -p "${PROJECT_ROOT}/repodir"
-jq -n --slurpfile s "${td}/assembled.json" '$s[0] * {repos: [{name: "origin", path: "repodir", url: null, branch: "main"}]}' >"${td}/state_repos.json"
+REPO_PATH_ROOT="$(cd "${PROJECT_ROOT}" && pwd)"
+jq -n \
+  --arg rroot "$REPO_PATH_ROOT" \
+  '{repos: [{name: "origin", path: "repodir", url: null, branch: "main"}], files: [], repo_path_root: $rroot, progress_display: "percent"}' >"${td}/state_repos.json"
 # shellcheck disable=SC2034
 declare -A FILESYNC_REPO_DIR_CACHE
 # shellcheck disable=SC2034
 declare -a FILESYNC_CLONED_TEMP_DIRS
 CONFIG_FILE="${td}/state_repos.json"
-PATH_MODE="relative"
-export CONFIG_FILE PROJECT_ROOT PATH_MODE
+export CONFIG_FILE REPO_PATH_ROOT
 info="$(filesync_get_repo_info "origin")"
 if [[ "${info}" == repodir\|* ]]; then ok "get_repo_info"; else bad "get_repo_info got ${info}"; fi
 rd="$(filesync_get_repo_dir "origin")"

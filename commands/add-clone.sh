@@ -26,6 +26,10 @@ source "$_CMD_ROOT/../lib/runtime.sh"
 source "$_CMD_ROOT/../lib/files-append.sh"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/collections.sh"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/also-targets.sh"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/repo-flags.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
 
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
@@ -78,6 +82,9 @@ declare -a ALSO_REPOS=()
 if ! filesync_also_expand_to_array "$TARGET_REPOS_RAW" "$FILESYNC_REPOS_FILE" "$FILESYNC_COLLECTIONS_FILE" ALSO_REPOS; then
   exit 1
 fi
+if ! filesync_also_targets_finalize ALSO_REPOS "$PROJECT_ROOT" "$REPO_PATH_ROOT" "$FILESYNC_REPOS_FILE"; then
+  exit 1
+fi
 
 declare -a ALL_TARGET_REPOS=("$PRIMARY_TARGET_REPO")
 for r in "${ALSO_REPOS[@]}"; do
@@ -85,19 +92,24 @@ for r in "${ALSO_REPOS[@]}"; do
   ALL_TARGET_REPOS+=("$r")
 done
 
-# Echo inferred repo name for source project (PROJECT_ROOT) in target's repos.json, or fail.
-infer_source_repo_name_at_target() {
-  local target_project_root="$1"
-  local source_project_root="$2"
-  local repos_json mode name path resolved found="" n=0
+for target_repo in "${ALL_TARGET_REPOS[@]}"; do
+  if ! filesync_repo_mirror_in_enabled "$FILESYNC_REPOS_FILE" "$target_repo"; then
+    echo -e "${RED}Error: Target repo '$target_repo' has mirror_in_enabled false.${NC}" >&2
+    exit 1
+  fi
+done
 
-  repos_json="$(filesync_project_repos_path "$target_project_root")"
-  mode="$(filesync_project_read_path_mode "$target_project_root")"
+# Echo inferred repo name for source project (PROJECT_ROOT) using global repos catalog, or fail.
+infer_source_repo_name_at_target() {
+  local source_project_root="$1"
+  local repos_json="$2"
+  local repo_root="$3"
+  local name path resolved found="" n=0
 
   while IFS=$'\t' read -r name path; do
     path="${path//$'\r'/}"
     [[ -z "$path" || "$path" == "null" ]] && continue
-    resolved="$(filesync_resolve_repo_path "$target_project_root" "$path" "$mode")"
+    resolved="$(filesync_resolve_repo_checkout_dir "$repo_root" "$path")"
     [[ -z "$resolved" ]] && continue
     if [[ "$resolved" == "$source_project_root" ]]; then
       if [[ $n -eq 0 ]]; then
@@ -108,11 +120,11 @@ infer_source_repo_name_at_target() {
   done < <(jq -r '.[] | [.name, (.path // "")] | @tsv' "$repos_json")
 
   if [[ $n -eq 0 ]]; then
-    echo -e "${RED}Error: No repo in $(basename "$repos_json") at $target_project_root resolves to this project root ($source_project_root).${NC}" >&2
+    echo -e "${RED}Error: No global repo entry resolves to this project root ($source_project_root).${NC}" >&2
     return 1
   fi
   if [[ $n -gt 1 ]]; then
-    echo -e "${RED}Error: Multiple repos in $target_project_root resolve to this project root; cannot infer repo= name uniquely.${NC}" >&2
+    echo -e "${RED}Error: Multiple global repos resolve to this project root; cannot infer repo= name uniquely.${NC}" >&2
     return 1
   fi
   printf '%s\n' "$found"
@@ -126,14 +138,14 @@ validate_target_repo_entry() {
   fi
   # shellcheck disable=SC2153
   local target_project_root ofs
-  target_project_root="$(filesync_resolve_also_project_root "$PROJECT_ROOT" "$FILESYNC_REPOS_FILE" "$target_repo" "$PATH_MODE")"
+  target_project_root="$(filesync_resolve_also_project_root "$REPO_PATH_ROOT" "$FILESYNC_REPOS_FILE" "$target_repo")"
   if [[ -z "$target_project_root" ]]; then
-    echo -e "${RED}Error: Target repo '$target_repo' has no local path.${NC}" >&2
+    echo -e "${RED}Error: Target repo '$target_repo' has no resolvable checkout path.${NC}" >&2
     return 1
   fi
   ofs="$target_project_root/.filesync"
-  if [[ ! -f "$ofs/$FILESYNC_FILES_NAME" ]] || [[ ! -f "$ofs/$FILESYNC_REPOS_NAME" ]]; then
-    echo -e "${RED}Error: Target '$target_repo' is not an initialized filesync project: missing $ofs/$FILESYNC_FILES_NAME and/or $ofs/$FILESYNC_REPOS_NAME.${NC}" >&2
+  if [[ ! -f "$ofs/$FILESYNC_FILES_NAME" ]]; then
+    echo -e "${RED}Error: Target '$target_repo' is not an initialized filesync project: missing $ofs/$FILESYNC_FILES_NAME.${NC}" >&2
     return 1
   fi
   printf '%s\n' "$target_project_root"
@@ -145,7 +157,7 @@ declare -A INFERRED_REPO_NAME_BY_TARGET=()
 for target_repo in "${ALL_TARGET_REPOS[@]}"; do
   root="$(validate_target_repo_entry "$target_repo")" || exit 1
   TARGET_ROOT_BY_REPO["$target_repo"]="$root"
-  ir="$(infer_source_repo_name_at_target "$root" "$PROJECT_ROOT")" || exit 1
+  ir="$(infer_source_repo_name_at_target "$PROJECT_ROOT" "$FILESYNC_REPOS_FILE" "$REPO_PATH_ROOT")" || exit 1
   INFERRED_REPO_NAME_BY_TARGET["$target_repo"]="$ir"
 done
 
@@ -210,12 +222,13 @@ add_clone_one() {
   local local_path="$6"
   local label="$7"
 
-  local full_master full_local tmp_clone rmi lmi new_entry
+  local full_master full_local tmp_clone rmi lmi new_entry rid
+  rid=$(jq -r --arg n "$inferred_repo_name" 'first(.[] | select(.name == $n) | .id) // empty' "$repos_path")
   full_master="$PROJECT_ROOT/$master_path"
   full_local="$target_project_root/$local_path"
   mkdir -p "$(dirname "$full_local")"
   tmp_clone="$(mktemp)"
-  if ! render_clone_from_master_file "$full_master" "$master_path" "$inferred_repo_name" "$tmp_clone"; then
+  if ! render_clone_from_master_file "$full_master" "$master_path" "$inferred_repo_name" "$tmp_clone" "$rid"; then
     rm -f "$tmp_clone"
     echo -e "${RED}Error: Could not render clone from master: $master_path (${label})${NC}" >&2
     return 1
@@ -227,12 +240,14 @@ add_clone_one() {
   lmi=$(file_sync_mtime_iso "$full_local")
 
   new_entry=$(jq -n \
+    --arg id "$rid" \
     --arg repo "$inferred_repo_name" \
     --arg repo_path "$master_path" \
     --arg local "$local_path" \
     --arg rmi "${rmi:-}" \
     --arg lmi "${lmi:-}" \
     '{
+      repo_id: $id,
       repo_name: $repo,
       repo_file_path: $repo_path,
       local_path: $local,
@@ -252,7 +267,7 @@ for target_repo in "${ALL_TARGET_REPOS[@]}"; do
   ofs="$troot/.filesync"
   inferred="${INFERRED_REPO_NAME_BY_TARGET[$target_repo]}"
   for i in "${!MASTER_PATHS[@]}"; do
-    add_clone_one "$troot" "$ofs/$FILESYNC_FILES_NAME" "$ofs/$FILESYNC_REPOS_NAME" "$inferred" \
+    add_clone_one "$troot" "$ofs/$FILESYNC_FILES_NAME" "$FILESYNC_REPOS_FILE" "$inferred" \
       "${MASTER_PATHS[$i]}" "${TARGET_LOCAL_PATHS[$i]}" "project at $troot ($target_repo)" \
       || filesync_die "add-clone failed (see messages above)"
   done

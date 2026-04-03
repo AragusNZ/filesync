@@ -102,8 +102,14 @@ main() {
     progress)
       exec "$ROOT/commands/progress.sh" "$@"
       ;;
-    path-mode)
-      exec "$ROOT/commands/path-mode.sh" "$@"
+    config)
+      exec "$ROOT/commands/config.sh" "$@"
+      ;;
+    migrate)
+      exec "$ROOT/commands/migrate.sh" "$@"
+      ;;
+    handle-missing)
+      exec "$ROOT/commands/handle-missing.sh" "$@"
       ;;
     update)
       exec "$ROOT/commands/update.sh" "$@"

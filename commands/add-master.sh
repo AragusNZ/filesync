@@ -26,6 +26,8 @@ source "$_CMD_ROOT/../lib/runtime.sh"
 source "$_CMD_ROOT/../lib/files-append.sh"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/collections.sh"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/also-targets.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
 
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
@@ -82,21 +84,25 @@ if ! jq -e --arg n "$TARGET_REPO" 'any(.name == $n)' "$FILESYNC_REPOS_FILE" &>/d
   exit 1
 fi
 
-# shellcheck disable=SC2153  # PROJECT_ROOT is set by filesync_command_init.
-TARGET_REPO_DIR="$(filesync_project_resolve_repo_dir "$PROJECT_ROOT" "$TARGET_REPO")"
+TARGET_REPO_DIR="$(filesync_project_resolve_repo_dir "$REPO_PATH_ROOT" "$FILESYNC_REPOS_FILE" "$TARGET_REPO")"
 if [[ -z "$TARGET_REPO_DIR" ]]; then
-  echo -e "${RED}Error: Target repo '$TARGET_REPO' has no resolvable local path.${NC}" >&2
+  echo -e "${RED}Error: Target repo '$TARGET_REPO' has no resolvable checkout path.${NC}" >&2
   exit 1
 fi
 
 TARGET_FS="$TARGET_REPO_DIR/.filesync"
-if [[ ! -f "$TARGET_FS/$FILESYNC_FILES_NAME" || ! -f "$TARGET_FS/$FILESYNC_REPOS_NAME" ]]; then
-  echo -e "${RED}Error: Target project must have .filesync/$FILESYNC_FILES_NAME and $FILESYNC_REPOS_NAME: $TARGET_FS${NC}" >&2
+if [[ ! -f "$TARGET_FS/$FILESYNC_FILES_NAME" ]]; then
+  echo -e "${RED}Error: Target project must have .filesync/$FILESYNC_FILES_NAME: $TARGET_FS${NC}" >&2
   exit 1
 fi
 
 declare -a TARGET_REPOS=()
 if ! filesync_also_expand_to_array "$TARGET_REPOS_RAW" "$FILESYNC_REPOS_FILE" "$FILESYNC_COLLECTIONS_FILE" TARGET_REPOS; then
+  exit 1
+fi
+# PROJECT_ROOT and REPO_PATH_ROOT are exported by filesync_command_init (runtime.sh).
+# shellcheck disable=SC2153
+if ! filesync_also_targets_finalize TARGET_REPOS "$PROJECT_ROOT" "$REPO_PATH_ROOT" "$FILESYNC_REPOS_FILE"; then
   exit 1
 fi
 
@@ -125,14 +131,14 @@ done
 
 for extra_repo in "${TARGET_REPOS[@]}"; do
   jq -e --arg n "$extra_repo" 'any(.name == $n)' "$FILESYNC_REPOS_FILE" &>/dev/null || {
-    echo -e "${RED}Error: Extra repo '$extra_repo' not in repos.${NC}" >&2; exit 1; }
-  extra_project_root="$(filesync_resolve_also_project_root "$PROJECT_ROOT" "$FILESYNC_REPOS_FILE" "$extra_repo" "$PATH_MODE")"
-  [[ -n "$extra_project_root" ]] || { echo -e "${RED}Error: Extra repo '$extra_repo' has no resolvable local path.${NC}" >&2; exit 1; }
+    echo -e "${RED}Error: Extra repo '$extra_repo' not in global repos.${NC}" >&2; exit 1; }
+  extra_project_root="$(filesync_resolve_also_project_root "$REPO_PATH_ROOT" "$FILESYNC_REPOS_FILE" "$extra_repo")"
+  [[ -n "$extra_project_root" ]] || { echo -e "${RED}Error: Extra repo '$extra_repo' has no resolvable checkout path.${NC}" >&2; exit 1; }
   efs="$extra_project_root/.filesync"
-  [[ -f "$efs/$FILESYNC_FILES_NAME" && -f "$efs/$FILESYNC_REPOS_NAME" ]] || {
+  [[ -f "$efs/$FILESYNC_FILES_NAME" ]] || {
     echo -e "${RED}Error: Missing $efs/$FILESYNC_FILES_NAME for --also=$extra_repo${NC}" >&2; exit 1; }
   for i in "${!LOCAL_PATHS[@]}"; do
-    validate_can_add "$efs/$FILESYNC_FILES_NAME" "$efs/$FILESYNC_REPOS_NAME" "$extra_repo" "${LOCAL_PATHS[$i]}" || filesync_die "add-master validation failed (see messages above)"
+    validate_can_add "$efs/$FILESYNC_FILES_NAME" "$FILESYNC_REPOS_FILE" "$extra_repo" "${LOCAL_PATHS[$i]}" || filesync_die "add-master validation failed (see messages above)"
   done
 done
 
@@ -153,13 +159,16 @@ append_row() {
   local project_root="${7:-}"
   local full_target_master_path="${8:-}"
 
-  local new_entry
+  local rid new_entry
+  rid=$(jq -r --arg n "$TARGET_REPO" 'first(.[] | select(.name == $n) | .id) // empty' "$repos_path")
   new_entry=$(jq -n \
+    --arg id "$rid" \
     --arg repo "$TARGET_REPO" \
     --arg repo_path "$target_repo_file_path" \
     --arg local "$local_path" \
     --arg st "$sync_status_val" \
     '{
+      repo_id: $id,
       repo_name: $repo,
       repo_file_path: $repo_path,
       local_path: $local,
@@ -195,7 +204,8 @@ for i in "${!LOCAL_PATHS[@]}"; do
   cp "$TMP_MASTER" "$full_target_master_path"
   echo -e "${GREEN}Promoted to master:${NC} $target_repo_file_path" >&2
 
-  if ! render_clone_from_master_file "$TMP_MASTER" "$target_repo_file_path" "$TARGET_REPO" "$TMP_CLONE"; then
+  tgt_rid=$(jq -r --arg n "$TARGET_REPO" 'first(.[] | select(.name == $n) | .id) // empty' "$FILESYNC_REPOS_FILE")
+  if ! render_clone_from_master_file "$TMP_MASTER" "$target_repo_file_path" "$TARGET_REPO" "$TMP_CLONE" "$tgt_rid"; then
     filesync_die "${local_path}: could not render clone preview from promoted master (unexpected; report a bug if this persists)"
   fi
   cp "$TMP_CLONE" "$full_local_path"
@@ -205,9 +215,9 @@ for i in "${!LOCAL_PATHS[@]}"; do
     || filesync_die "add-master failed (see messages above)"
 
   for extra_repo in "${TARGET_REPOS[@]}"; do
-    extra_project_root="$(filesync_resolve_also_project_root "$PROJECT_ROOT" "$FILESYNC_REPOS_FILE" "$extra_repo" "$PATH_MODE")"
+    extra_project_root="$(filesync_resolve_also_project_root "$REPO_PATH_ROOT" "$FILESYNC_REPOS_FILE" "$extra_repo")"
     efs="$extra_project_root/.filesync"
-    append_row "$efs/$FILESYNC_FILES_NAME" "$efs/$FILESYNC_REPOS_NAME" "$local_path" "$target_repo_file_path" "sync_required" "$extra_repo" \
+    append_row "$efs/$FILESYNC_FILES_NAME" "$FILESYNC_REPOS_FILE" "$local_path" "$target_repo_file_path" "sync_required" "$extra_repo" \
       || filesync_die "add-master failed (see messages above)"
   done
 done

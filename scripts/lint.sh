@@ -12,7 +12,7 @@ run_shellcheck() {
 		echo "lint.sh: shellcheck not found (e.g. apt install shellcheck)" >&2
 		return 127
 	}
-	shellcheck -x \
+	shellcheck -x --source-path=SCRIPTDIR \
 		bin/filesync \
 		commands/*.sh \
 		lib/*.sh \

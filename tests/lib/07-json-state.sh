@@ -5,62 +5,63 @@ TESTS="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=/dev/null
 source "${TESTS}/harness-lib.sh"
 : "${fail:=0}"
-# shellcheck source=/dev/null
+# shellcheck source=../../lib/data-names.sh
 source "${ROOT}/lib/data-names.sh"
 # shellcheck source=/dev/null
-source "${ROOT}/lib/config-merge.sh"
+source "${ROOT}/lib/system-resolve.sh"
 # shellcheck source=/dev/null
 source "${ROOT}/lib/json-state.sh"
 
 td="${LIB_TEST_TMP}"
 export FILESYNC_PKG_ROOT="${ROOT}"
+export FILESYNC_SYSTEM_HOME="${td}/syshome"
+mkdir -p "${FILESYNC_SYSTEM_HOME}"
+rr="${td}/reporoot"
+mkdir -p "$rr"
+FILESYNC_REPO_PATH_ANCHOR="$(cd "$rr" && pwd)"
+export FILESYNC_REPO_PATH_ANCHOR
+jq -n '{version: 2}' >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_SYSTEM_NAME}"
+printf '%s\n' '[]' | jq . >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_GLOBAL_REPOS_NAME}"
+printf '%s\n' '[]' | jq . >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_GLOBAL_COLLECTIONS_NAME}"
+printf '%s\n' '{}' | jq . >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_PREFERENCES_NAME}"
+
 export PROJECT_ROOT="${td}/stproj"
 export FILESYNC_DIR="${PROJECT_ROOT}/.filesync"
 mkdir -p "${FILESYNC_DIR}"
-printf '%s\n' '[]' >"${FILESYNC_DIR}/repos.json"
-printf '%s\n' '[]' >"${FILESYNC_DIR}/files.json"
-echo '{}' >"${FILESYNC_DIR}/config.json"
-if filesync_assemble_state_to "${td}/assembled.json" && jq -e '.repos == [] and .files == [] and .path_mode' "${td}/assembled.json" >/dev/null; then
+printf '%s\n' '[]' | jq . >"${FILESYNC_DIR}/${FILESYNC_FILES_NAME}"
+
+filesync_export_data_paths
+if [[ "${FILESYNC_REPOS_FILE}" == "${FILESYNC_SYSTEM_HOME}/${FILESYNC_GLOBAL_REPOS_NAME}" ]] && [[ "${FILESYNC_COLLECTIONS_FILE}" == "${FILESYNC_SYSTEM_HOME}/${FILESYNC_GLOBAL_COLLECTIONS_NAME}" ]]; then
+	ok "export_data_paths"
+else
+	bad "export_data_paths"
+fi
+
+if filesync_assemble_state_to "${td}/assembled.json" && jq -e '.repos == [] and .files == [] and .progress_display == "percent" and .repo_path_root' "${td}/assembled.json" >/dev/null; then
 	ok "assemble_state_to"
 else
 	bad "assemble_state_to"
 fi
-printf '%s\n' '{}' >"${FILESYNC_DIR}/repos.json"
+
+printf '%s\n' '{}' >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_GLOBAL_REPOS_NAME}"
 if filesync_assemble_state_to "${td}/bad.json" 2>/dev/null; then
 	bad "assemble_state should reject non-array repos"
 else
 	ok "assemble_state rejects bad repos"
 fi
-printf '%s\n' '[]' >"${FILESYNC_DIR}/repos.json"
+printf '%s\n' '[]' | jq . >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_GLOBAL_REPOS_NAME}"
 
-printf '{ not-valid-json' >"${FILESYNC_DIR}/config.json"
+printf '{ not-valid-json' >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_PREFERENCES_NAME}"
 _asm_err=""
 if _asm_err=$(filesync_assemble_state_to "${td}/bad-merge.json" 2>&1); then
-	bad "assemble_state should reject invalid config.json"
+	bad "assemble_state should reject invalid preferences"
 else
 	if [[ "${_asm_err}" == *filesync:* ]]; then
-		ok "assemble_state invalid config stderr"
+		ok "assemble_state invalid preferences stderr"
 	else
-		bad "assemble_state invalid config missing filesync prefix: ${_asm_err}"
+		bad "assemble_state invalid preferences missing filesync prefix: ${_asm_err}"
 	fi
 fi
-printf '%s\n' '{}' >"${FILESYNC_DIR}/config.json"
-
-filesync_export_data_paths
-if [[ "${FILESYNC_REPOS_FILE}" == "${FILESYNC_DIR}/repos.json" ]] && [[ "${FILESYNC_COLLECTIONS_FILE}" == "${FILESYNC_DIR}/collections.json" ]]; then ok "export_data_paths"; else bad "export_data_paths"; fi
-
-export FILESYNC_USER_CONFIG="${FILESYNC_DIR}/touchcfg.json"
-filesync_user_config_set_last_check_at "2021-06-15T12:00:00Z"
-if jq -e '.last_check_at == "2021-06-15T12:00:00Z"' "${FILESYNC_USER_CONFIG}" >/dev/null; then
-	ok "user_config_set_last_check_at create"
-else
-	bad "user_config create"
-fi
-filesync_user_config_set_last_check_at "2022-01-01T00:00:00Z"
-if jq -e '.last_check_at == "2022-01-01T00:00:00Z"' "${FILESYNC_USER_CONFIG}" >/dev/null; then
-	ok "user_config_set_last_check_at update"
-else
-	bad "user_config update"
-fi
+printf '%s\n' '{}' | jq . >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_PREFERENCES_NAME}"
 
 if [[ "${fail}" -ne 0 ]]; then exit 1; fi

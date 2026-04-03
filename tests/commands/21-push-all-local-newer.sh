@@ -33,7 +33,8 @@ mkdir -p "${proj}"
 	filesync init
 	jq -n \
 		--arg url "file://${master}" \
-		'[{"name":"origin","path":"../push-all-master","url":$url,"branch":"main"}]' >".filesync/repos.json"
+		'[{"name":"origin","path":"../push-all-master","url":$url,"branch":"main"}]' >"${TMP}/seed-21.json"
+	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-21.json"
 
 	filesync add-file origin tools/a.txt
 	filesync add-file origin tools/b.txt
@@ -70,7 +71,8 @@ mkdir -p "${noop}"
 	filesync init
 	jq -n \
 		--arg url "file://${master}" \
-		'[{"name":"origin","path":"../push-all-master","url":$url,"branch":"main"}]' >".filesync/repos.json"
+		'[{"name":"origin","path":"../push-all-master","url":$url,"branch":"main"}]' >"${TMP}/seed-21b.json"
+	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-21b.json"
 	filesync add-file origin tools/a.txt
 	filesync sync
 	filesync check >/dev/null || die "noop check"

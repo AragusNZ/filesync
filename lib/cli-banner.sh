@@ -5,7 +5,7 @@
 # shellcheck disable=SC2154
 
 filesync_print_disabled_hint() {
-  echo -e "${YELLOW}filesync is disabled. Run 'filesync enable' to enable.${NC}" >&2
+  echo -e "${YELLOW}No file rows to check or sync (repos may have check_sync_enabled false). Use 'filesync config' to inspect or change repo flags.${NC}" >&2
 }
 
 filesync_print_sync_banner() {

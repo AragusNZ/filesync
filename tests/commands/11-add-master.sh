@@ -30,7 +30,8 @@ mkdir -p "${master}" "${p}"
 
 jq -n \
 	--arg mp "../$(basename "${master}")" \
-	'[{"name":"origin","path":$mp,"url":"u","branch":"main"}]' >"${p}/.filesync/repos.json"
+	'[{"name":"origin","path":$mp,"url":"u","branch":"main"}]' >"${TMP}/seed-11.json"
+filesync_test_seed_global_repos "${p}" "${TMP}/seed-11.json"
 
 (
 	cd "${p}"

@@ -20,6 +20,32 @@ filesync_command_init_lite() {
   filesync_log_enable_debug
 }
 
+# System metadata only (no project .filesync required). Sets FILESYNC_SYSTEM_HOME.
+filesync_command_init_system() {
+  local script_path="${1:?}"
+  FILESYNC_PKG_ROOT="$(cd "$(dirname "$script_path")/.." && pwd)"
+  export FILESYNC_PKG_ROOT
+
+  # shellcheck source=/dev/null
+  source "$FILESYNC_PKG_ROOT/lib/colors.sh"
+  # shellcheck source=/dev/null
+  source "$FILESYNC_PKG_ROOT/lib/log.sh"
+  # shellcheck source=/dev/null
+  source "$FILESYNC_PKG_ROOT/lib/deps.sh"
+  # shellcheck source=/dev/null
+  source "$FILESYNC_PKG_ROOT/lib/system-resolve.sh"
+  # shellcheck source=/dev/null
+  source "$FILESYNC_PKG_ROOT/lib/data-names.sh"
+
+  filesync_require_jq
+  filesync_log_enable_debug
+
+  FILESYNC_SYSTEM_HOME="$(filesync_ensure_system_store)" || filesync_die "could not initialize system filesync store"
+  export FILESYNC_SYSTEM_HOME
+  export FILESYNC_REPOS_FILE="${FILESYNC_SYSTEM_HOME}/${FILESYNC_GLOBAL_REPOS_NAME}"
+  export FILESYNC_COLLECTIONS_FILE="${FILESYNC_SYSTEM_HOME}/${FILESYNC_GLOBAL_COLLECTIONS_NAME}"
+}
+
 filesync_command_init() {
   local script_path="${1:?}"
   FILESYNC_PKG_ROOT="$(cd "$(dirname "$script_path")/.." && pwd)"
@@ -33,8 +59,6 @@ filesync_command_init() {
   source "$FILESYNC_PKG_ROOT/lib/deps.sh"
   # shellcheck source=/dev/null
   source "$FILESYNC_PKG_ROOT/lib/resolve.sh"
-  # shellcheck source=/dev/null
-  source "$FILESYNC_PKG_ROOT/lib/config-merge.sh"
   # shellcheck source=/dev/null
   source "$FILESYNC_PKG_ROOT/lib/paths.sh"
   # shellcheck source=/dev/null
@@ -54,6 +78,10 @@ filesync_command_init() {
 
   filesync_resolve_or_exit
   filesync_require_files
+
+  FILESYNC_SYSTEM_HOME="$(filesync_ensure_system_store)" || filesync_die "could not initialize system filesync store"
+  export FILESYNC_SYSTEM_HOME
+
   filesync_export_data_paths
 
   filesync_require_jq
@@ -65,8 +93,12 @@ filesync_command_init() {
 
   CONFIG_FILE="$FILESYNC_STATE_FILE"
   export CONFIG_FILE FILESYNC_STATE_FILE PROJECT_ROOT FILESYNC_DIR \
-    FILESYNC_FILES_FILE FILESYNC_REPOS_FILE FILESYNC_COLLECTIONS_FILE FILESYNC_USER_CONFIG
+    FILESYNC_FILES_FILE FILESYNC_REPOS_FILE FILESYNC_COLLECTIONS_FILE FILESYNC_SYSTEM_HOME
 
-  PATH_MODE=$(jq -r '.path_mode // "relative"' "$CONFIG_FILE")
-  export PATH_MODE
+  REPO_PATH_ROOT=$(jq -r '.repo_path_root' "$CONFIG_FILE")
+  export REPO_PATH_ROOT
+
+  if [[ -n "${FILESYNC_VERBOSE:-}" && -n "${FILESYNC_HOME:-}" ]]; then
+    echo "filesync: using FILESYNC_HOME=${FILESYNC_SYSTEM_HOME} (metadata directory override)" >&2
+  fi
 }

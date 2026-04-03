@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Resolve local clone directories for repo names (uses CONFIG_FILE, PROJECT_ROOT, PATH_MODE).
+# Resolve local clone directories for repo names (uses CONFIG_FILE, REPO_PATH_ROOT).
 
 # Caller must: declare -A FILESYNC_REPO_DIR_CACHE; declare -a FILESYNC_CLONED_TEMP_DIRS
 # Optional: filesync_cleanup_clones on EXIT
@@ -27,7 +27,7 @@ filesync_get_repo_dir() {
   IFS='|' read -r repo_path url branch <<< "$info"
   if [[ -n "$repo_path" ]] && [[ "$repo_path" != "null" ]]; then
     local abs_path
-    abs_path=$(filesync_resolve_repo_path "$PROJECT_ROOT" "$repo_path" "${PATH_MODE:-relative}")
+    abs_path=$(filesync_resolve_repo_checkout_dir "${REPO_PATH_ROOT}" "$repo_path")
     if [[ -n "$abs_path" ]] && [[ -d "$abs_path" ]]; then
       # shellcheck disable=SC2004
       FILESYNC_REPO_DIR_CACHE[$repo_name]="$abs_path"

@@ -52,9 +52,10 @@ detach_one() {
     return 1
   fi
 
-  local repo_file_path repo_name
+  local repo_file_path repo_name repo_id
   repo_file_path="$(jq -r --arg local "$local_path" '.[] | select(.local_path == $local) | .repo_file_path // ""' "$FILESYNC_FILES_FILE")"
   repo_name="$(jq -r --arg local "$local_path" '.[] | select(.local_path == $local) | .repo_name // ""' "$FILESYNC_FILES_FILE")"
+  repo_id="$(jq -r --arg local "$local_path" '.[] | select(.local_path == $local) | .repo_id // ""' "$FILESYNC_FILES_FILE")"
 
   jq --arg local "$local_path" \
     'map(if .local_path == $local then . + {sync_status: "detached"} else . end)' \
@@ -68,7 +69,7 @@ detach_one() {
     local marker_style=""
     marker_style="$(jq -r --arg local "$local_path" '.[] | select(.local_path == $local) | .marker_style // empty' "$FILESYNC_FILES_FILE" | head -1)"
     [[ "$marker_style" == "null" ]] && marker_style=""
-    if render_detached_marker_file "$full" "$t" "$repo_file_path" "$repo_name" "$marker_style"; then
+    if render_detached_marker_file "$full" "$t" "$repo_file_path" "$repo_name" "$marker_style" "$repo_id"; then
       cp "$t" "$full"
       echo -e "${GREEN}Updated marker:${NC} $local_path" >&2
     else

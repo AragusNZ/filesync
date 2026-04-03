@@ -113,7 +113,7 @@ push_one() {
   fi
 
   local REPO_DIR
-  REPO_DIR="$(filesync_project_resolve_repo_dir "$PROJECT_ROOT" "$REPO_NAME")"
+  REPO_DIR="$(filesync_project_resolve_repo_dir "$REPO_PATH_ROOT" "$FILESYNC_REPOS_FILE" "$REPO_NAME")"
   if [[ -z "$REPO_DIR" ]]; then
     echo -e "${RED}Error: Repo '$REPO_NAME' has no resolvable local path.${NC}" >&2
     return 1

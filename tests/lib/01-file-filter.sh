@@ -17,9 +17,9 @@ _cfg=$(mktemp)
 _out=$(mktemp)
 trap 'rm -f "$_cfg" "$_out"' EXIT
 jq -n '{files:[
-  {repo_name:"r1",local_path:"a/x.txt",repo_file_path:"m/a.txt",sync_status:"synced"},
-  {repo_name:"r2",local_path:"b/x.txt",repo_file_path:"m/b.txt",sync_status:"sync_required"}
-]}' >"$_cfg"
+  {repo_id:"id1",repo_name:"r1",local_path:"a/x.txt",repo_file_path:"m/a.txt",sync_status:"synced"},
+  {repo_id:"id2",repo_name:"r2",local_path:"b/x.txt",repo_file_path:"m/b.txt",sync_status:"sync_required"}
+], repos:[]}' >"$_cfg"
 filesync_config_file_rows_tsv_to "$_out" "$_cfg" "" "x.txt"
 [[ "$(wc -l < "$_out" | tr -d " ")" -eq 2 ]] || bad "tsv fragment should match two rows"
 filesync_config_row_r1=$(grep $'^0\t' "$_out" || true)

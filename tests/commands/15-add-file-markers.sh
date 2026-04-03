@@ -24,7 +24,8 @@ mkdir -p "${master}/tools" "${proj}"
 	filesync init
 	jq -n \
 		--arg url "file://${master}" \
-		'[{"name":"origin","path":"../afm-master","url":$url,"branch":"main"}]' >".filesync/repos.json"
+		'[{"name":"origin","path":"../afm-master","url":$url,"branch":"main"}]' >"${TMP}/seed-15.json"
+	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-15.json"
 	set +e
 	filesync add-file origin tools/plain.txt >/dev/null 2>&1
 	_ec=$?

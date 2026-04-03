@@ -11,11 +11,11 @@ if filesync_argv_wants_help "$@"; then
 Usage: filesync add-collection <name> [--repos=a,b]
 Alias: acol
 
-Create a collection (a named list of repo names) in .filesync/collections.json for use with
-add-file/add-master/add-clone --also=. Collection names must not match any repo name in repos.json.
+Create a collection in the global collections.json for use with add-file/add-master/add-clone --also=.
+Collection names must not match any repo name in the global repos.json.
 
 Options:
-  --repos=a,b   Optional initial members (each must exist in repos.json)
+  --repos=a,b   Optional initial members (each must exist in global repos.json)
 
 EOF
   exit 0
@@ -26,7 +26,7 @@ source "$_CMD_ROOT/../lib/runtime.sh"
 source "$_CMD_ROOT/../lib/data-names.sh"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/collections.sh"
-filesync_command_init_lite "${BASH_SOURCE[0]}"
+filesync_command_init_system "${BASH_SOURCE[0]}"
 
 NAME=""
 REPOS_CSV=""
@@ -57,17 +57,8 @@ if [[ -z "$NAME" ]]; then
   exit 1
 fi
 
-repos="$FILESYNC_DIR/$FILESYNC_REPOS_NAME"
-coll="$FILESYNC_DIR/$FILESYNC_COLLECTIONS_NAME"
-
-if [[ ! -f "$repos" ]]; then
-  echo -e "${RED}Missing $repos${NC}" >&2
-  exit 1
-fi
-
-if [[ ! -f "$coll" ]]; then
-  printf '%s\n' '[]' | jq . > "$coll"
-fi
+repos="$FILESYNC_REPOS_FILE"
+coll="$FILESYNC_COLLECTIONS_FILE"
 
 if jq -e --arg n "$NAME" 'any(.name == $n)' "$repos" &>/dev/null; then
   echo -e "${RED}Error: '$NAME' is already a repo name; choose a different collection name.${NC}" >&2
@@ -89,7 +80,7 @@ fi
 
 for r in "${REPO_MEMBERS[@]}"; do
   if ! jq -e --arg n "$r" 'any(.name == $n)' "$repos" &>/dev/null; then
-    echo -e "${RED}Error: Repo '$r' not found in repos.json${NC}" >&2
+    echo -e "${RED}Error: Repo '$r' not found in global repos.json${NC}" >&2
     exit 1
   fi
 done

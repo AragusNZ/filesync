@@ -21,12 +21,13 @@ assert_help "sync alias s -h" "master repos" s -h
 assert_help "check --help" "last_check_at" check --help
 assert_help "check alias c -h" "Verify mappings" c -h
 assert_help "init --help" ".filesync/" init --help
+assert_help "init --help" "--no-repo" init --help
 assert_help "list-repos --help" "list-repos" list-repos --help
 assert_help "list-files -h" "list-files" list-files -h
-assert_help "enable --help" "file sync on" enable --help
-assert_help "disable -h" "file sync off" disable -h
+assert_help "enable --help" "check_sync_enabled" enable --help
+assert_help "disable -h" "check_sync_enabled" disable -h
 assert_help "update --help" "GitHub" update --help
-assert_help "path-mode --help" "path_mode" path-mode --help
+assert_help "config --help" "doctor" config --help
 assert_help "progress --help" "percent" progress --help
 assert_help "add-file --help" "add-file" add-file --help
 assert_help "add-master -h" "add-master" add-master -h
@@ -47,3 +48,6 @@ assert_help "remove-collection --help" "collections.json" remove-collection --he
 assert_help "list-collections -h" "list-collections" list-collections -h
 assert_help "list-collections alias lcol -h" "list-collections" lcol -h
 assert_help "edit-collection --help" "--add-repo" edit-collection --help
+assert_help "config --help" "system-home" config --help
+assert_help "migrate --help" "legacy-backup" migrate --help
+assert_help "handle-missing --help" "--recreate-from-master" handle-missing --help

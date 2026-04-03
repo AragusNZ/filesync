@@ -117,14 +117,14 @@ done
 if [[ "${wants_install_layout}" -eq 1 ]]; then
 	if [[ "${quiet}" -eq 1 ]]; then
 		_o1log="$(mktemp)"
-		if ! bash "${TESTS}/commands/01-install-layout.sh" >"${_o1log}" 2>&1; then
+		if ! bash "${TESTS}/commands/01-install-layout.sh" >"${_o1log}" 2>&1 </dev/null; then
 			cat "${_o1log}" >&2
 			rm -f "${_o1log}"
 			exit 1
 		fi
 		rm -f "${_o1log}"
 	else
-		bash "${TESTS}/commands/01-install-layout.sh"
+		bash "${TESTS}/commands/01-install-layout.sh" </dev/null
 	fi
 else
 	ensure_staged
@@ -143,7 +143,7 @@ for f in "${selected[@]}"; do
 	fi
 	if [[ "${quiet}" -eq 1 ]]; then
 		_tlog="$(mktemp)"
-		if bash "${f}" >"${_tlog}" 2>&1; then
+		if env FILESYNC_HOME="${TMP}/sys-${base%.sh}" bash "${f}" >"${_tlog}" 2>&1 </dev/null; then
 			rm -f "${_tlog}"
 			passed+=("${base}")
 		else
@@ -154,7 +154,7 @@ for f in "${selected[@]}"; do
 		fi
 	else
 		echo "  --- ${base} ---"
-		if bash "${f}"; then
+		if env FILESYNC_HOME="${TMP}/sys-${base%.sh}" bash "${f}" </dev/null; then
 			passed+=("${base}")
 		else
 			failed+=("${base}")

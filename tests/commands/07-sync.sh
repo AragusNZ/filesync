@@ -9,7 +9,6 @@ mkdir -p "${p}"
 (
 	cd "${p}"
 	filesync init
-	printf '%s\n' '[]' | jq . >".filesync/repos.json"
 	if filesync sync 2>/dev/null; then
 		die "sync with zero repos should fail"
 	fi
@@ -38,7 +37,8 @@ mkdir -p "${proj}"
 	filesync init
 	jq -n \
 		--arg url "file://${master}" \
-		'[{"name":"origin","path":"../sync-force-master","url":$url,"branch":"main"}]' >".filesync/repos.json"
+		'[{"name":"origin","path":"../sync-force-master","url":$url,"branch":"main"}]' >"${TMP}/seed-07.json"
+	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-07.json"
 	filesync add-file origin tools/x.txt
 	filesync sync
 	# Ensure last_sync_at is strictly before the next local mtime (second resolution).

@@ -15,7 +15,7 @@ At least one option is required.
 
 Options:
   --rename=new_name     Rename the collection (must not match a repo or other collection)
-  --add-repo=name       Add a repo that exists in repos.json
+  --add-repo=name       Add a repo that exists in global repos.json
   --remove-repo=name    Remove a repo from the collection (ok if already absent)
 
 EOF
@@ -27,7 +27,7 @@ source "$_CMD_ROOT/../lib/runtime.sh"
 source "$_CMD_ROOT/../lib/data-names.sh"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/collections.sh"
-filesync_command_init_lite "${BASH_SOURCE[0]}"
+filesync_command_init_system "${BASH_SOURCE[0]}"
 
 CUR=""
 RENAME=""
@@ -73,8 +73,8 @@ if [[ -z "$RENAME" ]] && [[ -z "$ADD_REPO" ]] && [[ -z "$RM_REPO" ]]; then
   exit 1
 fi
 
-repos="$FILESYNC_DIR/$FILESYNC_REPOS_NAME"
-coll="$FILESYNC_DIR/$FILESYNC_COLLECTIONS_NAME"
+repos="$FILESYNC_REPOS_FILE"
+coll="$FILESYNC_COLLECTIONS_FILE"
 
 if [[ ! -f "$coll" ]] || ! jq -e --arg n "$CUR" 'any(.name == $n)' "$coll" &>/dev/null; then
   echo -e "${RED}Error: No collection named '$CUR'${NC}" >&2

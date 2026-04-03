@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Set or show progress_display in .filesync/config.json: hidden | bar | percent (default: percent).
-# Dispatched as: filesync progress [hidden|bar|percent]
+# Set or show progress_display in system preferences: hidden | bar | percent (default: percent).
 
 set -euo pipefail
 
@@ -11,38 +10,38 @@ if filesync_argv_wants_help "$@"; then
   cat <<'EOF'
 Usage: filesync progress [hidden|bar|percent]
 
-Show or set progress_display in .filesync/config.json for long TTY loops (default: percent).
+Show or set progress_display in the system preferences file for long TTY loops (default: percent).
 
   hidden   Disable progress output
   bar      Full bar on stderr (TTY, many items)
   percent  Compact [NNN%] on stderr (TTY, many items)
 
-With no argument, prints the current effective value from merged config.
+With no argument, prints the current effective value (merged with package defaults).
 EOF
   exit 0
 fi
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
 # shellcheck source=/dev/null
-source "$_CMD_ROOT/../lib/config-merge.sh"
-filesync_command_init_lite "${BASH_SOURCE[0]}"
+source "$_CMD_ROOT/../lib/preferences-merge.sh"
+filesync_command_init_system "${BASH_SOURCE[0]}"
 
-mkdir -p "$FILESYNC_DIR"
-cfg="$FILESYNC_DIR/$FILESYNC_CONFIG_NAME"
-if [[ ! -f "$cfg" ]]; then
-  echo '{}' >"$cfg"
+prefs="${FILESYNC_SYSTEM_HOME}/${FILESYNC_PREFERENCES_NAME}"
+mkdir -p "$(dirname "$prefs")"
+if [[ ! -f "$prefs" ]]; then
+  printf '%s\n' '{}' | jq . >"$prefs"
 fi
 
 mode="${1:-}"
 if [[ -z "$mode" ]]; then
-  filesync_merged_top_level_config | jq -r '.progress_display // "percent"'
+  filesync_merged_preferences | jq -r '.progress_display // "percent"'
   exit 0
 fi
 
 case "$mode" in
   hidden | bar | percent)
-    jq --arg m "$mode" '.progress_display = $m | del(.show_progress)' "$cfg" >"${cfg}.tmp"
-    mv "${cfg}.tmp" "$cfg"
+    jq --arg m "$mode" '.progress_display = $m' "$prefs" >"${prefs}.tmp"
+    mv "${prefs}.tmp" "$prefs"
     case "$mode" in
       hidden) echo -e "${YELLOW}Progress disabled (hidden).${NC}" >&2 ;;
       bar) echo -e "${GREEN}Progress style: full bar on stderr (TTY, 10+ items).${NC}" >&2 ;;

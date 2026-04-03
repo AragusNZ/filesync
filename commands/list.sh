@@ -16,7 +16,8 @@ if filesync_argv_wants_help "$@"; then
 Usage: filesync list-repos [--repo=name]
 Alias: lr
 
-List configured repos from merged config. With --repo=, show only that repo (errors if missing).
+List configured repos from the global store. With --repo=, show only that repo (errors if missing).
+Does not require a project .filesync directory.
 EOF
       ;;
     list-files | lf)
@@ -24,7 +25,8 @@ EOF
 Usage: filesync list-files [--repo=name] [--file=fragment] [--status=a,b,...] [--include-detached]
 Alias: lf
 
-List file mappings and status. --file filters by substring on local_path or repo_file_path.
+List file mappings and status. Requires a filesync project (walk-up .filesync/ for files.json).
+--file filters by substring on local_path or repo_file_path.
 --status uses the same token rules as sync/check (see main "filesync -h" or man filesync).
 EOF
       ;;
@@ -33,7 +35,8 @@ EOF
 Usage: filesync list-collections
 Alias: lcol
 
-List named repo collections from .filesync/collections.json (for use with --also=).
+List named repo collections from the global store (for use with --also=).
+Does not require a project .filesync directory.
 EOF
       ;;
     *)
@@ -52,11 +55,6 @@ fi
 
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
-filesync_command_init "${BASH_SOURCE[0]}"
-# shellcheck source=/dev/null
-source "$_CMD_ROOT/../lib/cli-banner.sh"
-
-trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
 _list_usage_triple='filesync list-repos [--repo=name] | filesync list-files [--repo=name] [--file=path_fragment] [--status=a,b,...] [--include-detached] | filesync list-collections'
 
@@ -151,6 +149,25 @@ if [[ "$sub" == list-collections || "$sub" == lcol ]]; then
     exit 1
   fi
 fi
+
+case "$sub" in
+  list-files|lf)
+    filesync_command_init "${BASH_SOURCE[0]}"
+    ;;
+  list-repos|lr|list-collections|lcol)
+    filesync_command_init_system "${BASH_SOURCE[0]}"
+    # shellcheck source=/dev/null
+    source "$_CMD_ROOT/../lib/json-state.sh"
+    FILESYNC_STATE_FILE=$(mktemp)
+    filesync_assemble_global_catalog_state_to "$FILESYNC_STATE_FILE" || exit 1
+    CONFIG_FILE="$FILESYNC_STATE_FILE"
+    export CONFIG_FILE FILESYNC_STATE_FILE
+    ;;
+esac
+
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/cli-banner.sh"
+trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
 case "$sub" in
   list-repos|lr)

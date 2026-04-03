@@ -29,9 +29,6 @@ mkdir -p "${proj_b}"
 (
 	cd "${proj_b}"
 	filesync init
-	jq -n \
-		--arg p "${master}" \
-		'[{"name":"emissions","path":$p,"url":null,"branch":"main"}]' >".filesync/repos.json"
 )
 
 mkdir -p "${proj_a}"
@@ -44,7 +41,8 @@ mkdir -p "${proj_a}"
 		'[
 			{"name":"emissions","path":$master,"url":null,"branch":"main"},
 			{"name":"greenlit-api","path":$b,"url":null,"branch":null}
-		]' >".filesync/repos.json"
+		]' >"${TMP}/seed-18.json"
+	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-18.json"
 
 	filesync add-file emissions tools/x.txt --also=greenlit-api
 

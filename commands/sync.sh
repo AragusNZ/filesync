@@ -123,11 +123,6 @@ cleanup_sync_exit() {
 }
 trap cleanup_sync_exit EXIT
 
-if ! jq -e '.file_sync_enabled == true' "$CONFIG_FILE" &>/dev/null; then
-  filesync_print_disabled_hint
-  exit 0
-fi
-
 if ! jq -e '.repos | length > 0' "$CONFIG_FILE" >/dev/null 2>&1; then
   echo -e "${RED}Error: Config must have at least one entry in repos${NC}" >&2
   exit 1
@@ -151,6 +146,11 @@ filesync_config_file_rows_tsv_to "$SYNC_ROWS_TSV" "$CONFIG_FILE" "$REPO_FILTER" 
 FILES_WORK_COUNT=$(wc -l < "$SYNC_ROWS_TSV")
 FILES_WORK_COUNT="${FILES_WORK_COUNT//[[:space:]]/}"
 
+if [[ "$FILES_WORK_COUNT" -eq 0 ]] && filesync_files_only_blocked_by_check_sync "$CONFIG_FILE" "$REPO_FILTER" "$FILE_FRAGMENT"; then
+  filesync_print_disabled_hint
+  exit 0
+fi
+
 if filesync_progress_want "$FILES_WORK_COUNT"; then
   filesync_progress_begin "$FILES_WORK_COUNT"
 fi
@@ -163,7 +163,7 @@ filesync_sync_iter_progress() {
   fi
 }
 
-while IFS=$'\t' read -r i REPO_NAME LOCAL_PATH REPO_FILE_PATH ROW_STATUS _last_sync_unused; do
+while IFS=$'\t' read -r i REPO_ID REPO_NAME LOCAL_PATH REPO_FILE_PATH ROW_STATUS _last_sync_unused; do
   if [[ -z "$REPO_NAME" ]] || [[ "$REPO_NAME" == "null" ]]; then
     filesync_print_config_error_invalid_repo_name "$i"
     FAILED=$((FAILED + 1))
@@ -232,7 +232,11 @@ while IFS=$'\t' read -r i REPO_NAME LOCAL_PATH REPO_FILE_PATH ROW_STATUS _last_s
 
   if [[ -f "$FULL_LOCAL_PATH" ]]; then
     EXPECTED_TMP=$(mktemp)
-    if ! render_clone_from_master_file "$FULL_MASTER_PATH" "$REPO_FILE_PATH" "$REPO_NAME" "$EXPECTED_TMP"; then
+    _rid_render="${REPO_ID}"
+    if [[ -f "$FULL_LOCAL_PATH" ]] && ! grep -q 'repo_id=' "$FULL_LOCAL_PATH"; then
+      _rid_render=""
+    fi
+    if ! render_clone_from_master_file "$FULL_MASTER_PATH" "$REPO_FILE_PATH" "$REPO_NAME" "$EXPECTED_TMP" "$_rid_render"; then
       rm -f "$EXPECTED_TMP"
       file_sync_print_sync_action_line "${RED}✗${NC}" "${RED}" "could not render" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
       filesync_error "${LOCAL_PATH}: could not render clone from master ${REPO_NAME}/${REPO_FILE_PATH} (master file missing or unparsable filesync marker)"
@@ -260,7 +264,11 @@ while IFS=$'\t' read -r i REPO_NAME LOCAL_PATH REPO_FILE_PATH ROW_STATUS _last_s
     file_sync_print_sync_action_line "${YELLOW}→${NC}" "${YELLOW}" "dry-run" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
   else
     mkdir -p "$(dirname "$FULL_LOCAL_PATH")"
-    if ! render_clone_from_master_file "$FULL_MASTER_PATH" "$REPO_FILE_PATH" "$REPO_NAME" "$FULL_LOCAL_PATH"; then
+    _rid_render="${REPO_ID}"
+    if [[ -f "$FULL_LOCAL_PATH" ]] && ! grep -q 'repo_id=' "$FULL_LOCAL_PATH"; then
+      _rid_render=""
+    fi
+    if ! render_clone_from_master_file "$FULL_MASTER_PATH" "$REPO_FILE_PATH" "$REPO_NAME" "$FULL_LOCAL_PATH" "$_rid_render"; then
       file_sync_print_sync_action_line "${RED}✗${NC}" "${RED}" "could not render" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
       filesync_error "${LOCAL_PATH}: could not render clone from master ${REPO_NAME}/${REPO_FILE_PATH} (master file missing or unparsable filesync marker)"
       FAILED=$((FAILED + 1))

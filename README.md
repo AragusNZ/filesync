@@ -46,7 +46,7 @@ GitHub Releases publish a **source tarball** (`make install` from the extracted 
 
 ## Usage
 
-Create a new project (writes `./.filesync/` in the current directory — that folder’s parent is the **project root** for this tree):
+Create a new project (writes `./.filesync/` in the current directory — that folder’s parent is the **project root** for this tree). From an interactive terminal, **`filesync init`** can also prompt to add a matching entry to the **global** `repos.json` (name, URL, branch); the checkout **`path`** is derived from **`repo_path_root`** and the project directory (git top when in a work tree). Defaults for name, URL, and branch come from **git** when applicable. Use **`filesync init --no-repo`** (or run without a TTY) to skip that step and use **`add-repo`** later.
 
 ```bash
 cd /path/to/your/project
@@ -65,19 +65,19 @@ filesync list-files
 
 **Development without install:** run `./bin/filesync` from this tree (or `bash /path/to/filesync/bin/filesync …`).
 
-Primary subcommands: `init`, `enable`, `disable`, `progress`, `path-mode`, `sync`, `check`, `list-repos`, `list-files`, `list-collections`, `add-file`, `add-master`, `add-clone`, `push`, `detach-file`, `attach-file`, `detach-repo`, `attach-repo`, `remove-file`, `remove-repo`, `add-repo`, `edit-repo`, `add-collection`, `remove-collection`, `edit-collection`, `update`. Shorter aliases (`s`, `c`, `lr`, `lf`, `lcol`, `af`, `am`, `ac`, `ddf`, `daf`, `ddr`, `dar`, `rmf`, `rmr`, `ar`, `er`, `acol`, `rmcol`, `ecol`, …) are listed in the built-in help — run **`filesync`** with no arguments.
+Primary subcommands: `init`, `config`, `migrate`, `handle-missing`, `enable`, `disable`, `progress`, `sync`, `check`, `list-repos`, `list-files`, `list-collections`, `add-file`, `add-master`, `add-clone`, `push`, `detach-file`, `attach-file`, `detach-repo`, `attach-repo`, `remove-file`, `remove-repo`, `add-repo`, `edit-repo`, `add-collection`, `remove-collection`, `edit-collection`, `update`. Shorter aliases (`s`, `c`, `lr`, `lf`, `lcol`, `af`, `am`, `ac`, `ddf`, `daf`, `ddr`, `dar`, `rmf`, `rmr`, `ar`, `er`, `acol`, `rmcol`, `ecol`, …) are listed in the built-in help — run **`filesync`** with no arguments.
 
 **`check`**, **`sync`**, **`list-repos`**, and **`list-files`** accept optional **`--repo=name`**. **`check`**, **`sync`**, and **`list-files`** also accept **`--file=fragment`**: substring match on `local_path` or `repo_file_path` (case-sensitive). **`check`** also accepts **`--status=a,b,...`** (same token rules as `sync`/`list-files`) and matches against each row's current cached `sync_status` before re-checking selected rows. Combine filters to narrow scope.
 
-**`add-file`**, **`add-master`**, and **`add-clone`** support **`--also=`** with comma-separated **repo names** and/or **collection names** from `.filesync/collections.json`. Define groups with **`add-collection`** (**`acol`**), **`edit-collection`** (**`ecol`**), **`remove-collection`** (**`rmcol`**); list them with **`list-collections`** (**`lcol`**). Each resolved repo must appear in the current project's `.filesync/repos.json` with `path` pointing at another initialized project root (its own `.filesync/`). Collection and repo names share one namespace (no duplicate names across the two). Empty collections cannot be used with **`--also=`**. For **`add-file`**, the path in the repo must already have a **`kind=master`** marker unless you pass **`--mark-master`**, which prepends one when the repo file has no filesync marker yet.
+**`add-file`**, **`add-master`**, and **`add-clone`** support **`--also=`** with comma-separated **repo names** and/or **collection names** from the **global** `collections.json`. Define groups with **`add-collection`** (**`acol`**), **`edit-collection`** (**`ecol`**), **`remove-collection`** (**`rmcol`**); list them with **`list-collections`** (**`lcol`**). Each resolved repo must exist in the **global** `repos.json` with `path` resolved under **`repo_path_root`** (see **`filesync config show`**); the resolved checkout directory must be an initialized project (contains `.filesync/files.json`). **`--also`** skips targets whose checkout equals the current project root and respects per-repo **`mirror_in_enabled`**. Collection and repo names share one namespace. Empty collections cannot be used with **`--also=`**. For **`add-file`**, the path in the repo must already have a **`kind=master`** marker unless you pass **`--mark-master`**, which prepends one when the repo file has no filesync marker yet.
 
 **`filesync push`** copies local content to the linked master paths (reverse of default **`sync`**). Use **`--all`** to include every mapping whose status is **`local_newer`**, combined with any explicit paths you list; see [docs/configuration.md](docs/configuration.md) and **`man filesync`** for details.
 
 **`filesync remove-file`** (alias **`rmf`**) accepts **`--all-missing`** to remove every mapping whose cached **`sync_status`** is **`error_missing_master`**, combined with any explicit paths; see [docs/configuration.md](docs/configuration.md#removing-mappings) and **`man filesync`**.
 
-**Detach** vs **remove**: **`detach-file`** / **`detach-repo`** keep the row but mark it **`detached`**; **`remove-file`** drops the mapping and strips clone/detached markers on disk; **`remove-repo`** drops a repo after optionally clearing its mappings. See [docs/configuration.md](docs/configuration.md#removing-mappings).
+**Detach** vs **remove**: **`detach-file`** / **`detach-repo`** keep the row but mark it **`detached`**; **`remove-file`** drops the mapping and strips clone/detached markers on disk; **`remove-repo`** drops a repo after **`--force`** clears all mappings (when any remain), then **`-y`** can skip the prompt. See [docs/configuration.md](docs/configuration.md#removing-mappings).
 
-When file sync is off in **merged** config (`file_sync_enabled` is not boolean `true` — e.g. after **`filesync disable`**), **`check`** and **`sync`** print a message and exit **0** without doing work.
+When a repo has **`check_sync_enabled: false`** in the global store (**`filesync disable <repo>`**), **`check`** and **`sync`** skip every `files.json` row that references that repo. If every selected row is skipped for that reason, the command exits **0** with a short hint.
 
 ## Markers
 
@@ -96,22 +96,19 @@ Run `filesync` with no arguments to print a short usage summary (same idea as **
 | `bin/filesync` | Dispatcher |
 | `commands/*.sh` | Subcommand implementations (e.g. `list.sh` handles `list-repos`, `list-files`, and `list-collections`) |
 | `lib/*.sh` | Resolve project, merge config, assemble state JSON, paths, status |
-| `share/defaults/config.default.json` | Shallow-merge defaults for `.filesync/config.json` |
+| `share/defaults/preferences.default.json` | Defaults merged into system `preferences.json` |
 | `share/VERSION` | Single-line version for `filesync --version` |
 | `man/filesync.1` | Manual page (installed under `PREFIX/share/man/man1/`) |
 
-## User data: `.filesync/`
+## User data: system store + project `.filesync/`
 
-| File | Content |
-|------|---------|
-| `config.json` | JSON object (partial); merged over package defaults |
-| `repos.json` | JSON **array** of repo objects (`name`, `url`, `path`, `branch`, …) |
-| `files.json` | JSON **array** of file rows |
-| `collections.json` | JSON **array** of `{ "name", "repos": [repo names…] }` for **`--also=`** expansion; present after **`init`**; legacy trees may lack it until the first collection command or a partial **`init`** |
+**System metadata** (default **`~/.filesync`**, or **`FILESYNC_HOME`**, or the directory in **`~/.config/filesync/system_home`**): `repos.json`, `collections.json`, `system.json` (holds **`repo_path_root`**), and `preferences.json` (**`progress_display`**, etc.). Repo `path` values are relative to **`repo_path_root`** unless they start with `/`.
+
+**Per project** (discovered like git: walk up for **`.filesync/`**): **`files.json`** only. If you still have old per-project `repos.json` / `collections.json` / `config.json`, run **`filesync migrate`** once to import them into the global store.
 
 Basenames are defined in `lib/data-names.sh` if you need to change them in a fork.
 
-Discovery: walk parents from the current working directory until a directory `D` exists where **`D/.filesync`** is present; **`D` is the project root**. Overrides: `FILESYNC_PROJECT_ROOT` or `FILESYNC_DIR` (see [docs/configuration.md](docs/configuration.md)).
+Overrides: **`FILESYNC_PROJECT_ROOT`** or **`FILESYNC_DIR`** for the project; **`FILESYNC_HOME`** for the global store (see [docs/configuration.md](docs/configuration.md)).
 
 ## Docs
 

@@ -4,7 +4,7 @@ set -euo pipefail
 # shellcheck source=/dev/null
 source "${ROOT}/tests/harness-command.sh"
 
-# Basic: clone from master project into sibling; repo= inferred from target repos.json
+# Basic: clone from master project into sibling; repo= inferred from global repos + target checkout
 master="${TMP}/ac-master" proj_b="${TMP}/ac-proj-b"
 rm -rf "${master}" "${proj_b}"
 mkdir -p "${master}/tools" "${proj_b}"
@@ -16,18 +16,20 @@ mkdir -p "${master}/tools" "${proj_b}"
 		echo "BODY_X"
 		echo "# filesync kind=master"
 	} >tools/x.txt
-	jq -n \
-		--arg p "${proj_b}" \
-		'[{"name":"consumer","path":$p,"url":null,"branch":null}]' >".filesync/repos.json"
 )
+jq -n \
+	--arg p "${proj_b}" \
+	'[{"name":"consumer","path":$p,"url":null,"branch":null}]' >"${TMP}/seed-22a.json"
+filesync_test_seed_global_repos "${master}" "${TMP}/seed-22a.json"
 
 (
 	cd "${proj_b}"
 	filesync init
-	jq -n \
-		--arg p "${master}" \
-		'[{"name":"source","path":$p,"url":null,"branch":null}]' >".filesync/repos.json"
 )
+jq -n \
+	--arg p "${master}" \
+	'[{"name":"source","path":$p,"url":null,"branch":null}]' >"${TMP}/seed-22b.json"
+filesync_test_append_global_repos "${TMP}/seed-22b.json"
 
 (
 	cd "${master}"
@@ -95,23 +97,25 @@ mkdir -p "${master2}/tools" "${pb}" "${pc}"
 		echo "ZED"
 		echo "# filesync kind=master"
 	} >tools/z.txt
-	jq -n \
-		--arg b "${pb}" \
-		--arg c "${pc}" \
-		'[
-			{"name":"pb","path":$b,"url":null,"branch":null},
-			{"name":"pc","path":$c,"url":null,"branch":null}
-		]' >".filesync/repos.json"
 )
+jq -n \
+	--arg b "${pb}" \
+	--arg c "${pc}" \
+	'[
+		{"name":"pb","path":$b,"url":null,"branch":null},
+		{"name":"pc","path":$c,"url":null,"branch":null}
+	]' >"${TMP}/seed-22c.json"
+filesync_test_seed_global_repos "${master2}" "${TMP}/seed-22c.json"
 for d in "${pb}" "${pc}"; do
 	(
 		cd "${d}"
 		filesync init
-		jq -n \
-			--arg m "${master2}" \
-			'[{"name":"m","path":$m,"url":null,"branch":null}]' >".filesync/repos.json"
 	)
 done
+jq -n \
+	--arg m "${master2}" \
+	'[{"name":"m","path":$m,"url":null,"branch":null}]' >"${TMP}/seed-22d.json"
+filesync_test_append_global_repos "${TMP}/seed-22d.json"
 
 (
 	cd "${master2}"

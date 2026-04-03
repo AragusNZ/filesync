@@ -26,7 +26,8 @@ mkdir -p "${proj}"
 	filesync init
 	jq -n \
 		--arg url "file://${master}" \
-		'[{"name":"origin","path":"../git-master","url":$url,"branch":"main"}]' >".filesync/repos.json"
+		'[{"name":"origin","path":"../git-master","url":$url,"branch":"main"}]' >"${TMP}/seed-10.json"
+	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-10.json"
 	filesync add-file origin tools/demo.txt
 	[[ -f tools/demo.txt ]] || die "add-file should create local file"
 	grep -q 'filesync kind=clone' tools/demo.txt || die "add-file should set clone marker on local"

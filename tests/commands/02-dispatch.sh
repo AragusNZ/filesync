@@ -8,7 +8,8 @@ mkdir -p "${TMP}/dispatch-proj/dummy-repo"
 (
 	cd "${TMP}/dispatch-proj"
 	filesync init
-	jq -n '[{"name":"d","path":"dummy-repo","url":"u","branch":"main"}]' >".filesync/repos.json"
+	jq -n '[{"name":"d","path":"dummy-repo","url":"u","branch":"main"}]' >"${TMP}/seed-02.json"
+	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-02.json"
 	if filesync not_a_real_subcommand_zz 2>/dev/null; then
 		die "unknown subcommand should fail"
 	fi

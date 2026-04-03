@@ -11,16 +11,14 @@ if filesync_argv_wants_help "$@"; then
 Usage: filesync remove-collection <name>
 Alias: rmcol
 
-Remove a named collection from .filesync/collections.json.
+Remove a named collection from the global collections.json.
 
 EOF
   exit 0
 fi
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
-# shellcheck source=/dev/null
-source "$_CMD_ROOT/../lib/data-names.sh"
-filesync_command_init_lite "${BASH_SOURCE[0]}"
+filesync_command_init_system "${BASH_SOURCE[0]}"
 
 if [[ $# -ne 1 ]] || [[ "$1" == -* ]]; then
   echo -e "${RED}Usage: filesync remove-collection <name>${NC}" >&2
@@ -28,7 +26,7 @@ if [[ $# -ne 1 ]] || [[ "$1" == -* ]]; then
 fi
 
 NAME="$1"
-coll="$FILESYNC_DIR/$FILESYNC_COLLECTIONS_NAME"
+coll="$FILESYNC_COLLECTIONS_FILE"
 
 if [[ ! -f "$coll" ]]; then
   echo -e "${RED}Error: No collections file at $coll${NC}" >&2

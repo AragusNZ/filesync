@@ -13,9 +13,13 @@ filesync \- map and sync files across git checkouts
 .RI [ arguments ]
 .SH DESCRIPTION
 .B filesync
-is a Bash CLI that keeps file mappings in a per-project
-.B .filesync/
-directory (configuration, repos, optional named repo collections, and file rows). It discovers the project by walking parent directories from the current working directory, similar to
+is a Bash CLI that keeps global repo and collection metadata under a system directory (default
+.BR ~/.filesync\-root )
+and per-project file mappings under
+.BR .filesync/files.json .
+It discovers the project from the current working directory: first by matching registered repo checkouts that contain
+.BR .filesync/files.json ,
+then by walking parent directories, similar to
 .BR git .
 With no arguments,
 .B filesync
@@ -60,65 +64,67 @@ flags print extended usage for that subcommand only (see each command below).
 .SS "Project setup"
 .TP
 .B init
-.RI [ directory ]
+[\fIdirectory\fR] [\fB\-\-no\-repo\fR]
 Create
-.B .filesync/
-with default
-.IR config.json ", " repos.json ", " files.json ", and " collections.json
-at the project root. Default directory is the current working directory.
+.B .filesync/files.json
+as an empty array at the project root and ensure the system metadata store exists (default
+.BR ~/.filesync\-root ;
+override with
+.BR FILESYNC_HOME ).
+Default directory is the current working directory.
 .B init
 does not walk parents; the given directory establishes the project root.
 If
-.B .filesync/config.json
-,
-.B .filesync/repos.json
-and
 .B .filesync/files.json
-all already exist,
+already exists,
 .B init
-exits with an error; if only some exist, it creates whichever files are missing
-(including
-.B collections.json
-when absent).
+exits with an error.
+When stdin is a terminal and
+.B \-\-no\-repo
+is not given, prompts to append a repo definition to global
+.B repos.json
+(name, remote URL, branch, stable id).
+The checkout
+.B path
+is stored relative to your home directory when possible (git work tree top when inside git, otherwise the project root), with defaults for name, URL, and branch taken from git when the project is inside a work tree.
+If stdin is not a terminal, that step is skipped (use
+.B add-repo
+later, or pass
+.B \-\-no\-repo
+to suppress the notice).
 .TP
 .B enable
-Turn on file sync in merged config.
+.I repo_name
+Set
+.B check_sync_enabled
+true for
+.I repo_name
+in global
+.B repos.json
+(equivalent to
+.BR "filesync config repo" " " repo_name " check-sync true" ;
+prompts for confirmation).
 .TP
 .B disable
-Turn off file sync in merged config.
-.TP
-.B path-mode
-.RI [ relative | absolute ]
-With no argument, print the effective
-.I path_mode
-from merged config
-.RI ( relative
-or
-.IR absolute ).
-With an argument, set
-.I path_mode
-in
-.BR .filesync/config.json :
-.B relative
-resolves each repo
-.B path
-under the project root;
-.B absolute
-uses
-.B path
-as a filesystem directory as-is.
+.I repo_name
+Set
+.B check_sync_enabled
+false for
+.I repo_name
+in global
+.BR repos.json .
 .TP
 .B progress
 .RI [ hidden | bar | percent ]
 With no arguments, print the effective
 .I progress_display
-value (merged package defaults and
-.BR .filesync/config.json )
+from merged preferences (package defaults and
+.BR preferences.json )
 to standard output.
 With one argument, store
 .I progress_display
 in
-.BR .filesync/config.json :
+.BR preferences.json :
 .B hidden
 disables TTY progress;
 .B bar
@@ -127,6 +133,52 @@ draws the full bracket bar with counts on standard error;
 draws a compact
 .RI [ NNN% ]
 indicator (package default).
+.TP
+.B config
+Inspect or change system metadata:
+.B show
+prints effective system home, pointer path, repo path anchor, and global JSON paths;
+.B doctor
+summarizes pointer and environment overrides;
+.B set system-home
+,
+.B set progress
+, and
+.B repo ... check-sync
+/
+.B mirror-in
+update the pointer,
+.BR preferences.json ", or " repos.json
+(see
+.BR "filesync config --help" ).
+.B set repo-path-root
+is no longer supported; relative
+.B path
+values resolve under
+.B $HOME
+(or
+.B FILESYNC_REPO_PATH_ANCHOR
+for tests).
+.TP
+.B migrate
+If the discovered project still has per-project
+.B repos.json
+,
+.B collections.json
+, or
+.BR config.json ,
+merge them into the global store and remove those files after backup under
+.BR .filesync/legacy-backup/ .
+Also ensures every global repo has an
+.B id
+and every known
+.I files.json
+row has
+.BR repo_id .
+.TP
+.B handle-missing
+Non-interactive repair for rows whose master or local paths are missing (see
+.B "filesync handle-missing --help" ).
 .SS "Inspect and sync"
 .TP
 .B check
@@ -137,9 +189,9 @@ Also
 .RI [ \-\-status= list ]
 Verify mappings, refresh
 .I files.json
-row status, and update
-.I last_check_at
-in config. Optional
+row status (including per-row
+.IR last_check_at ).
+Optional
 .BI \-\-repo=
 filters to one repo by name.
 .BI \-\-file=
@@ -183,7 +235,7 @@ If the master file cannot be rendered, the row is
 but the command exits successfully unless other blocking issues exist.
 When standard error is a terminal,
 .I progress_display
-in merged config is not
+in merged preferences is not
 .B hidden
 (see
 .BR progress ),
@@ -269,7 +321,7 @@ Rows skipped by status filter or marker rules are printed in gray.
 Like
 .BR check ,
 a TTY progress indicator on standard error may appear when scanning many rows; per-file sync lines go to standard output, so output may not stay fixed on one line.
-If no repos are configured (for example
+If no repos are configured (for example global
 .I repos.json
 is an empty array),
 .B sync
@@ -315,8 +367,9 @@ for a row are summarized on the line after the status.
 .B list-collections
 Also
 .BR lcol .
-List named repo collections from
-.IR collections.json .
+List named repo collections from the global
+.I collections.json
+.RI ( FILESYNC_HOME ).
 These names can be used in
 .B \-\-also=
 with
@@ -346,19 +399,20 @@ The local file is written (or overwritten) with content rendered from the master
 .B kind=clone
 marker.
 .B \-\-also=
-mirrors the mapping into other initialized projects. Each comma-separated token is either a repo name from the current project's
+mirrors the mapping into other initialized projects. Each comma-separated token is either a repo name from global
 .B repos.json
-whose
-.B path
-points at a sibling project root containing its own
-.BR .filesync/ ,
-or a collection name defined in
-.BR collections.json
+whose resolved checkout directory is a sibling project root containing
+.BR .filesync/files.json ,
+or a collection name defined in global
+.B collections.json
 (expanded to that collection's repo names in order). Collection and repo names share a single namespace (no name may be both). Empty collections cannot be used with
 .BR \-\-also= .
-For each sibling project, filesync uses that project's configuration (including
-.BR path_mode )
-and writes/overwrites the clone file under that sibling project's root.
+Targets whose resolved checkout equals the current project root are skipped; each target must have
+.B mirror_in_enabled
+true (default).
+For each sibling project, filesync resolves checkouts using the configured path anchor (home directory, or
+.B FILESYNC_REPO_PATH_ANCHOR
+in tests) and writes/overwrites the clone file under that sibling project's root.
 .TP
 .B add-master
 Also
@@ -404,7 +458,7 @@ The target project's
 .B repo=
 token and row
 .B repo_name
-are inferred from that project's
+are inferred from global
 .B repos.json
 by finding the repo entry whose configured checkout path resolves to this project root.
 The command fails if the target local file already exists or if
@@ -511,28 +565,44 @@ arguments); if it is the only selector and there are no such rows, the command e
 .BR rmr ", " remove-repo
 .I repo_name
 .RI [ \-y " | " \-\-yes ]
+.RI [ \-\-force ]
 Remove the named repo from
-.IR repos.json .
+.IR repos.json
+after removing every
+.I files.json
+mapping for that repo across all known projects (registered checkouts with
+.BR .filesync/files.json ,
+plus the current project).
 The repo name is also removed from every entry in
 .I collections.json
 and any collection that becomes empty is dropped.
-If
-.I files.json
-has no rows for that repo, the repo entry is removed. If there are still file mappings for that repo, the command prompts for confirmation; if you agree, each such mapping is removed like
-.BR remove-file ,
-then the repo entry is removed. Local file contents are not deleted. Answer
-.B n
-or press Enter to abort without changes.
+If there are no mappings anywhere, the repo entry is removed immediately.
+If any mapping exists anywhere, you must pass
+.B \-\-force
+first; then the command prompts for confirmation unless
 .B \-y
-and
+or
 .B \-\-yes
-skip that prompt (non-interactive / scripting).
+is given.
+Discovery matches
+.B sync
+and
+.BR edit-repo " " \-\-rename :
+the union of registered checkouts that contain
+.BR .filesync/files.json
+and the current project root.
+Local file contents are not deleted except via marker stripping as in
+.BR remove-file .
 .TP
 .B add-repo
 Also
 .BR ar .
 Interactively add a repo definition to
 .IR repos.json .
+The checkout
+.B path
+is derived from the current directory (git work tree top when inside git, otherwise the working directory), relative to home when possible.
+Run from that checkout.
 The name must not duplicate an existing repo entry and must not match a collection name in
 .IR collections.json .
 .TP
@@ -546,11 +616,18 @@ Also
 .RI [ \-\-branch= branch ]
 Edit a repo entry. Renaming updates
 .I repo_name
-in every
+in every discovered project's
 .I files.json
-row and the
+and the
 .B repo=
-token in local clone/detached sync markers for those rows.
+token in local clone/detached sync markers for affected paths
+(same project-root discovery as
+.BR remove-repo ).
+Renaming is refused if any mapping still references the repo and it has
+.B check_sync_enabled
+false in the global store, or if a mapping lives under a registered checkout whose repo has
+.B mirror_in_enabled
+false.
 The new name must not match another repo or any collection name.
 .TP
 .B add-collection
@@ -616,27 +693,54 @@ and
 .B \-\-yes
 skip the confirmation prompt and apply immediately when an update is available.
 .SH FILES
+System metadata directory (default
+.BR ~/.filesync\-root ;
+see
+.BR FILESYNC_HOME ):
 .TP
-.I .filesync/config.json
-Merged over package defaults; toggles, path mode, and
+.I system.json
+Version and other metadata.
+.TP
+.I repos.json
+Global array of repo definitions (
+.BR id ", " check_sync_enabled ", " mirror_in_enabled ", ..." ).
+.TP
+.I collections.json
+Global array of
+.B { "name", "repos" }
+objects; used to expand
+.B \-\-also=
+tokens.
+.TP
+.I preferences.json
+Merged over package defaults;
 .I progress_display
 .RI ( hidden \| bar \| percent )
 for TTY progress on long loops.
-.TP
-.I .filesync/repos.json
-Array of repo definitions.
+.PP
+Per project:
 .TP
 .I .filesync/files.json
-Array of file mapping rows.
-.TP
-.I .filesync/collections.json
-Optional array of
-.B { "name", "repos" }
-objects; repo names only (no nesting). Used to expand
-.B \-\-also=
-tokens on
-.BR add-file ", " add-master ", and " add-clone .
+Array of file mapping rows (
+.BR repo_id ", " repo_name ", ..." ).
 .SH ENVIRONMENT
+.TP
+.B FILESYNC_HOME
+Absolute path to the system metadata directory (overrides the pointer file and default
+.BR ~/.filesync\-root ).
+Intended for tests and automation; avoid per-project shell env if you want the normal shared catalog.
+.TP
+.B FILESYNC_REPO_PATH_ANCHOR
+Optional absolute directory: used instead of
+.B $HOME
+when resolving relative
+.B path
+values in
+.IR repos.json
+(tests).
+.TP
+.B FILESYNC_SYSTEM_HOME
+Set by the tool to the resolved metadata directory; not an input override.
 .TP
 .B FILESYNC_PROJECT_ROOT
 Project root directory.
@@ -678,7 +782,9 @@ Success, or
 .B check
 /
 .B sync
-completed with nothing blocking (or file sync is disabled and the command exits after notice).
+completed with nothing blocking (or every selected row was skipped because
+.B check_sync_enabled
+is false for its repo, in which case a hint is printed).
 .TP
 .B 1
 Failure: missing dependencies, invalid or missing configuration, usage errors, or

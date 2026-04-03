@@ -31,7 +31,8 @@ mkdir -p "${master}/tools" "${proj}/tools"
 	filesync init
 	jq -n \
 		--arg p "${master}" \
-		'[{"name":"origin","path":$p,"url":"","branch":"main"}]' >".filesync/repos.json"
+		'[{"name":"origin","path":$p,"url":"","branch":"main"}]' >"${TMP}/seed-17.json"
+	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-17.json"
 	jq -n \
 		'[
 			{"repo_name":"origin","repo_file_path":"tools/a.txt","local_path":"tools/a.txt","sync_status":"local_newer","last_check_at":null},

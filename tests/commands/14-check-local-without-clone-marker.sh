@@ -22,7 +22,8 @@ cp "${master}/tools/plain.txt" "${proj}/tools/plain.txt"
 	filesync init
 	jq -n \
 		--arg p "${master}" \
-		'[{"name":"origin","path":$p,"url":"","branch":"main"}]' >".filesync/repos.json"
+		'[{"name":"origin","path":$p,"url":"","branch":"main"}]' >"${TMP}/seed-14.json"
+	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-14.json"
 	jq -n \
 		'[{"repo_name":"origin","repo_file_path":"tools/plain.txt","local_path":"tools/plain.txt","sync_status":"synced"}]' \
 		>".filesync/files.json"

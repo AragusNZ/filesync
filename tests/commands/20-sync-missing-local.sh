@@ -28,7 +28,8 @@ mkdir -p "${master}" "${proj}"
 	filesync init
 	jq -n \
 		--arg url "file://${master}" \
-		'[{"name":"origin","path":"../sync-missing-local-master","url":$url,"branch":"main"}]' >".filesync/repos.json"
+		'[{"name":"origin","path":"../sync-missing-local-master","url":$url,"branch":"main"}]' >"${TMP}/seed-20.json"
+	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-20.json"
 
 	filesync add-file origin database/seeders/LoadsDataFilesTrait.php
 	filesync sync

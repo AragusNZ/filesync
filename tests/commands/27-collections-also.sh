@@ -29,9 +29,6 @@ mkdir -p "${proj_b}"
 (
 	cd "${proj_b}"
 	filesync init
-	jq -n \
-		--arg p "${master}" \
-		'[{"name":"emissions","path":$p,"url":null,"branch":"main"}]' >".filesync/repos.json"
 )
 
 mkdir -p "${proj_a}"
@@ -44,7 +41,8 @@ mkdir -p "${proj_a}"
 		'[
 			{"name":"emissions","path":$master,"url":null,"branch":"main"},
 			{"name":"greenlit-api","path":$b,"url":null,"branch":null}
-		]' >".filesync/repos.json"
+		]' >"${TMP}/seed-27a.json"
+	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-27a.json"
 
 	filesync add-collection siblings --repos=greenlit-api
 
@@ -92,23 +90,18 @@ mkdir -p "${proj_a}"
 (
 	cd "${proj_a}"
 	jq -n \
-		--arg master "${master}" \
-		--arg b "${proj_b}" \
 		--arg x "${TMP}/coll-also-x" \
-		'[
-			{"name":"emissions","path":$master,"url":null,"branch":"main"},
-			{"name":"greenlit-api","path":$b,"url":null,"branch":null},
-			{"name":"solo","path":$x,"url":null,"branch":"main"}
-		]' >".filesync/repos.json"
+		'[{"name":"solo","path":$x,"url":null,"branch":"main"}]' >"${TMP}/seed-27b.json"
+	filesync_test_append_global_repos "${TMP}/seed-27b.json"
 	mkdir -p "${TMP}/coll-also-x"
 	(
 		cd "${TMP}/coll-also-x"
 		filesync init
 	)
 	filesync add-collection tworepo --repos=greenlit-api,solo
-	jq -e '.[] | select(.name=="tworepo") | .repos | length == 2' ".filesync/collections.json" >/dev/null || die "tworepo should list 2 repos"
+	jq -e '.[] | select(.name=="tworepo") | .repos | length == 2' "${FILESYNC_HOME}/collections.json" >/dev/null || die "tworepo should list 2 repos"
 	filesync remove-repo -y solo
-	jq -e '.[] | select(.name=="tworepo") | .repos == ["greenlit-api"]' ".filesync/collections.json" >/dev/null || die "tworepo should only list greenlit-api after solo removed"
+	jq -e '.[] | select(.name=="tworepo") | .repos == ["greenlit-api"]' "${FILESYNC_HOME}/collections.json" >/dev/null || die "tworepo should only list greenlit-api after solo removed"
 	filesync remove-repo -y greenlit-api
-	! jq -e '.[] | select(.name=="tworepo")' ".filesync/collections.json" >/dev/null || die "empty tworepo collection should be removed"
+	! jq -e '.[] | select(.name=="tworepo")' "${FILESYNC_HOME}/collections.json" >/dev/null || die "empty tworepo collection should be removed"
 )

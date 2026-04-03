@@ -65,9 +65,10 @@ attach_one() {
     return 0
   fi
 
-  local repo_file_path repo_name
+  local repo_file_path repo_name repo_id
   repo_file_path="$(jq -r --arg local "$local_path" '.[] | select(.local_path == $local) | .repo_file_path // ""' "$FILESYNC_FILES_FILE")"
   repo_name="$(jq -r --arg local "$local_path" '.[] | select(.local_path == $local) | .repo_name // ""' "$FILESYNC_FILES_FILE")"
+  repo_id="$(jq -r --arg local "$local_path" '.[] | select(.local_path == $local) | .repo_id // ""' "$FILESYNC_FILES_FILE")"
 
   if [[ -z "$repo_name" || "$repo_name" == "null" ]]; then
     echo -e "${RED}Error: Missing repo_name for $local_path${NC}" >&2
@@ -91,7 +92,7 @@ attach_one() {
   mv "${FILESYNC_FILES_FILE}.tmp" "$FILESYNC_FILES_FILE"
 
   mkdir -p "$(dirname "$full")"
-  if ! render_clone_from_master_file "$full_master" "$repo_file_path" "$repo_name" "$full"; then
+  if ! render_clone_from_master_file "$full_master" "$repo_file_path" "$repo_name" "$full" "$repo_id"; then
     filesync_error "${local_path}: could not render clone from master ${repo_name}/${repo_file_path} (master file missing or unparsable filesync marker)"
     return 1
   fi

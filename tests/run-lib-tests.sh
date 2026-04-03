@@ -97,7 +97,7 @@ for f in "${selected[@]}"; do
 	base="$(basename "${f}")"
 	if [[ "${quiet}" -eq 1 ]]; then
 		_tlog="$(mktemp)"
-		if bash "${f}" "${ROOT}" >"${_tlog}" 2>&1; then
+		if env FILESYNC_HOME="${LIB_TEST_TMP}/sys-${base%.sh}" bash "${f}" "${ROOT}" >"${_tlog}" 2>&1 </dev/null; then
 			rm -f "${_tlog}"
 			passed+=("${base}")
 		else
@@ -108,7 +108,7 @@ for f in "${selected[@]}"; do
 		fi
 	else
 		echo "  --- ${base} ---"
-		if bash "${f}" "${ROOT}"; then
+		if env FILESYNC_HOME="${LIB_TEST_TMP}/sys-${base%.sh}" bash "${f}" "${ROOT}" </dev/null; then
 			passed+=("${base}")
 		else
 			failed+=("${base}")

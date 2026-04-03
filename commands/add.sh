@@ -16,7 +16,7 @@ is omitted (no :suffix), it defaults to the same path as path_in_repo.
 
 Options:
   --mark-master        Set kind=master on the local file (promote as master source)
-  --also=names         Comma-separated repo names and/or collection names (see collections.json)
+  --also=names         Comma-separated repo names and/or collection names (see global collections)
 
 EOF
   exit 0
@@ -27,6 +27,8 @@ source "$_CMD_ROOT/../lib/runtime.sh"
 source "$_CMD_ROOT/../lib/files-append.sh"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/collections.sh"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/also-targets.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
 
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
@@ -81,20 +83,26 @@ declare -a TARGET_REPOS=()
 if ! filesync_also_expand_to_array "$TARGET_REPOS_RAW" "$FILESYNC_REPOS_FILE" "$FILESYNC_COLLECTIONS_FILE" TARGET_REPOS; then
   exit 1
 fi
+# PROJECT_ROOT and REPO_PATH_ROOT are exported by filesync_command_init (runtime.sh).
+# shellcheck disable=SC2153
+if ! filesync_also_targets_finalize TARGET_REPOS "$PROJECT_ROOT" "$REPO_PATH_ROOT" "$FILESYNC_REPOS_FILE"; then
+  exit 1
+fi
 
 add_one() {
   local project_root="$1"
   local files_path="$2"
   local repos_path="$3"
-  local path_mode="$4"
+  local repo_path_root="$4"
   local repo_name="$5"
   local repo_file_path="$6"
   local local_path="$7"
   local label="$8"
 
-  local repo_path_from_json repo_dir rmi="" lmi=""
+  local repo_path_from_json repo_dir rmi="" lmi="" rid=""
   repo_path_from_json=$(jq -r --arg n "$repo_name" '.[] | select(.name == $n) | .path // ""' "$repos_path" | head -1)
-  repo_dir="$(filesync_resolve_repo_path "$project_root" "$repo_path_from_json" "$path_mode")"
+  rid=$(jq -r --arg n "$repo_name" 'first(.[] | select(.name == $n) | .id) // empty' "$repos_path")
+  repo_dir="$(filesync_resolve_repo_checkout_dir "$repo_path_root" "$repo_path_from_json")"
   if [[ -z "$repo_dir" ]]; then
     echo -e "${RED}Error: Repo '$repo_name' has no resolvable local path (${label}).${NC}" >&2
     return 1
@@ -126,7 +134,7 @@ add_one() {
   mkdir -p "$(dirname "$full_local")"
   local tmp_clone
   tmp_clone="$(mktemp)"
-  if ! render_clone_from_master_file "$full_master" "$repo_file_path" "$repo_name" "$tmp_clone"; then
+  if ! render_clone_from_master_file "$full_master" "$repo_file_path" "$repo_name" "$tmp_clone" "$rid"; then
     rm -f "$tmp_clone"
     echo -e "${RED}Error: Could not render clone from master: $repo_file_path${NC}" >&2
     return 1
@@ -139,12 +147,14 @@ add_one() {
 
   local new_entry
   new_entry=$(jq -n \
+    --arg id "$rid" \
     --arg repo "$repo_name" \
     --arg repo_path "$repo_file_path" \
     --arg local "$local_path" \
     --arg rmi "${rmi:-}" \
     --arg lmi "${lmi:-}" \
     '{
+      repo_id: $id,
       repo_name: $repo,
       repo_file_path: $repo_path,
       local_path: $local,
@@ -161,33 +171,31 @@ add_one() {
 
 for target_repo in "${TARGET_REPOS[@]}"; do
   if ! jq -e --arg n "$target_repo" 'any(.name == $n)' "$FILESYNC_REPOS_FILE" &>/dev/null; then
-    echo -e "${RED}Error: Target repo '$target_repo' is not in current repos.${NC}" >&2
+    echo -e "${RED}Error: Target repo '$target_repo' is not in global repos.${NC}" >&2
     exit 1
   fi
-  # shellcheck disable=SC2153  # PROJECT_ROOT and PATH_MODE are set by filesync_command_init.
-  target_project_root="$(filesync_resolve_also_project_root "$PROJECT_ROOT" "$FILESYNC_REPOS_FILE" "$target_repo" "$PATH_MODE")"
+  target_project_root="$(filesync_resolve_also_project_root "$REPO_PATH_ROOT" "$FILESYNC_REPOS_FILE" "$target_repo")"
   if [[ -z "$target_project_root" ]]; then
-    echo -e "${RED}Error: Target repo '$target_repo' has no local path.${NC}" >&2
+    echo -e "${RED}Error: Target repo '$target_repo' has no resolvable checkout path.${NC}" >&2
     exit 1
   fi
   ofs="$target_project_root/.filesync"
-  if [[ ! -f "$ofs/$FILESYNC_FILES_NAME" ]] || [[ ! -f "$ofs/$FILESYNC_REPOS_NAME" ]]; then
-    echo -e "${RED}Error: Target '$target_repo' is not an initialized filesync project: missing $ofs/$FILESYNC_FILES_NAME and/or $ofs/$FILESYNC_REPOS_NAME.${NC}" >&2
+  if [[ ! -f "$ofs/$FILESYNC_FILES_NAME" ]]; then
+    echo -e "${RED}Error: Target '$target_repo' is not an initialized filesync project: missing $ofs/$FILESYNC_FILES_NAME.${NC}" >&2
     exit 1
   fi
 done
 
 for i in "${!REPO_FILE_PATHS[@]}"; do
-  add_one "$PROJECT_ROOT" "$FILESYNC_FILES_FILE" "$FILESYNC_REPOS_FILE" "$PATH_MODE" "$REPO_NAME" "${REPO_FILE_PATHS[$i]}" "${LOCAL_PATHS[$i]}" "current project" \
+  add_one "$PROJECT_ROOT" "$FILESYNC_FILES_FILE" "$FILESYNC_REPOS_FILE" "$REPO_PATH_ROOT" "$REPO_NAME" "${REPO_FILE_PATHS[$i]}" "${LOCAL_PATHS[$i]}" "current project" \
     || filesync_die "add-file failed (see messages above)"
 done
 
 for target_repo in "${TARGET_REPOS[@]}"; do
-  target_project_root="$(filesync_resolve_also_project_root "$PROJECT_ROOT" "$FILESYNC_REPOS_FILE" "$target_repo" "$PATH_MODE")"
+  target_project_root="$(filesync_resolve_also_project_root "$REPO_PATH_ROOT" "$FILESYNC_REPOS_FILE" "$target_repo")"
   ofs="$target_project_root/.filesync"
-  target_mode="$(filesync_project_read_path_mode "$target_project_root")"
   for i in "${!REPO_FILE_PATHS[@]}"; do
-    add_one "$target_project_root" "$ofs/$FILESYNC_FILES_NAME" "$ofs/$FILESYNC_REPOS_NAME" "$target_mode" "$REPO_NAME" "${REPO_FILE_PATHS[$i]}" "${LOCAL_PATHS[$i]}" "project at $target_project_root" \
+    add_one "$target_project_root" "$ofs/$FILESYNC_FILES_NAME" "$FILESYNC_REPOS_FILE" "$REPO_PATH_ROOT" "$REPO_NAME" "${REPO_FILE_PATHS[$i]}" "${LOCAL_PATHS[$i]}" "project at $target_project_root" \
       || filesync_die "add-file failed (see messages above)"
   done
 done

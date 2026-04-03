@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Check synced files; update .filesync/files.json and .filesync/config.json (last_check_at).
+# Check synced files; update .filesync/files.json row status (incl. last_check_at per row).
 # Usage: check.sh [--repo=name] [--file=path_fragment] [--status=a,b,...]
 # Path fragment: substring match on local_path or repo_file_path (after optional --repo filter).
 
@@ -14,14 +14,14 @@ Usage: filesync check [option] ...
 Alias: c
 
 Verify mappings against disk and repo checkouts; refresh row status in .filesync/files.json
-and config metadata (e.g. last_check_at).
+(including per-row last_check_at).
 
 Options:
   --repo=name            Limit to mappings for this repo
   --file=fragment        Substring match on local_path or repo_file_path (after --repo)
   --status=a,b,...       Filter by row status (OR). Tokens: see main "filesync -h" or man filesync
 
-If file_sync_enabled is false in merged config, prints a hint and exits without scanning.
+If every matching row is skipped because each repo has check_sync_enabled false, prints a hint and exits without scanning.
 EOF
   exit 0
 fi
@@ -64,11 +64,6 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
-
-if ! jq -e '.file_sync_enabled == true' "$CONFIG_FILE" &>/dev/null; then
-  filesync_print_disabled_hint
-  exit 0
-fi
 
 # shellcheck disable=SC2034
 declare -A FILESYNC_REPO_DIR_CACHE
@@ -148,6 +143,11 @@ filesync_config_file_rows_tsv_to "$CHECK_ROWS_TSV" "$CONFIG_FILE" "$REPO_FILTER"
 FILES_WORK_COUNT=$(wc -l < "$CHECK_ROWS_TSV")
 FILES_WORK_COUNT="${FILES_WORK_COUNT//[[:space:]]/}"
 
+if [[ "$FILES_WORK_COUNT" -eq 0 ]] && filesync_files_only_blocked_by_check_sync "$CONFIG_FILE" "$REPO_FILTER" "$FILE_FRAGMENT"; then
+  filesync_print_disabled_hint
+  exit 0
+fi
+
 if filesync_progress_want "$FILES_WORK_COUNT"; then
   filesync_progress_begin "$FILES_WORK_COUNT"
 fi
@@ -160,7 +160,7 @@ filesync_check_iter_progress() {
   fi
 }
 
-while IFS=$'\t' read -r i REPO_NAME LOCAL_PATH REPO_FILE_PATH PRIOR_STATUS LAST_SYNC_RAW; do
+while IFS=$'\t' read -r i REPO_ID REPO_NAME LOCAL_PATH REPO_FILE_PATH PRIOR_STATUS LAST_SYNC_RAW; do
 
   NOW_ISO=$(file_sync_now_iso)
   NOW_E=$(file_sync_now_epoch)
@@ -295,7 +295,11 @@ while IFS=$'\t' read -r i REPO_NAME LOCAL_PATH REPO_FILE_PATH PRIOR_STATUS LAST_
   [[ ${#CHECK_MARKER_WARN_CODES[@]} -gt 0 ]] && MARKER_WARN_ROWS=$((MARKER_WARN_ROWS + 1))
 
   EXPECTED_TMP=$(mktemp)
-  if ! render_clone_from_master_file "$FULL_MASTER_PATH" "$REPO_FILE_PATH" "$REPO_NAME" "$EXPECTED_TMP"; then
+  _rid_render="${REPO_ID}"
+  if [[ -f "$FULL_LOCAL_PATH" ]] && ! grep -q 'repo_id=' "$FULL_LOCAL_PATH"; then
+    _rid_render=""
+  fi
+  if ! render_clone_from_master_file "$FULL_MASTER_PATH" "$REPO_FILE_PATH" "$REPO_NAME" "$EXPECTED_TMP" "$_rid_render"; then
     rm -f "$EXPECTED_TMP"
     filesync_warn "${LOCAL_PATH}: could not render clone from master ${REPO_NAME}/${REPO_FILE_PATH} (unparsable or missing filesync marker line)"
     CHECKED=$((CHECKED + 1))
@@ -361,8 +365,6 @@ done < "$CHECK_ROWS_TSV"
 
 filesync_progress_end
 
-ROOT_NOW=$(file_sync_now_iso)
-
 if [[ -s "$PATCH_LINES_FILE" ]]; then
   jq --slurpfile p <(jq -s '.' "$PATCH_LINES_FILE") '
     reduce $p[0][] as $patch (.;
@@ -370,7 +372,6 @@ if [[ -s "$PATCH_LINES_FILE" ]]; then
     )
   ' "$FILESYNC_FILES_FILE" > "${FILESYNC_FILES_FILE}.tmp"
   mv "${FILESYNC_FILES_FILE}.tmp" "$FILESYNC_FILES_FILE"
-  filesync_user_config_set_last_check_at "$ROOT_NOW"
 fi
 
 echo "" >&2
