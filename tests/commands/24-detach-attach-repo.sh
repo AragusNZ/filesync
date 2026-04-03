@@ -27,6 +27,9 @@ mkdir -p "${master}"
 mkdir -p "${proj}"
 (
 	cd "${proj}"
+	# Isolate mktemp(1) so we can detect orphaned FILESYNC_STATE_FILE from attach-repo/exec.
+	TMPDIR="$(mktemp -d)"
+	export TMPDIR
 	filesync init
 	jq -n \
 		--arg url "file://${master}" \
@@ -54,4 +57,8 @@ mkdir -p "${proj}"
 	fi
 	filesync ddr origin >/dev/null || die "ddr alias"
 	filesync dar origin >/dev/null || die "dar alias"
+	_sweep="$(find "${TMPDIR}" -type f 2>/dev/null | wc -l)"
+	_sweep="${_sweep//[[:space:]]/}"
+	[[ "${_sweep}" -eq 0 ]] || die "expected no leaked temps in TMPDIR (got ${_sweep})"
+	rm -rf "${TMPDIR}"
 )

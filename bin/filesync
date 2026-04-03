@@ -7,6 +7,24 @@ if _rp="$(readlink -f "$_dispatch_self" 2>/dev/null)"; then
   _dispatch_self="$_rp"
 elif command -v realpath >/dev/null 2>&1 && _rp="$(realpath "$_dispatch_self" 2>/dev/null)"; then
   _dispatch_self="$_rp"
+else
+  # Fallback when readlink lacks -f and realpath is missing: chase symlinks by hand (POSIX readlink).
+  _p="$_dispatch_self"
+  case "$_p" in
+    /*) ;;
+    *) _p="$(cd "$(dirname "$_p")" && pwd)/$(basename "$_p")" ;;
+  esac
+  _i=0
+  while [[ -L "$_p" ]] && [[ "$_i" -lt 64 ]]; do
+    _t="$(readlink "$_p" 2>/dev/null)" || break
+    if [[ "$_t" == /* ]]; then
+      _p="$_t"
+    else
+      _p="$(cd "$(dirname "$_p")" && pwd)/$_t"
+    fi
+    _i=$((_i + 1))
+  done
+  _dispatch_self="$(cd "$(dirname "$_p")" && pwd -P)/$(basename "$_p")"
 fi
 ROOT="$(cd "$(dirname "$_dispatch_self")/.." && pwd)"
 

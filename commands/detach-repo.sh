@@ -18,6 +18,7 @@ fi
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
+trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
 if [[ $# -ne 1 ]] || [[ -z "${1// }" ]]; then
   echo -e "${RED}Usage: filesync detach-repo|ddr <repo_name>${NC}" >&2
@@ -41,4 +42,7 @@ if [[ ${#LOCAL_PATHS[@]} -eq 0 ]]; then
   exit 1
 fi
 
+trap - EXIT
+rm -f "${FILESYNC_STATE_FILE:-}"
+unset FILESYNC_STATE_FILE CONFIG_FILE
 exec "$_CMD_ROOT/detach.sh" "${LOCAL_PATHS[@]}"

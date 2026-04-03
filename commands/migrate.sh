@@ -39,6 +39,8 @@ source "$_CMD_ROOT/../lib/fs-lock.sh"
 source "$_CMD_ROOT/../lib/paths.sh"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/filesync-projects.sh"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/repos-json.sh"
 
 filesync_resolve_or_exit
 filesync_require_files
@@ -146,6 +148,11 @@ done < <(jq -c '.[]' "$G_REPOS")
 jq -s '.' "$tmp_ids" >"${G_REPOS}.new"
 mv "${G_REPOS}.new" "$G_REPOS"
 rm -f "$tmp_ids"
+
+if ! filesync_assert_global_repos_unique_names "$G_REPOS"; then
+  echo "filesync: fix duplicate names in ${G_REPOS} and re-run migrate if needed." >&2
+  exit 1
+fi
 
 rroot="$(filesync_read_repo_path_root "$FILESYNC_SYSTEM_HOME")"
 

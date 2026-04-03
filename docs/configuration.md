@@ -13,11 +13,11 @@ Default: **`~/.filesync-root`** (distinct from **`<project>/.filesync/`**). If *
 Files in that directory:
 
 - **`system.json`** — metadata (e.g. **`version`**). Global JSON updates use a lock file (**`.lock`**) to reduce concurrent write races.
-- **`repos.json`** — array of repo objects: stable **`id`** (UUID), **`name`**, **`url`**, **`path`**, **`branch`**, optional **`check_sync_enabled`** and **`mirror_in_enabled`** (both default true if omitted). Each repo’s **`path`** is resolved with `filesync_resolve_repo_checkout_dir`: **relative** paths are under your **home directory** (or **`FILESYNC_REPO_PATH_ANCHOR`** when set); absolute **`path`** values are used as-is.
+- **`repos.json`** — array of repo objects: stable **`id`** (UUID), **`name`**, **`url`**, **`path`**, **`branch`**, optional **`check_sync_enabled`** and **`mirror_in_enabled`** (both default true if omitted). Each **`name`** must be unique; duplicate names make resolution ambiguous and are rejected when loading project state. Each repo’s **`path`** is resolved with `filesync_resolve_repo_checkout_dir`: **relative** paths are under your **home directory** (or **`FILESYNC_REPO_PATH_ANCHOR`** when set); absolute **`path`** values are used as-is.
 - **`collections.json`** — array of `{ "name", "repos": [ … ] }` for **`--also=`** expansion.
 - **`preferences.json`** — merged over `share/defaults/preferences.default.json`; **`progress_display`** is **`percent`**, **`bar`**, or **`hidden`**. Use **`filesync progress`** or **`filesync config set progress …`**.
 
-**`filesync config show`** prints the effective system home, pointer path, repo path anchor, and paths to global JSON files. **`filesync config doctor`** summarizes pointer / **`FILESYNC_HOME`** overrides.
+**`filesync config show`** prints the effective system home, pointer path, repo path anchor, and paths to global JSON files. **`filesync config doctor`** summarizes pointer / **`FILESYNC_HOME`** overrides and warns if **`repos.json`** contains duplicate **`name`** values.
 
 ## Project `.filesync/`
 

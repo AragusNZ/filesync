@@ -51,6 +51,14 @@ else
 fi
 printf '%s\n' '[]' | jq . >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_GLOBAL_REPOS_NAME}"
 
+jq -n '[{name:"x",id:"a",path:"p",url:null,branch:"main"},{name:"x",id:"b",path:"q",url:null,branch:"main"}]' >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_GLOBAL_REPOS_NAME}"
+if filesync_assemble_state_to "${td}/dup.json" 2>/dev/null; then
+	bad "assemble_state should reject duplicate repo names"
+else
+	ok "assemble_state rejects duplicate repo names"
+fi
+printf '%s\n' '[]' | jq . >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_GLOBAL_REPOS_NAME}"
+
 printf '{ not-valid-json' >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_PREFERENCES_NAME}"
 _asm_err=""
 if _asm_err=$(filesync_assemble_state_to "${td}/bad-merge.json" 2>&1); then

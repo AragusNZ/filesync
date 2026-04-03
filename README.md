@@ -15,7 +15,7 @@ From a clone of this repository:
 sudo make install
 ```
 
-Default prefix is `/usr/local` (`filesync` → `/usr/local/bin/filesync`, package files under `/usr/local/lib/filesync/`). The binary on `PATH` is a **symlink** to `PREFIX/lib/filesync/bin/filesync`; libraries and commands live under `PREFIX/lib/filesync/`. Override with `PREFIX`:
+Default prefix is `/usr/local` (`filesync` → `/usr/local/bin/filesync`, package files under `/usr/local/lib/filesync/`). The binary on `PATH` is a **symlink** to `PREFIX/lib/filesync/bin/filesync`; libraries and commands live under `PREFIX/lib/filesync/`. The dispatcher resolves that symlink using **`readlink -f`** (GNU coreutils), **`realpath`**, or a manual symlink chase so `ROOT` points at `PREFIX/lib/filesync`; without a usable `readlink`/`realpath`, a symlink-only install layout may fail to find `lib/`. Override with `PREFIX`:
 
 ```bash
 sudo make install PREFIX=/usr
@@ -75,7 +75,7 @@ Primary subcommands: `init`, `config`, `migrate`, `handle-missing`, `enable`, `d
 
 **`filesync remove-file`** (alias **`rmf`**) accepts **`--all-missing`** to remove every mapping whose cached **`sync_status`** is **`error_missing_master`**, combined with any explicit paths; see [docs/configuration.md](docs/configuration.md#removing-mappings) and **`man filesync`**.
 
-**Detach** vs **remove**: **`detach-file`** / **`detach-repo`** keep the row but mark it **`detached`**; **`remove-file`** drops the mapping and strips clone/detached markers on disk; **`remove-repo`** drops a repo after **`--force`** clears all mappings (when any remain), then **`-y`** can skip the prompt. See [docs/configuration.md](docs/configuration.md#removing-mappings).
+**Detach** vs **remove**: **`detach-file`** / **`detach-repo`** keep the row but mark it **`detached`**; **`remove-file`** drops the mapping and strips clone/detached markers on disk; **`remove-repo`** removes a global repo entry. If any `files.json` row still references that repo, you must pass **`--force`** (which removes those mappings like **`remove-file`**), then confirm unless you pass **`-y`** / **`--yes`**. See [docs/configuration.md](docs/configuration.md#removing-mappings).
 
 When a repo has **`check_sync_enabled: false`** in the global store (**`filesync disable <repo>`**), **`check`** and **`sync`** skip every `files.json` row that references that repo. If every selected row is skipped for that reason, the command exits **0** with a short hint.
 
@@ -102,7 +102,7 @@ Run `filesync` with no arguments to print a short usage summary (same idea as **
 
 ## User data: system store + project `.filesync/`
 
-**System metadata** (default **`~/.filesync`**, or **`FILESYNC_HOME`**, or the directory in **`~/.config/filesync/system_home`**): `repos.json`, `collections.json`, `system.json` (holds **`repo_path_root`**), and `preferences.json` (**`progress_display`**, etc.). Repo `path` values are relative to **`repo_path_root`** unless they start with `/`.
+**System metadata** (default **`~/.filesync-root`**; if **`~/.filesync`** exists and **`~/.filesync-root`** does not, the first run may rename it — see stderr; override with **`FILESYNC_HOME`** or the pointer file **`~/.config/filesync/system_home`**): `repos.json`, `collections.json`, `system.json` (version and other metadata), and `preferences.json` (**`progress_display`**, etc.). Relative repo `path` values in `repos.json` resolve under your home directory (or **`FILESYNC_REPO_PATH_ANCHOR`** when set); absolute paths are used as-is. **`filesync config show`** prints the effective repo path anchor.
 
 **Per project** (discovered like git: walk up for **`.filesync/`**): **`files.json`** only. If you still have old per-project `repos.json` / `collections.json` / `config.json`, run **`filesync migrate`** once to import them into the global store.
 

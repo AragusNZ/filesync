@@ -7,6 +7,8 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/data-names.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/preferences-merge.sh"
 # shellcheck source=/dev/null
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/system-resolve.sh"
+# shellcheck source=/dev/null
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/repos-json.sh"
 
 # Requires: FILESYNC_PKG_ROOT, FILESYNC_DIR, FILESYNC_SYSTEM_HOME, PROJECT_ROOT
 # Uses slurpfile so large files.json arrays do not hit shell argv limits.
@@ -39,6 +41,10 @@ filesync_assemble_state_to() {
   if ! jq -e 'type == "array"' "${FILESYNC_REPOS_FILE}" &>/dev/null; then
     rm -rf "$tmpd"
     echo "filesync: ${FILESYNC_REPOS_FILE} must be a JSON array" >&2
+    return 1
+  fi
+  if ! filesync_assert_global_repos_unique_names "${FILESYNC_REPOS_FILE}"; then
+    rm -rf "$tmpd"
     return 1
   fi
   if ! jq -e 'type == "array"' "${FILESYNC_DIR}/${FILESYNC_FILES_NAME}" &>/dev/null; then
@@ -114,6 +120,10 @@ filesync_assemble_global_catalog_state_to() {
   if ! jq -e 'type == "array"' "${FILESYNC_REPOS_FILE}" &>/dev/null; then
     rm -rf "$tmpd"
     echo "filesync: ${FILESYNC_REPOS_FILE} must be a JSON array" >&2
+    return 1
+  fi
+  if ! filesync_assert_global_repos_unique_names "${FILESYNC_REPOS_FILE}"; then
+    rm -rf "$tmpd"
     return 1
   fi
   rroot="$(filesync_read_repo_path_root "$FILESYNC_SYSTEM_HOME")"

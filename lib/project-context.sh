@@ -3,7 +3,7 @@
 #
 # Notes:
 # - A "project root" is the directory containing a ".filesync/" folder.
-# - Repo checkout paths in global repos.json are relative to repo_path_root (system.json).
+# - Repo checkout paths in global repos.json are relative to the repo path anchor ($HOME, or FILESYNC_REPO_PATH_ANCHOR).
 
 _LIB_PC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null

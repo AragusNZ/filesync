@@ -17,7 +17,7 @@ Usage:
   filesync config repo <name> mirror-in <true|false>
 
 show    Effective system home, pointer, repo path anchor, global JSON paths, preferences.
-doctor  Report pointer validity and whether FILESYNC_HOME overrides the pointer.
+doctor  Report pointer validity, FILESYNC_HOME override, and duplicate repo names in repos.json.
 set     system-home (pointer file) or progress (preferences.json).
 repo    Toggle per-repo flags in global repos.json.
 EOF
@@ -31,6 +31,8 @@ source "$_CMD_ROOT/../lib/data-names.sh"
 source "$_CMD_ROOT/../lib/preferences-merge.sh"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/fs-lock.sh"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/repos-json.sh"
 filesync_command_init_system "${BASH_SOURCE[0]}"
 
 sys="${FILESYNC_SYSTEM_HOME}/${FILESYNC_SYSTEM_NAME}"
@@ -77,6 +79,17 @@ case "$cmd" in
       echo "No pointer file (using default ~/.filesync-root unless FILESYNC_HOME is set)." >&2
     fi
     echo "Effective store: $FILESYNC_SYSTEM_HOME" >&2
+    if [[ -f "$repos" ]] && jq -e 'type == "array"' "$repos" &>/dev/null; then
+      dup_lines="$(filesync_global_repos_duplicate_names "$repos")"
+      if [[ -n "$dup_lines" ]]; then
+        echo "Warning: duplicate repo name(s) in repos.json (behavior is ambiguous until fixed):" >&2
+        while IFS= read -r line; do
+          echo "  $line" >&2
+        done <<<"$dup_lines"
+      else
+        echo "Global repos.json: no duplicate repo names." >&2
+      fi
+    fi
     ;;
   set)
     [[ $# -ge 2 ]] || { echo -e "${RED}Usage: filesync config set system-home|progress ...${NC}" >&2; exit 1; }

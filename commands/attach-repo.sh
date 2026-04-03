@@ -18,6 +18,7 @@ fi
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
+trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
 if [[ $# -ne 1 ]] || [[ -z "${1// }" ]]; then
   echo -e "${RED}Usage: filesync attach-repo|dar <repo_name>${NC}" >&2
@@ -41,4 +42,9 @@ if [[ ${#LOCAL_PATHS[@]} -eq 0 ]]; then
   exit 1
 fi
 
+# Merged state temp is unused after exec; clear env so attach.sh does not inherit a path that
+# nested check.sh would delete during its own init.
+trap - EXIT
+rm -f "${FILESYNC_STATE_FILE:-}"
+unset FILESYNC_STATE_FILE CONFIG_FILE
 exec "$_CMD_ROOT/attach.sh" "${LOCAL_PATHS[@]}"
