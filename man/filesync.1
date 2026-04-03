@@ -97,19 +97,18 @@ to suppress the notice).
 .B config
 Inspect or change system metadata:
 .B show
-prints effective system home, pointer path, repo path anchor, and global JSON paths;
+prints effective system home, repo path anchor, and global JSON paths;
 .B doctor
-summarizes pointer and environment overrides and reports duplicate
+summarizes environment overrides and reports duplicate
 .B name
 entries in global
 .BR repos.json ;
-.B set system-home
-,
 .B set progress
 .RI ( hidden | bar | percent ;
 TTY progress style in
 .BR preferences.json )
-update the pointer or preferences file
+updates
+.BR preferences.json
 (see
 .BR "filesync config --help" ).
 Per-repo
@@ -757,9 +756,10 @@ Array of file mapping rows (
 .SH ENVIRONMENT
 .TP
 .B FILESYNC_HOME
-Absolute path to the system metadata directory (overrides the pointer file and default
+Absolute path to the system metadata directory (overrides default
 .BR ~/.filesync\-root ).
 Intended for tests and automation; avoid per-project shell env if you want the normal shared catalog.
+There is no separate pointer file for the system store path.
 .TP
 .B FILESYNC_REPO_PATH_ANCHOR
 Optional absolute directory: used instead of

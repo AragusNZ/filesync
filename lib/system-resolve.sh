@@ -4,26 +4,9 @@
 # shellcheck source=/dev/null
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/data-names.sh"
 
-# XDG config dir for pointer file (default ~/.config).
-filesync_xdg_config_dir() {
-  printf '%s' "${XDG_CONFIG_HOME:-$HOME/.config}"
-}
-
-# Pointer file: one line = absolute path to system metadata directory.
-filesync_system_home_pointer_path() {
-  printf '%s/filesync/system_home' "$(filesync_xdg_config_dir)"
-}
-
-# Default metadata directory (after optional legacy migration).
+# Default metadata directory (fixed path under $HOME).
 filesync_system_home_default_dir() {
-  local legacy="${HOME:?}/.filesync"
-  local preferred="${HOME}/.filesync-root"
-  if [[ -d "$legacy" && ! -e "$preferred" ]]; then
-    if mv "$legacy" "$preferred" 2>/dev/null; then
-      echo "filesync: migrated metadata from $legacy to $preferred" >&2
-    fi
-  fi
-  printf '%s' "$preferred"
+  printf '%s' "${HOME:?}/.filesync-root"
 }
 
 # Print absolute path to system metadata home (mkdir -p not implied for default path).
@@ -33,17 +16,6 @@ filesync_system_home_dir() {
     (cd "$FILESYNC_HOME" && pwd) && return 0
     echo "filesync: FILESYNC_HOME is not a directory: $FILESYNC_HOME" >&2
     return 1
-  fi
-  local ptr line
-  ptr="$(filesync_system_home_pointer_path)"
-  if [[ -f "$ptr" ]]; then
-    line="$(tr -d '\r\n' <"$ptr")"
-    if [[ -n "$line" ]]; then
-      if (cd "$line" 2>/dev/null && pwd); then
-        return 0
-      fi
-      echo "filesync: warning: invalid path in pointer file $ptr — using default metadata directory" >&2
-    fi
   fi
   filesync_system_home_default_dir
 }
@@ -82,15 +54,4 @@ filesync_ensure_system_store() {
     printf '%s\n' '{}' | jq . >"$prefs"
   fi
   printf '%s' "$home"
-}
-
-# Write pointer file so future invocations use this metadata directory.
-filesync_write_system_home_pointer() {
-  local target="${1:?}"
-  local ptr dir
-  ptr="$(filesync_system_home_pointer_path)"
-  dir="$(dirname "$ptr")"
-  mkdir -p "$dir"
-  target="$(cd "$target" && pwd)"
-  printf '%s\n' "$target" >"$ptr"
 }

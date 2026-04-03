@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Inspect or change system-level filesync settings (store path, preferences). Repo flags: edit repo.
+# Inspect or change system-level filesync settings (preferences). Repo flags: edit repo.
 
 set -euo pipefail
 
@@ -11,12 +11,11 @@ if filesync_argv_wants_help "$@"; then
 Usage:
   filesync config show
   filesync config doctor
-  filesync config set system-home <absolute_dir>
   filesync config set progress <hidden|bar|percent>
 
-show    Effective system home, pointer, repo path anchor, global JSON paths, preferences.
-doctor  Report pointer validity, FILESYNC_HOME override, and duplicate repo names in repos.json.
-set     system-home (pointer file) or progress (preferences.json).
+show    Effective system home, repo path anchor, global JSON paths, preferences.
+doctor  Report FILESYNC_HOME override and duplicate repo names in repos.json.
+set     progress (preferences.json).
 
 Per-repo check_sync_enabled / mirror_in_enabled: use filesync edit repo (see filesync edit repo -h).
 EOF
@@ -37,7 +36,6 @@ filesync_command_init_system "${BASH_SOURCE[0]}"
 sys="${FILESYNC_SYSTEM_HOME}/${FILESYNC_SYSTEM_NAME}"
 repos="$FILESYNC_REPOS_FILE"
 prefs="${FILESYNC_SYSTEM_HOME}/${FILESYNC_PREFERENCES_NAME}"
-ptr="$(filesync_system_home_pointer_path)"
 
 if [[ $# -lt 1 ]]; then
   echo -e "${RED}Usage: filesync config show | doctor | set ...${NC}" >&2
@@ -49,10 +47,9 @@ shift
 
 case "$cmd" in
   show)
-    echo "FILESYNC_HOME (effective): $FILESYNC_SYSTEM_HOME" >&2
-    echo "Pointer file: $ptr" >&2
+    echo "System metadata directory: $FILESYNC_SYSTEM_HOME" >&2
     if [[ -n "${FILESYNC_HOME:-}" ]]; then
-      echo "Note: FILESYNC_HOME is set in the environment (overrides pointer and default)." >&2
+      echo "Note: FILESYNC_HOME is set (overrides default ~/.filesync-root)." >&2
     fi
     echo "Repo path anchor (relative paths in repos.json): $(filesync_read_repo_path_root "$FILESYNC_SYSTEM_HOME")" >&2
     if [[ -n "${FILESYNC_REPO_PATH_ANCHOR:-}" ]]; then
@@ -65,17 +62,9 @@ case "$cmd" in
     ;;
   doctor)
     if [[ -n "${FILESYNC_HOME:-}" ]]; then
-      echo "FILESYNC_HOME is set; metadata directory is isolated from the pointer file." >&2
-    fi
-    if [[ -f "$ptr" ]]; then
-      line="$(tr -d '\r\n' <"$ptr")"
-      if [[ -n "$line" ]] && [[ ! -d "$line" ]]; then
-        echo "Pointer file lists a non-directory (ignored at runtime): $line" >&2
-      else
-        echo "Pointer file: OK" >&2
-      fi
+      echo "FILESYNC_HOME is set; using that directory for system metadata." >&2
     else
-      echo "No pointer file (using default ~/.filesync-root unless FILESYNC_HOME is set)." >&2
+      echo "Using default system metadata directory (~/.filesync-root)." >&2
     fi
     echo "Effective store: $FILESYNC_SYSTEM_HOME" >&2
     if [[ -f "$repos" ]] && jq -e 'type == "array"' "$repos" &>/dev/null; then
@@ -91,15 +80,14 @@ case "$cmd" in
     fi
     ;;
   set)
-    [[ $# -ge 2 ]] || { echo -e "${RED}Usage: filesync config set system-home|progress ...${NC}" >&2; exit 1; }
+    [[ $# -ge 2 ]] || { echo -e "${RED}Usage: filesync config set progress ...${NC}" >&2; exit 1; }
     what="$1"
     shift
     case "$what" in
       system-home)
-        [[ $# -eq 1 ]] || exit 1
-        [[ -d "$1" ]] || { echo -e "${RED}Not a directory: $1${NC}" >&2; exit 1; }
-        filesync_write_system_home_pointer "$1"
-        echo -e "${GREEN}Pointer updated. Effective FILESYNC_HOME: $(filesync_system_home_dir)${NC}" >&2
+        echo -e "${RED}config set system-home is removed. The system store is always ~/.filesync-root, or FILESYNC_HOME when set (tests/automation only).${NC}" >&2
+        echo "Do not set FILESYNC_HOME in per-project .env; use one catalog per machine." >&2
+        exit 1
         ;;
       repo-path-root)
         echo -e "${RED}repo-path-root is no longer configurable; relative repo paths use your home directory.${NC}" >&2

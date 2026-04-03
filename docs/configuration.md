@@ -4,11 +4,14 @@ State is split between a **system metadata directory** (repos, collections, pref
 
 ## System metadata directory
 
-Default: **`~/.filesync-root`** (distinct from **`<project>/.filesync/`**). If **`~/.filesync`** exists and **`~/.filesync-root`** does not, the first run may migrate by renaming that directory (see stderr notice). Resolution order:
+The catalog is **machine-wide**: **`~/.filesync-root`** (distinct from **`<project>/.filesync/`**). Resolution:
 
-1. **`FILESYNC_HOME`** (absolute path; intended for tests and automation — avoid setting it in per-project `.env` if you want a normal shared machine catalog).
-2. Else the single line in **`$XDG_CONFIG_HOME/filesync/system_home`** (default **`~/.config/filesync/system_home`**), if present and valid (invalid pointer paths are ignored with a warning; the default directory is used).
-3. Else **`~/.filesync-root`**.
+- If **`FILESYNC_HOME`** is set to an absolute path, that directory is used (intended for **tests and CI**). Do **not** set **`FILESYNC_HOME`** in per-project **`.env`** files or you will split the catalog across projects unintentionally.
+- Otherwise **`~/.filesync-root`**.
+
+There is no config-file pointer for the system store path; **`filesync config set system-home`** was removed.
+
+If you have an old copy of the global store at **`~/.filesync`** (not the project’s **`.filesync/`** folder), move it yourself once, e.g. **`mv ~/.filesync ~/.filesync-root`**, when **`~/.filesync-root`** does not already exist.
 
 Files in that directory:
 
@@ -17,7 +20,7 @@ Files in that directory:
 - **`collections.json`** — array of `{ "name", "repos": [ … ] }` for **`--also=`** expansion.
 - **`preferences.json`** — merged over `share/defaults/preferences.default.json`; **`progress_display`** is **`percent`**, **`bar`**, or **`hidden`**. Set it with **`filesync config set progress …`**; inspect the effective value with **`filesync config show`**.
 
-**`filesync config show`** prints the effective system home, pointer path, repo path anchor, and paths to global JSON files. **`filesync config doctor`** summarizes pointer / **`FILESYNC_HOME`** overrides and warns if **`repos.json`** contains duplicate **`name`** values.
+**`filesync config show`** prints the effective system home, repo path anchor, and paths to global JSON files. **`filesync config doctor`** summarizes **`FILESYNC_HOME`** (if set) and warns if **`repos.json`** contains duplicate **`name`** values.
 
 ## Project `.filesync/`
 
@@ -139,7 +142,7 @@ Master files must contain **`filesync kind=master`** or the row is skipped (with
 
 ## Environment variables
 
-- **`FILESYNC_HOME`**: absolute path to the system metadata directory (overrides pointer and default **`~/.filesync-root`**). Prefer the pointer file (**`filesync config set system-home`**) for a relocatable user default; reserve **`FILESYNC_HOME`** for CI and automation.
+- **`FILESYNC_HOME`**: absolute path to the system metadata directory (overrides default **`~/.filesync-root`**). Use only for tests, CI, or deliberate machine-local overrides — not per-project **`.env`**.
 - **`FILESYNC_REPO_PATH_ANCHOR`**: optional absolute directory used **instead of `$HOME`** when resolving **relative** `path` values in **global** **`repos.json`** (tests and specialized layouts). Not needed for normal use.
 - **`FILESYNC_SYSTEM_HOME`**: set by the tool to the resolved metadata directory — **do not** rely on setting it yourself as input.
 - **`FILESYNC_PROJECT_ROOT`**: forces the project root (discovery does not walk parents); `.filesync` defaults to `$FILESYNC_PROJECT_ROOT/.filesync` unless `FILESYNC_DIR` is also set.

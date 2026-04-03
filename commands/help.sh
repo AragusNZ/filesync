@@ -68,6 +68,6 @@ echo '   With -f/--force: also local_newer and conflict. Other tokens: synced, c
 echo ''
 echo 'Config:'
 echo '   Project: walk up from cwd for .filesync/ (files.json only after init).'
-echo '   Global store: default ~/.filesync-root (repos.json, collections.json, system.json, preferences.json);'
-echo '   override with FILESYNC_HOME or pointer file (see docs/configuration.md).'
+echo '   Global store: ~/.filesync-root (repos.json, collections.json, system.json, preferences.json);'
+echo '   FILESYNC_HOME overrides the path for tests/automation only (see docs/configuration.md).'
 echo '   list repos and list collections use the global store only; list files needs a project.'
