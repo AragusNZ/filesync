@@ -160,6 +160,7 @@ Also
 .BR c .
 .RI [ \-\-repo= name ]
 .RI [ \-\-file= fragment ]
+.RI [ \-\-exact\-local= path ]
 .RI [ \-\-status= list ]
 Verify mappings, refresh
 .I files.json
@@ -174,6 +175,13 @@ matches rows where
 or
 .I repo_file_path
 contains the fragment (substring).
+Do not combine
+.BI \-\-file=
+with
+.BR \-\-exact\-local= ;
+the latter may be repeated and selects rows whose
+.I local_path
+equals the given project-relative path exactly.
 .BI \-\-status=
 matches rows by cached
 .I sync_status
@@ -218,6 +226,46 @@ and
 and at least 10 rows are in the configuration,
 .B check
 may draw a scanning progress indicator on standard error; per-row lines go to standard output, so output may not stay fixed on one line.
+.TP
+.B info
+Also
+.BR i .
+.RI [ file " | " \-f ]
+.I path
+.RI [ \-\-fix\-marker ]
+The optional
+.B file
+or
+.B \-f
+word selects the same subcommand explicitly; you may omit it after
+.B i
+.RI ( e.g. \*(lqfilesync i \fIpath\fR\*(rq).
+Resolve
+.I path
+to a tracked clone in the current project's
+.I files.json
+or to a file under a registered repo checkout (master-at-checkout).
+Lists every
+.I files.json
+row in the union of this project and other registered checkouts that share the same master
+.RI ( repo_file_path
+and repo identity),
+runs
+.B check
+with
+.B \-\-exact\-local=
+for those rows in each affected project,
+then prints a summary on standard error.
+If the canonical master file's
+.B kind=master
+marker does not match whether any clones are tracked, prompts on a terminal to add or strip the marker; with standard input not a terminal, prints a hint unless
+.B \-\-fix\-marker
+is given to perform the update without prompting.
+Exits with the same status as
+.B check
+when
+.B check
+reported blocking issues (after printing).
 .TP
 .B sync
 Also

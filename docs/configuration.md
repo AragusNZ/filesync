@@ -43,7 +43,7 @@ The tool rewrites the first marker line when syncing or changing coupling; the *
 
 ### Writes
 
-Commands such as **`check`** update row-level fields in **`.filesync/files.json`** (including per-row **`last_check_at`**). Global **`repos.json`**, **`collections.json`**, and **`preferences.json`** are usually written by **`jq`** to a temp file, then replaced with **`mv`**. **`config set`**, **`new repo`**, **`edit repo`**, **`migrate`**, **`remove repo`**, and **`init`** (when appending a global repo) also take **`flock`** on **`.lock`** in the metadata directory so concurrent writers do not read partial state; some collection-only paths use temp + **`mv`** without that global lock.
+Commands such as **`check`** and **`info`** (via subprocess **`check`**) update row-level fields in **`.filesync/files.json`** (including per-row **`last_check_at`**). **`info`** may also rewrite the canonical master file’s marker when you confirm the prompt or pass **`--fix-marker`**. Global **`repos.json`**, **`collections.json`**, and **`preferences.json`** are usually written by **`jq`** to a temp file, then replaced with **`mv`**. **`config set`**, **`new repo`**, **`edit repo`**, **`migrate`**, **`remove repo`**, and **`init`** (when appending a global repo) also take **`flock`** on **`.lock`** in the metadata directory so concurrent writers do not read partial state; some collection-only paths use temp + **`mv`** without that global lock.
 
 ## Project discovery
 
@@ -91,10 +91,15 @@ Internally, project commands build a **temporary** JSON file with **`repos`**, *
 ## `check` / `sync` / `list repos` / `list files` / `list collections` filters
 
 - **`--repo=name`**: for **`check`**, **`sync`**, and **`list files`**, only rows where `repo_name` equals this name. For **`list repos`**, show only that repo’s entry.
-- **`--file=fragment`**: for **`check`**, **`sync`**, and **`list files`**, only rows where `local_path` **or** `repo_file_path` contains the fragment (substring / “like” match). Whitespace is trimmed from the fragment; an empty value matches all rows. Not valid for **`list repos`** or **`list collections`**.
+- **`--file=fragment`**: for **`check`**, **`sync`**, and **`list files`**, only rows where `local_path` **or** `repo_file_path` contains the fragment (substring / “like” match). Whitespace is trimmed from the fragment; an empty value matches all rows. Not valid for **`list repos`** or **`list collections`**. Do not combine **`--file=`** with **`--exact-local=`** on **`check`**.
+- **`--exact-local=path`**: **`check`** only; may be repeated; each value must equal a row’s project-relative **`local_path`** exactly (safe for paths where a substring match would be ambiguous). Used internally by **`info`** when refreshing sibling mappings.
 - **`list collections`** accepts no options (no **`--repo`**, **`--file`**, **`--status`**, or **`--include-detached`**).
 
 **`attach file`** (and **`attach files-in-repo`**, which runs it for every row for a repo): re-couples rows with `sync_status: detached` by rewriting the local file from master (clone marker), clearing `sync_status`, then running **`check`** for that repo and path so status is recomputed. **`detach files-in-repo`** runs **`detach file`** for every mapping with that **`repo_name`**.
+
+## Inspecting one path (`info`)
+
+**`filesync info`** (short: **`i`**) takes **`[file | -f] <local-path>`** or, equivalently, **`filesync i <local-path>`** with no extra keyword. From the current project it resolves the path to either a tracked clone (**`files.json`** row) or a file under a registered repo checkout (**master-at-checkout**). It gathers every **`files.json`** row across the same **project union** as **`remove repo`** that shares that master (**`repo_file_path`** + **`repo_id`** / legacy **`repo_name`**), runs **`check --exact-local=`** for the affected rows in each project, prints a summary on stderr, then optionally prompts (if stdin is a TTY) or accepts **`--fix-marker`** to align **`kind=master`** on the canonical master file with whether any clones are tracked. Exit status follows **`check`** when **`check`** reports blocking issues. See **`man filesync`** and **`filesync info file --help`**.
 
 ## Push (`push`)
 
@@ -147,4 +152,4 @@ Master files must contain **`filesync kind=master`** or the row is skipped (with
 
 ## Dependencies
 
-`jq` is required. **`git`** must be on `PATH` for: `check`, `sync`, `list files`, `list repos`, `add file`, `add master`, `add clone`, `push`, `detach file`, `attach file`, `detach files-in-repo`, `attach files-in-repo`, `remove file`, and `remove repo` (the shared runtime checks for `git` even when a given command does not invoke it). Other commands (`init`, `update`, `config`, `migrate`, `handle-missing`, `new repo`, `edit repo`, `new collection`, `remove collection`, `edit collection`, `list collections`) only require `jq` (and `curl` or `wget` for `update` when fetching release metadata or assets).
+`jq` is required. **`git`** must be on `PATH` for: `check`, `sync`, `list files`, `list repos`, `add file`, `add master`, `add clone`, `push`, `detach file`, `attach file`, `detach files-in-repo`, `attach files-in-repo`, `remove file`, `remove repo`, and `info` (the shared runtime checks for `git` even when a given command does not invoke it). Other commands (`init`, `update`, `config`, `migrate`, `handle-missing`, `new repo`, `edit repo`, `new collection`, `remove collection`, `edit collection`, `list collections`) only require `jq` (and `curl` or `wget` for `update` when fetching release metadata or assets).

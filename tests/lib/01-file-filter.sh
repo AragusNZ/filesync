@@ -32,4 +32,13 @@ filesync_config_file_rows_tsv_to "$_out" "$_cfg" "  r2 " $' x.txt\n'
 grep -q $'^1\t' "$_out" || bad "filtered row should be index 1"
 ok "config_file_rows_tsv_to fragment, repo, trim"
 
+locals_json='["a/x.txt"]'
+filesync_config_file_rows_tsv_to_exact_locals "$_out" "$_cfg" "" "$locals_json"
+[[ "$(wc -l < "$_out" | tr -d " ")" -eq 1 ]] || bad "exact-local should match one row"
+grep -q $'^0\tid1\tr1\ta/x\.txt' "$_out" || bad "exact-local row should be index 0 r1 a/x.txt"
+locals_json='["a/x.txt","b/x.txt"]'
+filesync_config_file_rows_tsv_to_exact_locals "$_out" "$_cfg" "" "$locals_json"
+[[ "$(wc -l < "$_out" | tr -d " ")" -eq 2 ]] || bad "exact-local two paths should match two rows"
+ok "config_file_rows_tsv_to_exact_locals"
+
 if [[ "${fail}" -ne 0 ]]; then exit 1; fi

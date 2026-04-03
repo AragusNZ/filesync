@@ -131,3 +131,21 @@ filesync_route_edit() {
       ;;
   esac
 }
+
+filesync_route_info() {
+  if [[ $# -eq 0 ]]; then
+    echo -e "${RED}Usage: filesync info [file | -f] <local-path> [--fix-marker]${NC}" >&2
+    echo "       filesync i <local-path>   (same; optional word: file or -f)" >&2
+    echo "See: filesync info file --help  or  filesync info --help" >&2
+    exit 1
+  fi
+  case "$1" in
+    -h | --help)
+      exec "$ROOT/commands/info-file.sh" --help
+      ;;
+    file | -f)
+      shift
+      ;;
+  esac
+  exec "$ROOT/commands/info-file.sh" "$@"
+}

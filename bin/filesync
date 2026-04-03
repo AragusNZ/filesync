@@ -95,6 +95,9 @@ main() {
     update)
       exec "$ROOT/commands/update.sh" "$@"
       ;;
+    info|i)
+      filesync_route_info "$@"
+      ;;
     help|-h|--help)
       exec "$ROOT/commands/help.sh"
       ;;

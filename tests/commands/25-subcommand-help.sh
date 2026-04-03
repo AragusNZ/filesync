@@ -19,7 +19,11 @@ assert_help "sync --help" "--dry-run" sync --help
 assert_help "sync --help" "-c, --check" sync --help
 assert_help "sync alias s -h" "master repos" s -h
 assert_help "check --help" "last_check_at" check --help
+assert_help "check --help" "exact-local" check --help
 assert_help "check alias c -h" "Verify mappings" c -h
+assert_help "info file --help" "fix-marker" info file --help
+assert_help "info --help" "fix-marker" info --help
+assert_help "i --help" "fix-marker" i --help
 assert_help "init --help" ".filesync/" init --help
 assert_help "init --help" "--no-repo" init --help
 assert_help "list repos --help" "list repos" list repos --help

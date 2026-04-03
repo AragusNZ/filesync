@@ -31,6 +31,23 @@ _out="$(filesync edit repo --help 2>&1)" || die "edit repo --help"
 _out="$(filesync e -r --help 2>&1)" || die "e -r --help"
 [[ "${_out}" == *"--disable"* ]] || die "e -r help"
 
+_out="$(filesync info file --help 2>&1)" || die "info file --help"
+[[ "${_out}" == *"fix-marker"* ]] || die "info file help should mention fix-marker"
+
+_out="$(filesync i file --help 2>&1)" || die "i file --help"
+[[ "${_out}" == *"fix-marker"* ]] || die "i file help"
+
+_out="$(filesync i --help 2>&1)" || die "i --help"
+[[ "${_out}" == *"fix-marker"* ]] || die "i --help should mention fix-marker"
+
+if filesync info 2>/dev/null; then
+	die "info with no args should fail"
+fi
+
+if filesync i 2>/dev/null; then
+	die "i with no args should fail"
+fi
+
 if filesync enable x 2>/dev/null; then
 	die "enable should be removed"
 fi

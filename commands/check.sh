@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Check synced files; update .filesync/files.json row status (incl. last_check_at per row).
-# Usage: check.sh [--repo=name] [--file=path_fragment] [--status=a,b,...]
+# Usage: check.sh [--repo=name] [--file=path_fragment] [--exact-local=path]... [--status=a,b,...]
 # Path fragment: substring match on local_path or repo_file_path (after optional --repo filter).
+# --exact-local: exact project-relative local_path (repeatable); mutually exclusive with --file=.
 
 set -euo pipefail
 
@@ -19,6 +20,7 @@ Verify mappings against disk and repo checkouts; refresh row status in .filesync
 Options:
   --repo=name            Limit to mappings for this repo
   --file=fragment        Substring match on local_path or repo_file_path (after --repo)
+  --exact-local=path     Exact match on local_path only (repeatable); do not combine with --file=
   --status=a,b,...       Filter by row status (OR). Tokens: see main "filesync -h" or man filesync
 
 If every matching row is skipped because each repo has check_sync_enabled false, prints a hint and exits without scanning.
@@ -38,6 +40,7 @@ col_st() { file_sync_status_color "$1"; }
 REPO_FILTER=""
 FILE_FRAGMENT=""
 STATUS_FILTER=""
+EXACT_LOCAL_PATHS=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --repo=*)
@@ -48,22 +51,36 @@ while [[ $# -gt 0 ]]; do
       FILE_FRAGMENT="${1#*=}"
       shift
       ;;
+    --exact-local=*)
+      EXACT_LOCAL_PATHS+=("${1#*=}")
+      shift
+      ;;
     --status=*)
       STATUS_FILTER="${1#*=}"
       shift
       ;;
     -*)
       echo -e "${RED}Unknown option: $1${NC}" >&2
-      echo "Usage: filesync check [--repo=name] [--file=path_fragment] [--status=a,b,...]" >&2
+      echo "Usage: filesync check [--repo=name] [--file=path_fragment | --exact-local=path ...] [--status=a,b,...]" >&2
       exit 1
       ;;
     *)
       echo -e "${RED}Unexpected argument: $1${NC}" >&2
-      echo "Usage: filesync check [--repo=name] [--file=path_fragment] [--status=a,b,...]" >&2
+      echo "Usage: filesync check [--repo=name] [--file=path_fragment | --exact-local=path ...] [--status=a,b,...]" >&2
       exit 1
       ;;
   esac
 done
+
+if [[ ${#EXACT_LOCAL_PATHS[@]} -gt 0 ]] && [[ -n "${FILE_FRAGMENT// }" ]]; then
+  echo -e "${RED}Use either --file= or --exact-local=, not both.${NC}" >&2
+  exit 1
+fi
+
+LOCALS_JSON='[]'
+if [[ ${#EXACT_LOCAL_PATHS[@]} -gt 0 ]]; then
+  LOCALS_JSON=$(printf '%s\n' "${EXACT_LOCAL_PATHS[@]}" | jq -R . | jq -s .)
+fi
 
 # shellcheck disable=SC2034
 declare -A FILESYNC_REPO_DIR_CACHE
@@ -123,7 +140,16 @@ UPDATED_ROWS=0
 declare -A CHECK_STATUS_COUNTS=()
 
 filesync_print_check_banner
-filesync_print_filter_context "$REPO_FILTER" "$FILE_FRAGMENT" "$STATUS_FILTER" false 0
+if [[ ${#EXACT_LOCAL_PATHS[@]} -gt 0 ]]; then
+  filesync_print_filter_context "$REPO_FILTER" "" "$STATUS_FILTER" false 0
+  filesync_print_filter_note "Filter: --exact-local= (exact project-relative local_path)"
+  for _elp in "${EXACT_LOCAL_PATHS[@]}"; do
+    filesync_print_filter_note "  ${_elp}"
+  done
+  unset _elp
+else
+  filesync_print_filter_context "$REPO_FILTER" "$FILE_FRAGMENT" "$STATUS_FILTER" false 0
+fi
 echo "" >&2
 
 PATCH_LINES_FILE=$(mktemp)
@@ -139,13 +165,24 @@ cleanup_verify_exit() {
 }
 trap cleanup_verify_exit EXIT
 
-filesync_config_file_rows_tsv_to "$CHECK_ROWS_TSV" "$CONFIG_FILE" "$REPO_FILTER" "$FILE_FRAGMENT"
+if [[ ${#EXACT_LOCAL_PATHS[@]} -gt 0 ]]; then
+  filesync_config_file_rows_tsv_to_exact_locals "$CHECK_ROWS_TSV" "$CONFIG_FILE" "$REPO_FILTER" "$LOCALS_JSON"
+else
+  filesync_config_file_rows_tsv_to "$CHECK_ROWS_TSV" "$CONFIG_FILE" "$REPO_FILTER" "$FILE_FRAGMENT"
+fi
 FILES_WORK_COUNT=$(wc -l < "$CHECK_ROWS_TSV")
 FILES_WORK_COUNT="${FILES_WORK_COUNT//[[:space:]]/}"
 
-if [[ "$FILES_WORK_COUNT" -eq 0 ]] && filesync_files_only_blocked_by_check_sync "$CONFIG_FILE" "$REPO_FILTER" "$FILE_FRAGMENT"; then
-  filesync_print_disabled_hint
-  exit 0
+if [[ ${#EXACT_LOCAL_PATHS[@]} -gt 0 ]]; then
+  if [[ "$FILES_WORK_COUNT" -eq 0 ]] && filesync_files_only_blocked_by_check_sync_exact_locals "$CONFIG_FILE" "$REPO_FILTER" "$LOCALS_JSON"; then
+    filesync_print_disabled_hint
+    exit 0
+  fi
+else
+  if [[ "$FILES_WORK_COUNT" -eq 0 ]] && filesync_files_only_blocked_by_check_sync "$CONFIG_FILE" "$REPO_FILTER" "$FILE_FRAGMENT"; then
+    filesync_print_disabled_hint
+    exit 0
+  fi
 fi
 
 if filesync_progress_want "$FILES_WORK_COUNT"; then
@@ -375,7 +412,9 @@ if [[ -s "$PATCH_LINES_FILE" ]]; then
 fi
 
 echo "" >&2
-if [[ -n "$FILE_FRAGMENT" ]] && [[ "$CHECKED" -eq 0 ]]; then
+if [[ ${#EXACT_LOCAL_PATHS[@]} -gt 0 ]] && [[ "$CHECKED" -eq 0 ]]; then
+  echo -e "${YELLOW}No file rows matched --exact-local= paths (and repo filter if any).${NC}" >&2
+elif [[ -n "$FILE_FRAGMENT" ]] && [[ "$CHECKED" -eq 0 ]]; then
   filesync_print_no_file_rows_for_fragment "$FILE_FRAGMENT"
 fi
 if [[ -n "$STATUS_FILTER" ]] && [[ "$CHECKED" -eq 0 ]]; then
