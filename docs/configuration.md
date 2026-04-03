@@ -68,7 +68,7 @@ Internally, project commands build a **temporary** JSON file with **`repos`**, *
 
 ## Repo metadata (`edit-repo`)
 
-**`filesync edit-repo <repo_name>`** updates **global** **`repos.json`**. Pass any of **`--rename=new_name`**, **`--path=...`**, **`--url=...`**, **`--branch=...`** (at least one required). Renaming uses the same multi-project discovery as **`remove-repo`** and rewrites **`repo_name`** on every matching row and the **`repo=`** field in the first **`filesync`** marker on each affected local file (clone or detached copies). Renaming is refused if any mapping still references the repo while **`check_sync_enabled`** is false for that repo, or if a mapping lives under a registered checkout whose repo has **`mirror_in_enabled`** false. The new name must not match any **collection** name in **global** **`collections.json`**. Use **`--branch=`** to change the configured branch.
+**`filesync edit-repo <repo_name>`** updates **global** **`repos.json`** only (system store). Pass any of **`--rename=new_name`**, **`--path=...`**, **`--url=...`**, **`--branch=...`** (at least one required). It does **not** modify project **`files.json`** or local sync markers; the new name must not match any **collection** name in **global** **`collections.json`**. Use **`--branch=`** to change the configured branch.
 
 ## Adding mappings (`add-file`, `add-master`, `add-clone`)
 
@@ -147,4 +147,4 @@ Master files must contain **`filesync kind=master`** or the row is skipped (with
 
 ## Dependencies
 
-`jq` is required. **`git`** must be on `PATH` for: `check`, `sync`, `list-files`, `list-repos`, `add-file`, `add-master`, `add-clone`, `push`, `detach-file`, `attach-file`, `detach-repo`, `attach-repo`, `remove-file`, `remove-repo`, and `edit-repo` (the shared runtime checks for `git` even when a given command does not invoke it). Other commands (`init`, `update`, `enable`, `disable`, `progress`, `config`, `migrate`, `handle-missing`, `add-repo`, `add-collection`, `remove-collection`, `edit-collection`, `list-collections`) only require `jq` (and `curl` or `wget` for `update` when fetching release metadata or assets).
+`jq` is required. **`git`** must be on `PATH` for: `check`, `sync`, `list-files`, `list-repos`, `add-file`, `add-master`, `add-clone`, `push`, `detach-file`, `attach-file`, `detach-repo`, `attach-repo`, `remove-file`, and `remove-repo` (the shared runtime checks for `git` even when a given command does not invoke it). Other commands (`init`, `update`, `enable`, `disable`, `progress`, `config`, `migrate`, `handle-missing`, `add-repo`, `edit-repo`, `add-collection`, `remove-collection`, `edit-collection`, `list-collections`) only require `jq` (and `curl` or `wget` for `update` when fetching release metadata or assets).

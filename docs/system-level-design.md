@@ -26,7 +26,7 @@ Layout and command bootstrap matrix. User-facing docs: `docs/configuration.md` a
 ## File row object
 
 - `repo_id` — references `repos[].id`.
-- `repo_name` — denormalized display; kept in sync on rename / migrate.
+- `repo_name` — denormalized display; aligned via migrate and commands that touch project files (not `edit-repo --rename`, which updates global `repos.json` only).
 
 ## Runtime `CONFIG_FILE` (temp merged JSON)
 
@@ -36,8 +36,8 @@ Merged preferences, `repo_path_root` (effective anchor path), `repos`, `files` (
 
 | Command | Init |
 |---------|------|
-| `add-repo`, `add-collection`, `edit-collection`, `remove-collection`, `list-repos`, `list-collections`, `progress`, `config` | system |
-| `remove-repo`, `edit-repo`, `migrate`, `list-files`, `handle-missing`, `init` (special), `check`, `sync`, `add-file`, … | full (`filesync_command_init`) |
+| `add-repo`, `add-collection`, `edit-collection`, `remove-collection`, `list-repos`, `list-collections`, `progress`, `config`, `edit-repo` | system |
+| `remove-repo`, `migrate`, `list-files`, `handle-missing`, `init` (special), `check`, `sync`, `add-file`, … | full (`filesync_command_init`) |
 
 `list.sh` uses `filesync_command_init_system` for `list-repos` / `list-collections` and full init for `list-files`.
 

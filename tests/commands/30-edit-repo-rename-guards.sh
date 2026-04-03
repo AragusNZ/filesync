@@ -4,6 +4,7 @@ set -euo pipefail
 # shellcheck source=/dev/null
 source "${ROOT}/tests/harness-command.sh"
 
+# edit-repo uses system init: renames global repos.json only; no project scans or files.json/marker updates.
 master="${TMP}/er-guard-master"
 proj_a="${TMP}/er-guard-a"
 proj_b="${TMP}/er-guard-b"
@@ -50,28 +51,17 @@ mkdir -p "${proj_a}"
 (
 	cd "${proj_a}"
 	filesync disable emissions
-	if filesync edit-repo emissions --rename=em2 2>/dev/null; then
-		die "rename should fail when check_sync_enabled false and mappings exist"
-	fi
-	filesync config repo emissions check-sync true
-)
-
-(
-	cd "${proj_a}"
 	filesync config repo greenlit-api mirror-in false
-	if filesync edit-repo emissions --rename=em2 2>/dev/null; then
-		die "rename should fail when host checkout has mirror_in_enabled false"
-	fi
-	filesync config repo greenlit-api mirror-in true
 	filesync edit-repo emissions --rename=em2
-	jq -e '.[] | select(.local_path=="tools/x.txt") | .repo_name == "em2"' ".filesync/files.json" >/dev/null || die "proj_a files.json after rename"
-	grep -qF 'repo=em2' "tools/x.txt" || die "clone marker repo= in proj_a"
+	jq -e 'any(.name == "em2")' "${FILESYNC_HOME}/repos.json" >/dev/null || die "global repos should list em2"
+	jq -e '.[] | select(.local_path=="tools/x.txt") | .repo_name == "emissions"' ".filesync/files.json" >/dev/null || die "project files.json keeps old repo_name"
+	grep -qF 'repo=emissions' "tools/x.txt" || die "marker unchanged"
 )
 
 (
 	cd "${proj_b}"
-	jq -e '.[] | select(.local_path=="tools/x.txt") | .repo_name == "em2"' ".filesync/files.json" >/dev/null || die "proj_b files.json after rename"
-	grep -qF 'repo=em2' "tools/x.txt" || die "clone marker repo= in proj_b"
+	jq -e '.[] | select(.local_path=="tools/x.txt") | .repo_name == "emissions"' ".filesync/files.json" >/dev/null || die "proj_b files.json unchanged"
+	grep -qF 'repo=emissions' "tools/x.txt" || die "proj_b marker unchanged"
 )
 
 (

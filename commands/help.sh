@@ -53,7 +53,7 @@ _hcd 'remove-file (rmf)' 'Drop row; strip clone/detached marker; keep master' '[
 _hcd 'remove-repo (rmr)' 'Drop repo (prompts if file mappings remain; -y/--yes skips prompt)' '<repo_name> [-y|--yes]'
 _hcd 'remove-collection (rmcol)' 'Delete a collection' '<name>'
 _hcd 'add-repo (ar)' 'Interactively add a repo' ''
-_hcd 'edit-repo (er)' 'Update global repo entry; --rename updates repo_name in files.json rows and markers per project' '<name> [--rename=] [--path=] [--url=] [--branch=]'
+_hcd 'edit-repo (er)' 'Update global repos.json only (no project files.json or markers)' '<name> [--rename=] [--path=] [--url=] [--branch=]'
 _hcd 'add-collection (acol)' 'Named repo group for --also= (optional --repos=a,b)' '<name> [--repos=a,b]'
 _hcd 'edit-collection (ecol)' 'Add/remove repo in collection or --rename' '<name> [--add-repo=] [--remove-repo=] [--rename=]'
 echo ''

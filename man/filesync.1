@@ -588,9 +588,7 @@ or
 .B \-\-yes
 is given.
 Discovery matches
-.B sync
-and
-.BR edit-repo " " \-\-rename :
+.B sync :
 the union of registered checkouts that contain
 .BR .filesync/files.json
 and the current project root.
@@ -617,20 +615,9 @@ Also
 .RI [ \-\-path= path ]
 .RI [ \-\-url= url ]
 .RI [ \-\-branch= branch ]
-Edit a repo entry. Renaming updates
-.I repo_name
-in every discovered project's
+Edit a repo entry in the global store only; project
 .I files.json
-and the
-.B repo=
-token in local clone/detached sync markers for affected paths
-(same project-root discovery as
-.BR remove-repo ).
-Renaming is refused if any mapping still references the repo and it has
-.B check_sync_enabled
-false in the global store, or if a mapping lives under a registered checkout whose repo has
-.B mirror_in_enabled
-false.
+rows and local sync markers are not updated.
 The new name must not match another repo or any collection name.
 .TP
 .B add-collection
