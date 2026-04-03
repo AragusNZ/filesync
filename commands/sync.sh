@@ -11,7 +11,7 @@ source "$_CMD_ROOT/../lib/cli-help.sh"
 if filesync_argv_wants_help "$@"; then
   cat <<'EOF'
 Usage: filesync sync [option] ...
-Alias: s
+Also: s
 
 Copy from master repos into the project and update .filesync/files.json row status.
 

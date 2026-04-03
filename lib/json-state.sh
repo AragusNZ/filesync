@@ -107,7 +107,7 @@ filesync_assemble_state_to() {
   rm -rf "$tmpd"
 }
 
-# Merged prefs + global repos + empty files + repo_path_root (list-repos / global-only tools).
+# Merged prefs + global repos + empty files + repo_path_root (list repos / global-only tools).
 filesync_assemble_global_catalog_state_to() {
   local out="${1:?}"
   local tmpd merged_prefs rroot

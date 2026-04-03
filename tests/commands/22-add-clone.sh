@@ -33,7 +33,7 @@ filesync_test_append_global_repos "${TMP}/seed-22b.json"
 
 (
 	cd "${master}"
-	filesync add-clone consumer tools/x.txt
+	filesync add clone consumer tools/x.txt
 	[[ -f "${proj_b}/tools/x.txt" ]] || die "target should have clone file"
 	grep -qE 'filesync kind=clone' "${proj_b}/tools/x.txt" || die "clone marker"
 	grep -qE 'path=tools/x\.txt' "${proj_b}/tools/x.txt" || die "clone path="
@@ -46,7 +46,7 @@ filesync_test_append_global_repos "${TMP}/seed-22b.json"
 (
 	cd "${master}"
 	set +e
-	filesync add-clone consumer tools/x.txt >/dev/null 2>&1
+	filesync add clone consumer tools/x.txt >/dev/null 2>&1
 	_ec=$?
 	set -e
 	[[ "${_ec}" -ne 0 ]] || die "add-clone should fail when target file exists"
@@ -57,7 +57,7 @@ echo "# filesync kind=clone path=x repo=y" >"${master}/tools/bad.txt"
 (
 	cd "${master}"
 	set +e
-	filesync add-clone consumer tools/bad.txt >/dev/null 2>&1
+	filesync add clone consumer tools/bad.txt >/dev/null 2>&1
 	_ec=$?
 	set -e
 	[[ "${_ec}" -ne 0 ]] || die "add-clone should fail when source is not kind=master"
@@ -67,7 +67,7 @@ echo "# filesync kind=clone path=x repo=y" >"${master}/tools/bad.txt"
 echo "plain-only" >"${master}/tools/plain.txt"
 (
 	cd "${master}"
-	filesync add-clone consumer tools/plain.txt
+	filesync add clone consumer tools/plain.txt
 	grep -qE 'kind=master' "${master}/tools/plain.txt" || die "auto master marker"
 	grep -qE 'kind=clone' "${proj_b}/tools/plain.txt" || die "clone after auto master"
 )
@@ -79,7 +79,7 @@ echo "plain-only" >"${master}/tools/plain.txt"
 } >"${master}/tools/w.txt"
 (
 	cd "${master}"
-	filesync add-clone consumer tools/w.txt:other/w.txt
+	filesync add clone consumer tools/w.txt:other/w.txt
 	[[ -f "${proj_b}/other/w.txt" ]] || die "override local path"
 	grep -qE 'path=tools/w\.txt' "${proj_b}/other/w.txt" || die "marker path= stays master path"
 	jq -e '.[] | select(.local_path=="other/w.txt") | .repo_file_path == "tools/w.txt"' "${proj_b}/.filesync/files.json" >/dev/null || die "row paths"
@@ -119,7 +119,7 @@ filesync_test_append_global_repos "${TMP}/seed-22d.json"
 
 (
 	cd "${master2}"
-	filesync add-clone pb tools/z.txt --also=pc
+	filesync add clone pb tools/z.txt --also=pc
 	[[ -f "${pb}/tools/z.txt" && -f "${pc}/tools/z.txt" ]] || die "--also should write both"
 	jq -e '.[] | select(.local_path=="tools/z.txt")' "${pb}/.filesync/files.json" >/dev/null || die "pb row"
 	jq -e '.[] | select(.local_path=="tools/z.txt")' "${pc}/.filesync/files.json" >/dev/null || die "pc row"

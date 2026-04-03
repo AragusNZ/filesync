@@ -76,7 +76,7 @@ else
 	bad "write_file_row"
 fi
 
-# --status CSV matching (sync / list-files)
+# --status CSV matching (sync / list files)
 _m() { file_sync_status_matches_csv "$1" "$2" && echo y || echo n; }
 
 [[ "$(_m "" "unset")" == y ]] || bad "csv unset matches empty"

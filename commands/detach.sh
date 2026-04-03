@@ -8,8 +8,8 @@ _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_CMD_ROOT/../lib/cli-help.sh"
 if filesync_argv_wants_help "$@"; then
   cat <<'EOF'
-Usage: filesync detach-file <local_path> [<local_path> ...]
-Alias: ddf
+Usage: filesync detach file <local_path> [<local_path> ...]
+Also: d, d -f
 
 Keep each mapping but set sync status to detached and write the detached marker on disk.
 EOF
@@ -24,7 +24,7 @@ source "$_CMD_ROOT/../lib/progress.sh"
 trap 'filesync_progress_end || true; rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
 if [[ $# -lt 1 ]]; then
-  echo -e "${RED}Usage: filesync detach-file|ddf <local_path1> [local_path2 ...]${NC}" >&2
+  echo -e "${RED}Usage: filesync detach file <local_path1> [local_path2 ...]${NC}" >&2
   exit 1
 fi
 

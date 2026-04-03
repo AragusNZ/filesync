@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CLI: filesync add-collection — append a named repo group to collections.json.
+# CLI: filesync new collection — append a named repo group to collections.json.
 
 set -euo pipefail
 
@@ -8,10 +8,10 @@ _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_CMD_ROOT/../lib/cli-help.sh"
 if filesync_argv_wants_help "$@"; then
   cat <<'EOF'
-Usage: filesync add-collection <name> [--repos=a,b]
-Alias: acol
+Usage: filesync new collection <name> [--repos=a,b]
+Also: n -col
 
-Create a collection in the global collections.json for use with add-file/add-master/add-clone --also=.
+Create a collection in the global collections.json for use with add file / add master / add clone --also=.
 Collection names must not match any repo name in the global repos.json.
 
 Options:
@@ -38,7 +38,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     -*)
       echo -e "${RED}Unknown option: $1${NC}" >&2
-      echo "Usage: filesync add-collection <name> [--repos=a,b]" >&2
+      echo "Usage: filesync new collection <name> [--repos=a,b]" >&2
       exit 1
       ;;
     *)
@@ -53,7 +53,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$NAME" ]]; then
-  echo -e "${RED}Usage: filesync add-collection <name> [--repos=a,b]${NC}" >&2
+  echo -e "${RED}Usage: filesync new collection <name> [--repos=a,b]${NC}" >&2
   exit 1
 fi
 

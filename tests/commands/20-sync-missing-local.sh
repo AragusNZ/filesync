@@ -31,7 +31,7 @@ mkdir -p "${master}" "${proj}"
 		'[{"name":"origin","path":"../sync-missing-local-master","url":$url,"branch":"main"}]' >"${TMP}/seed-20.json"
 	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-20.json"
 
-	filesync add-file origin database/seeders/LoadsDataFilesTrait.php
+	filesync add origin database/seeders/LoadsDataFilesTrait.php
 	filesync sync
 
 	rm -f database/seeders/LoadsDataFilesTrait.php

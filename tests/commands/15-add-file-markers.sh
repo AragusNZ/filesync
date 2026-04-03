@@ -27,11 +27,11 @@ mkdir -p "${master}/tools" "${proj}"
 		'[{"name":"origin","path":"../afm-master","url":$url,"branch":"main"}]' >"${TMP}/seed-15.json"
 	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-15.json"
 	set +e
-	filesync add-file origin tools/plain.txt >/dev/null 2>&1
+	filesync add origin tools/plain.txt >/dev/null 2>&1
 	_ec=$?
 	set -e
 	[[ "${_ec}" -ne 0 ]] || die "add-file without master marker should fail"
-	filesync add-file --mark-master origin tools/plain.txt
+	filesync add --mark-master origin tools/plain.txt
 	grep -qE 'kind=master' "${master}/tools/plain.txt" || die "--mark-master should tag master file"
 	[[ -f tools/plain.txt ]] || die "add-file should create local"
 	grep -qE 'kind=clone' tools/plain.txt || die "local should have clone marker"
@@ -46,7 +46,7 @@ echo "# filesync kind=clone path=x repo=y" >"${master}/tools/bad.txt"
 (
 	cd "${proj}"
 	set +e
-	filesync add-file origin tools/bad.txt:tools/bad-local.txt >/dev/null 2>&1
+	filesync add origin tools/bad.txt:tools/bad-local.txt >/dev/null 2>&1
 	_ec=$?
 	set -e
 	[[ "${_ec}" -ne 0 ]] || die "add-file should fail when master has non-master marker"

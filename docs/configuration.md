@@ -12,10 +12,10 @@ Default: **`~/.filesync-root`** (distinct from **`<project>/.filesync/`**). If *
 
 Files in that directory:
 
-- **`system.json`** — metadata (e.g. **`version`**). Global JSON updates use a lock file (**`.lock`**) to reduce concurrent write races.
+- **`system.json`** — metadata (e.g. **`version`**).
 - **`repos.json`** — array of repo objects: stable **`id`** (UUID), **`name`**, **`url`**, **`path`**, **`branch`**, optional **`check_sync_enabled`** and **`mirror_in_enabled`** (both default true if omitted). Each **`name`** must be unique; duplicate names make resolution ambiguous and are rejected when loading project state. Each repo’s **`path`** is resolved with `filesync_resolve_repo_checkout_dir`: **relative** paths are under your **home directory** (or **`FILESYNC_REPO_PATH_ANCHOR`** when set); absolute **`path`** values are used as-is.
 - **`collections.json`** — array of `{ "name", "repos": [ … ] }` for **`--also=`** expansion.
-- **`preferences.json`** — merged over `share/defaults/preferences.default.json`; **`progress_display`** is **`percent`**, **`bar`**, or **`hidden`**. Use **`filesync progress`** or **`filesync config set progress …`**.
+- **`preferences.json`** — merged over `share/defaults/preferences.default.json`; **`progress_display`** is **`percent`**, **`bar`**, or **`hidden`**. Set it with **`filesync config set progress …`**; inspect the effective value with **`filesync config show`**.
 
 **`filesync config show`** prints the effective system home, pointer path, repo path anchor, and paths to global JSON files. **`filesync config doctor`** summarizes pointer / **`FILESYNC_HOME`** overrides and warns if **`repos.json`** contains duplicate **`name`** values.
 
@@ -37,13 +37,13 @@ Each synced copy carries a single-line **marker** containing the substring **`fi
 
 - **`kind=master`** — file in the upstream repo (source of truth).
 - **`kind=clone`** — coupled local copy; includes **`path=…`** (repo-relative path), **`repo=…`** (repo name), and usually **`repo_id=…`** (stable id matching **`repos.json`**).
-- **`kind=detached`** — local file after **`detach-file`**; optional **`path=`** / **`repo=`** / **`repo_id=`** for context.
+- **`kind=detached`** — local file after **`detach file`**; optional **`path=`** / **`repo=`** / **`repo_id=`** for context.
 
 The tool rewrites the first marker line when syncing or changing coupling; the **comment style** around that payload matches the source file (or `marker_style` / extension rules above). Standard **`.json`** does not allow comments; use a commented dialect (e.g. JSONC) and map extension/basename, or avoid markers inside strict JSON.
 
 ### Writes
 
-Commands such as **`check`** update row-level fields in **`.filesync/files.json`** (including per-row **`last_check_at`**). Global JSON files are updated atomically (temp file + **`mv`**) when repo/collection/preference commands run.
+Commands such as **`check`** update row-level fields in **`.filesync/files.json`** (including per-row **`last_check_at`**). Global **`repos.json`**, **`collections.json`**, and **`preferences.json`** are usually written by **`jq`** to a temp file, then replaced with **`mv`**. **`config set`**, **`new repo`**, **`edit repo`**, **`migrate`**, **`remove repo`**, and **`init`** (when appending a global repo) also take **`flock`** on **`.lock`** in the metadata directory so concurrent writers do not read partial state; some collection-only paths use temp + **`mv`** without that global lock.
 
 ## Project discovery
 
@@ -60,41 +60,41 @@ When **stdin is a terminal** and **`--no-repo`** is not passed, **`init`** promp
 
 ### Enable / disable (per repo)
 
-**`filesync enable <repo>`** and **`filesync disable <repo>`** set **`check_sync_enabled`** for that repo in **global** **`repos.json`** (same as **`filesync config repo <name> check-sync true|false`**). **`enable`** prompts for confirmation; **`disable`** does not. Rows referencing a disabled repo are skipped by **`check`** and **`sync`**.
+Use **`filesync edit repo <name> --enable`** or **`--disable`** to set both **`check_sync_enabled`** and **`mirror_in_enabled`** true or false in **global** **`repos.json`**, or set them independently with **`--check-sync=true|false`** and **`--mirror-in=true|false`**. Rows referencing a repo with **`check_sync_enabled: false`** are skipped by **`check`** and **`sync`**.
 
 ## Assembled state
 
 Internally, project commands build a **temporary** JSON file with **`repos`**, **`files`** (rows normalized with **`repo_id`** / **`repo_name`**), merged **preferences**, and **`repo_path_root`** (the effective path anchor, for **`jq`**) for filtering. **`collections`** are **not** embedded; commands that need them read **`FILESYNC_COLLECTIONS_FILE`** separately or use **`jq --slurpfile`**.
 
-## Repo metadata (`edit-repo`)
+## Repo metadata (`edit repo`)
 
-**`filesync edit-repo <repo_name>`** updates **global** **`repos.json`** only (system store). Pass any of **`--rename=new_name`**, **`--path=...`**, **`--url=...`**, **`--branch=...`** (at least one required). It does **not** modify project **`files.json`** or local sync markers; the new name must not match any **collection** name in **global** **`collections.json`**. Use **`--branch=`** to change the configured branch.
+**`filesync edit repo <repo_name>`** (short: **`e -r`**) updates **global** **`repos.json`** only (system store). Pass at least one of **`--rename=`**, **`--path=`**, **`--url=`**, **`--branch=`**, **`--check-sync=true|false`**, **`--mirror-in=true|false`**, **`--enable`**, or **`--disable`** (the **`=`** options use a single argument, e.g. **`--rename=myrepo`**). It does **not** modify project **`files.json`** or local sync markers; the new name must not match any **collection** name in **global** **`collections.json`**.
 
-## Adding mappings (`add-file`, `add-master`, `add-clone`)
+## Adding mappings (`add file`, `add master`, `add clone`)
 
-**`add-file`** tracks paths from a repo checkout into the project. The file under the repo must already contain a **`kind=master`** marker; **`kind=clone`** (or another non-master marker) is rejected. If the repo file has **no** filesync marker yet, pass **`--mark-master`** so the tool prepends a master marker (comment style follows the path).
+**`add file`** (**`a`**, **`a -f`**) tracks paths from a repo checkout into the project. The file under the repo must already contain a **`kind=master`** marker; **`kind=clone`** (or another non-master marker) is rejected. If the repo file has **no** filesync marker yet, pass **`--mark-master`** so the tool prepends a master marker (comment style follows the path).
 
-**`add-master`** promotes local files into the master repo checkout and adds mappings; omit **`:path_in_repo`** when it matches **`local_path`**. See **`man filesync`** for arguments and **`--also`**.
+**`add master`** promotes local files into the master repo checkout and adds mappings; omit **`:path_in_repo`** when it matches **`local_path`**. See **`man filesync`** for arguments and **`--also`**.
 
-**`add-clone`** creates a **`kind=clone`** copy and row in a **sibling** initialized project from a **`kind=master`** file that lives under the **current** project. If that source file has no filesync marker, a **`kind=master`** marker is prepended automatically; other non-master markers are rejected. This differs from **`add-file`**, where an unmarked repo file requires **`--mark-master`** explicitly.
+**`add clone`** creates a **`kind=clone`** copy and row in a **sibling** initialized project from a **`kind=master`** file that lives under the **current** project. If that source file has no filesync marker, a **`kind=master`** marker is prepended automatically; other non-master markers are rejected. This differs from **`add file`**, where an unmarked repo file requires **`--mark-master`** explicitly.
 
 ## Removing mappings
 
-- **`detach-file`** / **`detach-repo`**: the row stays in **`files.json`** with **`sync_status: detached`**; the local file’s marker becomes **`kind=detached`**. Use when you want to pause syncing but keep the mapping.
-- **`remove-file`** (alias **`rmf`**): removes the row from **`files.json`** and strips **`kind=clone`** or **`kind=detached`** markers from the local file; **`kind=master`** in the repo checkout is unchanged. Pass **`--all-missing`** to also remove every mapping whose cached **`sync_status`** is **`error_missing_master`**, unioned with any explicit paths (similar to how **`push --all`** adds all **`local_newer`** rows). If only **`--all-missing`** is given and no rows match, the command exits **0** after a short message. Full syntax is in **`man filesync`**.
-- **`remove-repo`**: removes a repo from **global** **`repos.json`** after removing **all** mappings for that repo across **every known project** (registered checkouts with **`.filesync/files.json`**, plus the current project). See the next section.
+- **`detach file`** / **`detach files-in-repo`**: the row stays in **`files.json`** with **`sync_status: detached`**; the local file’s marker becomes **`kind=detached`**. Use when you want to pause syncing but keep the mapping.
+- **`remove file`** (also **`rm`**, **`rm -f`**): removes the row from **`files.json`** and strips **`kind=clone`** or **`kind=detached`** markers from the local file; **`kind=master`** in the repo checkout is unchanged. Pass **`--all-missing`** to also remove every mapping whose cached **`sync_status`** is **`error_missing_master`**, unioned with any explicit paths (similar to how **`push --all`** adds all **`local_newer`** rows). If only **`--all-missing`** is given and no rows match, the command exits **0** after a short message. Full syntax is in **`man filesync`**.
+- **`remove repo`**: removes a repo from **global** **`repos.json`** after removing **all** mappings for that repo across **every known project** (registered checkouts with **`.filesync/files.json`**, plus the current project). See the next section.
 
-## Removing a repo (`remove-repo`)
+## Removing a repo (`remove repo`)
 
-**`filesync remove-repo`** (alias **`rmr`**) drops an entry from **global** **`repos.json`**. The repo name is removed from every **global** **`collections.json`** entry, and collections that become empty are removed. Discovery is the same union as **`sync`**: registered checkouts that have **`.filesync/files.json`**, plus the current project root. If **any** **`files.json`** still references that repo, the command fails until you pass **`--force`**; then it asks for confirmation unless **`rmr -y`** / **`--yes`**. On success, each mapping is removed the same way as **`remove-file`**, then the global repo row is removed. See **`man filesync`** for details.
+**`filesync remove repo`** (also **`rm -r`**) drops an entry from **global** **`repos.json`**. The repo name is removed from every **global** **`collections.json`** entry, and collections that become empty are removed. Discovery is the same union as **`sync`**: registered checkouts that have **`.filesync/files.json`**, plus the current project root. If **any** **`files.json`** still references that repo, the command fails until you pass **`--force`**; then it asks for confirmation unless **`-y`** / **`--yes`**. On success, each mapping is removed the same way as **`remove file`**, then the global repo row is removed. See **`man filesync`** for details.
 
-## `check` / `sync` / `list-repos` / `list-files` / `list-collections` filters
+## `check` / `sync` / `list repos` / `list files` / `list collections` filters
 
-- **`--repo=name`**: for **`check`**, **`sync`**, and **`list-files`**, only rows where `repo_name` equals this name. For **`list-repos`**, show only that repo’s entry.
-- **`--file=fragment`**: for **`check`**, **`sync`**, and **`list-files`**, only rows where `local_path` **or** `repo_file_path` contains the fragment (substring / “like” match). Whitespace is trimmed from the fragment; an empty value matches all rows. Not valid for **`list-repos`** or **`list-collections`**.
-- **`list-collections`** accepts no options (no **`--repo`**, **`--file`**, **`--status`**, or **`--include-detached`**).
+- **`--repo=name`**: for **`check`**, **`sync`**, and **`list files`**, only rows where `repo_name` equals this name. For **`list repos`**, show only that repo’s entry.
+- **`--file=fragment`**: for **`check`**, **`sync`**, and **`list files`**, only rows where `local_path` **or** `repo_file_path` contains the fragment (substring / “like” match). Whitespace is trimmed from the fragment; an empty value matches all rows. Not valid for **`list repos`** or **`list collections`**.
+- **`list collections`** accepts no options (no **`--repo`**, **`--file`**, **`--status`**, or **`--include-detached`**).
 
-**`attach-file`** (and **`attach-repo`**, which runs it for every row for a repo): re-couples rows with `sync_status: detached` by rewriting the local file from master (clone marker), clearing `sync_status`, then running **`check`** for that repo and path so status is recomputed. **`detach-repo`** runs **`detach-file`** for every mapping with that **`repo_name`**.
+**`attach file`** (and **`attach files-in-repo`**, which runs it for every row for a repo): re-couples rows with `sync_status: detached` by rewriting the local file from master (clone marker), clearing `sync_status`, then running **`check`** for that repo and path so status is recomputed. **`detach files-in-repo`** runs **`detach file`** for every mapping with that **`repo_name`**.
 
 ## Push (`push`)
 
@@ -102,15 +102,15 @@ Internally, project commands build a **temporary** JSON file with **`repos`**, *
 
 ## Cross-project mirroring (`--also`)
 
-**`add-file`**, **`add-master`**, and **`add-clone`** accept **`--also=`** with comma-separated **repo names** and/or **collection names** (from **global** **`collections.json`**) to mirror mappings into sibling initialized projects.
+**`add file`**, **`add master`**, and **`add clone`** accept **`--also=`** with comma-separated **repo names** and/or **collection names** (from **global** **`collections.json`**) to mirror mappings into sibling initialized projects.
 
 - After expanding collection names to their **`repos`** lists (order preserved; duplicates removed), every target must be a repo name in **global** **`repos.json`** with **`mirror_in_enabled`** true (default).
 - The resolved checkout directory for each target must contain **`.filesync/files.json`** (sibling project). Targets whose resolved directory **equals** the current project root are filtered out.
-- For `add-master --also` and `add-clone --also`, mirrored rows in sibling projects are initialized as **`sync_required`** so each project can run **`check`** / **`sync`** to compute timestamps and verify status in its own context.
+- For `add master --also` and `add clone --also`, mirrored rows in sibling projects are initialized as **`sync_required`** so each project can run **`check`** / **`sync`** to compute timestamps and verify status in its own context.
 
-## `sync` / `list-files` status filter (`--status`)
+## `sync` / `list files` status filter (`--status`)
 
-**`list-files`**: optional **`--status=a,b,...`** and optional **`--include-detached`** (with **`--status`** only). Omit **`--status`** to list every row (after **`--repo`** / **`--file`** filters).
+**`list files`**: optional **`--status=a,b,...`** and optional **`--include-detached`** (with **`--status`** only). Omit **`--status`** to list every row (after **`--repo`** / **`--file`** filters).
 
 **`sync`**: by default only rows whose **`sync_status`** is **unset**, **`sync_required`**, or **`error_missing_local`** are processed (so missing local files are recreated from master); **`detached`** rows are skipped unless **`--include-detached`** is set. Pass **`--status=`** to replace that default with other tokens.
 
@@ -147,4 +147,4 @@ Master files must contain **`filesync kind=master`** or the row is skipped (with
 
 ## Dependencies
 
-`jq` is required. **`git`** must be on `PATH` for: `check`, `sync`, `list-files`, `list-repos`, `add-file`, `add-master`, `add-clone`, `push`, `detach-file`, `attach-file`, `detach-repo`, `attach-repo`, `remove-file`, and `remove-repo` (the shared runtime checks for `git` even when a given command does not invoke it). Other commands (`init`, `update`, `enable`, `disable`, `progress`, `config`, `migrate`, `handle-missing`, `add-repo`, `edit-repo`, `add-collection`, `remove-collection`, `edit-collection`, `list-collections`) only require `jq` (and `curl` or `wget` for `update` when fetching release metadata or assets).
+`jq` is required. **`git`** must be on `PATH` for: `check`, `sync`, `list files`, `list repos`, `add file`, `add master`, `add clone`, `push`, `detach file`, `attach file`, `detach files-in-repo`, `attach files-in-repo`, `remove file`, and `remove repo` (the shared runtime checks for `git` even when a given command does not invoke it). Other commands (`init`, `update`, `config`, `migrate`, `handle-missing`, `new repo`, `edit repo`, `new collection`, `remove collection`, `edit collection`, `list collections`) only require `jq` (and `curl` or `wget` for `update` when fetching release metadata or assets).

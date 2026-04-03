@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Detach every files.json row for a given repo_name (same per-file behavior as detach-file).
+# Detach every files.json row for a given repo_name (same per-file behavior as detach file).
 
 set -euo pipefail
 
@@ -8,10 +8,10 @@ _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_CMD_ROOT/../lib/cli-help.sh"
 if filesync_argv_wants_help "$@"; then
   cat <<'EOF'
-Usage: filesync detach-repo <repo_name>
-Alias: ddr
+Usage: filesync detach files-in-repo <repo_name>
+Also: d -fir
 
-Detach every files.json row for the given repo_name (same per-file behavior as detach-file).
+Detach every files.json row for the given repo_name (same per-file behavior as detach file).
 EOF
   exit 0
 fi
@@ -21,13 +21,13 @@ filesync_command_init "${BASH_SOURCE[0]}"
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
 if [[ $# -ne 1 ]] || [[ -z "${1// }" ]]; then
-  echo -e "${RED}Usage: filesync detach-repo|ddr <repo_name>${NC}" >&2
+  echo -e "${RED}Usage: filesync detach files-in-repo <repo_name>${NC}" >&2
   exit 1
 fi
 
 REPO_NAME="$1"
 if [[ "$REPO_NAME" == -* ]]; then
-  echo -e "${RED}Usage: filesync detach-repo|ddr <repo_name>${NC}" >&2
+  echo -e "${RED}Usage: filesync detach files-in-repo <repo_name>${NC}" >&2
   exit 1
 fi
 

@@ -8,7 +8,7 @@ _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_CMD_ROOT/../lib/cli-help.sh"
 if filesync_argv_wants_help "$@"; then
   cat <<'EOF'
-Usage: filesync handle-missing --local-path=<path> (--unmap | --delete-local-and-unmap | --recreate-from-master)
+Usage: filesync handle-missing <local_path> (--unmap | --delete-local-and-unmap | --recreate-from-master)
 
 Run from a filesync project (walk-up .filesync/). Selects the mapping row by local_path.
 
@@ -40,10 +40,6 @@ DO_REC=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --local-path=*)
-      LOCAL_PATH="${1#*=}"
-      shift
-      ;;
     --unmap)
       DO_UNMAP=true
       shift
@@ -56,14 +52,20 @@ while [[ $# -gt 0 ]]; do
       DO_REC=true
       shift
       ;;
-    *)
+    -*)
       echo -e "${RED}Unknown or missing arguments. Try filesync handle-missing --help${NC}" >&2
       exit 1
+      ;;
+    *)
+      [[ -n "$1" ]] || { echo -e "${RED}local_path cannot be empty${NC}" >&2; exit 1; }
+      [[ -z "$LOCAL_PATH" ]] || { echo -e "${RED}Only one local_path is allowed${NC}" >&2; exit 1; }
+      LOCAL_PATH="$1"
+      shift
       ;;
   esac
 done
 
-[[ -n "$LOCAL_PATH" ]] || { echo -e "${RED}--local-path= is required${NC}" >&2; exit 1; }
+[[ -n "$LOCAL_PATH" ]] || { echo -e "${RED}<local_path> is required${NC}" >&2; exit 1; }
 
 acts=0
 $DO_UNMAP && acts=$((acts + 1))

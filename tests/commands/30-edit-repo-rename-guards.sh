@@ -44,15 +44,15 @@ mkdir -p "${proj_a}"
 			{"name":"greenlit-api","path":$b,"url":null,"branch":null}
 		]' >"${TMP}/seed-30.json"
 	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-30.json"
-	filesync add-collection sib --repos=greenlit-api
-	filesync add-file emissions tools/x.txt --also=sib
+	filesync new collection sib --repos=greenlit-api
+	filesync add emissions tools/x.txt --also=sib
 )
 
 (
 	cd "${proj_a}"
-	filesync disable emissions
-	filesync config repo greenlit-api mirror-in false
-	filesync edit-repo emissions --rename=em2
+	filesync edit repo emissions --disable
+	filesync edit repo greenlit-api --mirror-in=false
+	filesync edit repo emissions --rename=em2
 	jq -e 'any(.name == "em2")' "${FILESYNC_HOME}/repos.json" >/dev/null || die "global repos should list em2"
 	jq -e '.[] | select(.local_path=="tools/x.txt") | .repo_name == "emissions"' ".filesync/files.json" >/dev/null || die "project files.json keeps old repo_name"
 	grep -qF 'repo=emissions' "tools/x.txt" || die "marker unchanged"
@@ -66,6 +66,6 @@ mkdir -p "${proj_a}"
 
 (
 	cd "${proj_a}"
-	filesync remove-repo em2 2>/dev/null && die "remove-repo should require --force when mappings exist"
-	filesync remove-repo em2 --force -y
+	filesync remove repo em2 2>/dev/null && die "remove-repo should require --force when mappings exist"
+	filesync remove repo em2 --force -y
 )

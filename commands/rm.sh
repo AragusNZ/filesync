@@ -8,8 +8,8 @@ _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_CMD_ROOT/../lib/cli-help.sh"
 if filesync_argv_wants_help "$@"; then
   cat <<'EOF'
-Usage: filesync remove-file [--all-missing] [<local_path> ...]
-Alias: rmf
+Usage: filesync remove file [--all-missing] [<local_path> ...]
+Also: rm, rm -f
 
 Drop the row from .filesync/files.json; strip clone/detached markers from the local file;
 keep kind=master when present.
@@ -39,7 +39,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     -*)
       echo -e "${RED}Unknown option: $1${NC}" >&2
-      echo "Usage: filesync rmf|remove-file [--all-missing] [<local_path1> [local_path2 ...]]" >&2
+      echo "Usage: filesync remove file [--all-missing] [<local_path1> [local_path2 ...]]" >&2
       exit 1
       ;;
     *)
@@ -71,10 +71,10 @@ fi
 
 if [[ ${#LOCAL_PATHS[@]} -eq 0 ]]; then
   if [[ "$ALL_MISSING" == true ]]; then
-    echo "filesync rmf: no error_missing_master rows to remove." >&2
+    echo "filesync remove file: no error_missing_master rows to remove." >&2
     exit 0
   fi
-  echo -e "${RED}Usage: filesync rmf|remove-file [--all-missing] [<local_path1> [local_path2 ...]]${NC}" >&2
+  echo -e "${RED}Usage: filesync remove file [--all-missing] [<local_path1> [local_path2 ...]]${NC}" >&2
   exit 1
 fi
 

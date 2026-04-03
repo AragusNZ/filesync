@@ -88,51 +88,11 @@ The checkout
 .B path
 is stored relative to your home directory when possible (git work tree top when inside git, otherwise the project root), with defaults for name, URL, and branch taken from git when the project is inside a work tree.
 If stdin is not a terminal, that step is skipped (use
-.B add-repo
+.B "new repo"
+.RB ( n " " \-r )
 later, or pass
 .B \-\-no\-repo
 to suppress the notice).
-.TP
-.B enable
-.I repo_name
-Set
-.B check_sync_enabled
-true for
-.I repo_name
-in global
-.B repos.json
-(equivalent to
-.BR "filesync config repo" " " repo_name " check-sync true" ;
-prompts for confirmation).
-.TP
-.B disable
-.I repo_name
-Set
-.B check_sync_enabled
-false for
-.I repo_name
-in global
-.BR repos.json .
-.TP
-.B progress
-.RI [ hidden | bar | percent ]
-With no arguments, print the effective
-.I progress_display
-from merged preferences (package defaults and
-.BR preferences.json )
-to standard output.
-With one argument, store
-.I progress_display
-in
-.BR preferences.json :
-.B hidden
-disables TTY progress;
-.B bar
-draws the full bracket bar with counts on standard error;
-.B percent
-draws a compact
-.RI [ NNN% ]
-indicator (package default).
 .TP
 .B config
 Inspect or change system metadata:
@@ -146,14 +106,25 @@ entries in global
 .B set system-home
 ,
 .B set progress
-, and
-.B repo ... check-sync
-/
-.B mirror-in
-update the pointer,
-.BR preferences.json ", or " repos.json
+.RI ( hidden | bar | percent ;
+TTY progress style in
+.BR preferences.json )
+update the pointer or preferences file
 (see
 .BR "filesync config --help" ).
+Per-repo
+.B check_sync_enabled
+and
+.B mirror_in_enabled
+are changed with
+.BR "filesync edit repo" .
+The standalone
+.B progress
+command is removed; use
+.B "config set progress"
+or inspect
+.B "config show"
+for the effective value.
 .B set repo-path-root
 is no longer supported; relative
 .B path
@@ -219,7 +190,7 @@ for any
 Compares each local file to the clone rendered from the master copy (diff drives
 .IR sync_status ).
 Per-row status lines use the same layout as
-.BR list-files :
+.BI list " files" :
 .IR [ sync_status "] " repo " | " repo_file_path
 with an optional local path arrow and
 .B ⚠
@@ -241,7 +212,9 @@ When standard error is a terminal,
 in merged preferences is not
 .B hidden
 (see
-.BR progress ),
+.BR "config show"
+and
+.BR "config set progress" ),
 and at least 10 rows are in the configuration,
 .B check
 may draw a scanning progress indicator on standard error; per-row lines go to standard output, so output may not stay fixed on one line.
@@ -317,7 +290,7 @@ Coupled sync requires a master marker on the repo file.
 Per-file lines start with a result symbol, use the same
 .IR repo " | " repo_file_path
 layout as
-.BR list-files ,
+.BI list " files" ,
 and end with a bracketed outcome
 .RI ( e.g. "\fB[Synced]\fR", "\fB[Already in sync]\fR", "\fB[Dry-run]\fR" ).
 Rows skipped by status filter or marker rules are printed in gray.
@@ -330,20 +303,19 @@ is an empty array),
 .B sync
 exits with failure.
 .TP
-.B list-repos
+.BI list " repos"
 Also
-.BR lr .
+.BR "l " \-r .
 .RI [ \-\-repo= name ]
 List configured repos or details for one repo by name.
-.B list-repos
-accepts only
+Accepts only
 .BR \-\-repo= ;
 it does not accept
 .BR \-\-file= ", " \-\-status= ", or " \-\-include\-detached .
 .TP
-.B list-files
+.BI list " files"
 Also
-.BR lf .
+.BR l ", " "l " \-f .
 .RI [ \-\-repo= name ]
 .RI [ \-\-file= fragment ]
 .RI [ \-\-status= list ]
@@ -352,9 +324,13 @@ List file mappings and cached status; run
 .B check
 to refresh status fields. Filters match
 .BR check .
-If filters match no rows,
-.B list-files
-prints nothing and exits successfully.
+If filters match no rows, prints nothing and exits successfully.
+With no
+.B list
+sub-target,
+.B l
+alone lists files the same as
+.BR "list files" .
 Optional
 .BI \-\-status=
 uses the same comma-separated tokens as
@@ -367,23 +343,22 @@ Non-empty
 .I check_marker_warnings
 for a row are summarized on the line after the status.
 .TP
-.B list-collections
+.BI list " collections"
 Also
-.BR lcol .
+.BR "l " \-col .
 List named repo collections from the global
 .I collections.json
 .RI ( FILESYNC_HOME ).
 These names can be used in
 .B \-\-also=
 with
-.BR add-file ", " add-master ", and " add-clone .
-.B list-collections
-accepts no options.
+.BR "add " file ", " "add " master ", and " "add " clone .
+Accepts no options.
 .SS "Mappings and repos"
 .TP
-.B add-file
+.BI add " file"
 Also
-.BR af .
+.BR a ", " "a " \-f .
 .I repo_name path_in_repo \fR[\fI:local_path\fR] \fR...
 .RI [ \-\-mark\-master ]
 .RI [ \-\-also= names ]
@@ -417,9 +392,9 @@ For each sibling project, filesync resolves checkouts using the configured path 
 .B FILESYNC_REPO_PATH_ANCHOR
 in tests) and writes/overwrites the clone file under that sibling project's root.
 .TP
-.B add-master
+.BI add " master"
 Also
-.BR am .
+.BR "a " \-m .
 .I target_repo local_path \fR[\fI:path_in_repo\fR] \fR...
 .RI [ \-\-also= names ]
 Promote local files into the master repo and add mappings. Omit
@@ -436,7 +411,9 @@ or
 .B sync
 to validate timestamps and status in its own context.
 .TP
-.B add-clone
+.BI add " clone"
+Also
+.BR "a " \-c .
 .I target_repo master_path \fR[\fI:local_path\fR] \fR...
 .RI [ \-\-also= names ]
 Add a
@@ -470,7 +447,7 @@ already lists that
 .IR local_path .
 .B \-\-also=
 mirrors the same operation into additional sibling projects (same rules as
-.BR add-file ).
+.BI add " file" ).
 .TP
 .B push
 .RI [\-\-all]
@@ -498,9 +475,9 @@ is given, no paths are listed, and there are no
 .B local_newer
 rows, the command exits successfully after a short notice.
 .TP
-.B detach-file
+.BI detach " file"
 Also
-.BR ddf .
+.BR d ", " "d " \-f .
 .I local_path \fR[\fIlocal_path ...\fR]
 Set
 .I sync_status
@@ -512,17 +489,17 @@ and rewrite the first marker line in each local file to
 .BR kind=detached
 (keeping path/repo context when possible).
 .TP
-.B attach-file
+.BI attach " file"
 Also
-.BR daf .
+.BR da ", " "da " \-f .
 .I local_path \fR[\fIlocal_path ...\fR]
 Re-couple detached rows and run
 .B check
 on each.
 .TP
-.B detach-repo
+.BI detach " files-in-repo"
 Also
-.BR ddr .
+.BR "d " \-fir .
 .I repo_name
 For every row in
 .I files.json
@@ -531,20 +508,22 @@ whose
 matches
 .IR repo_name ,
 run the same operation as
-.BR detach-file
+.BI detach " file"
 for that row's
 .IR local_path .
 .TP
-.B attach-repo
+.BI attach " files-in-repo"
 Also
-.BR dar .
+.BR "da " \-fir .
 .I repo_name
 For every such row, run the same operation as
-.BR attach-file
+.BI attach " file"
 (non-detached rows are skipped as for
-.BR attach-file ).
+.BI attach " file" ).
 .TP
-.BR rmf ", " remove-file
+.BI remove " file"
+Also
+.BR rm ", " "rm " \-f .
 .RI [ \-\-all-missing ]
 .I local_path \fR[\fIlocal_path ...\fR]
 Remove the matching row(s) from
@@ -565,7 +544,9 @@ is
 .IR local_path
 arguments); if it is the only selector and there are no such rows, the command exits successfully after a short message.
 .TP
-.BR rmr ", " remove-repo
+.BI remove " repo"
+Also
+.BR "rm " \-r .
 .I repo_name
 .RI [ \-y " | " \-\-yes ]
 .RI [ \-\-force ]
@@ -593,11 +574,11 @@ the union of registered checkouts that contain
 .BR .filesync/files.json
 and the current project root.
 Local file contents are not deleted except via marker stripping as in
-.BR remove-file .
+.BI remove " file" .
 .TP
-.B add-repo
+.BI new " repo"
 Also
-.BR ar .
+.BR "n " \-r .
 Interactively add a repo definition to
 .IR repos.json .
 The checkout
@@ -607,22 +588,34 @@ Run from that checkout.
 The name must not duplicate an existing repo entry and must not match a collection name in
 .IR collections.json .
 .TP
-.B edit-repo
+.BI edit " repo"
 Also
-.BR er .
+.BR "e " \-r .
 .I repo_name
 .RI [ \-\-rename= name ]
 .RI [ \-\-path= path ]
 .RI [ \-\-url= url ]
 .RI [ \-\-branch= branch ]
+.RI [ \-\-check\-sync= true | false ]
+.RI [ \-\-mirror\-in= true | false ]
+.RB [ \-\-enable ]
+.RB [ \-\-disable ]
 Edit a repo entry in the global store only; project
 .I files.json
 rows and local sync markers are not updated.
 The new name must not match another repo or any collection name.
+.B \-\-enable
+sets both
+.B check_sync_enabled
+and
+.B mirror_in_enabled
+true;
+.B \-\-disable
+sets both false.
 .TP
-.B add-collection
+.BI new " collection"
 Also
-.BR acol .
+.BR "n " \-col .
 .I name
 .RI [ \-\-repos= repo1,repo2 ]
 Create a named collection in
@@ -633,16 +626,16 @@ lists initial members; each must exist in
 .IR repos.json .
 The name must not match an existing repo or collection.
 .TP
-.B remove-collection
+.BI remove " collection"
 Also
-.BR rmcol .
+.BR "rm " \-col .
 .I name
 Remove a collection from
 .IR collections.json .
 .TP
-.B edit-collection
+.BI edit " collection"
 Also
-.BR ecol .
+.BR "e " \-col .
 .I name
 .RI [ \-\-rename= new ]
 .RI [ \-\-add\-repo= name ]

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CLI: filesync edit-repo — update global repos.json (system store only).
+# CLI: filesync edit repo — update global repos.json (system store only).
 
 set -euo pipefail
 
@@ -8,17 +8,21 @@ _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_CMD_ROOT/../lib/cli-help.sh"
 if filesync_argv_wants_help "$@"; then
   cat <<'EOF'
-Usage: filesync edit-repo <repo_name> [options]
-Alias: er
+Usage: filesync edit repo <repo_name> [options]
+Also: e -r
 
 Update a repo entry in the global store (repos.json). Does not read or modify any project
-.filesync/files.json or sync markers. At least one of the options below is required.
+.filesync/files.json or sync markers. At least one option is required.
 
 Options:
-  --rename=new_name    Set display name in repos.json (must not match a collection name)
-  --path=new_path      Set checkout path
-  --url=new_url        Set remote URL
-  --branch=name        Change branch
+  --rename=new_name       Set display name (must not match a collection name)
+  --path=new_path         Set checkout path
+  --url=new_url           Set remote URL
+  --branch=name           Change branch
+  --check-sync=true|false Set check_sync_enabled
+  --mirror-in=true|false  Set mirror_in_enabled
+  --enable                Set check_sync_enabled and mirror_in_enabled true
+  --disable               Set check_sync_enabled and mirror_in_enabled false
 
 EOF
   exit 0
@@ -36,6 +40,20 @@ RENAME=""
 PATH_NEW=""
 URL_NEW=""
 BRANCH_NEW=""
+CS_SET=0
+CS_VAL=false
+MI_SET=0
+MI_VAL=false
+
+_bool_from_arg() {
+  case "${1,,}" in
+    true | 1 | yes) echo true ;;
+    false | 0 | no) echo false ;;
+    *)
+      echo ""
+      ;;
+  esac
+}
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -55,9 +73,43 @@ while [[ $# -gt 0 ]]; do
       BRANCH_NEW="${1#*=}"
       shift
       ;;
+    --check-sync=*)
+      _b="$(_bool_from_arg "${1#*=}")"
+      [[ -n "$_b" ]] || {
+        echo -e "${RED}--check-sync must be true or false${NC}" >&2
+        exit 1
+      }
+      CS_SET=1
+      [[ "$_b" == true ]] && CS_VAL=true || CS_VAL=false
+      shift
+      ;;
+    --mirror-in=*)
+      _b="$(_bool_from_arg "${1#*=}")"
+      [[ -n "$_b" ]] || {
+        echo -e "${RED}--mirror-in must be true or false${NC}" >&2
+        exit 1
+      }
+      MI_SET=1
+      [[ "$_b" == true ]] && MI_VAL=true || MI_VAL=false
+      shift
+      ;;
+    --enable)
+      CS_SET=1
+      CS_VAL=true
+      MI_SET=1
+      MI_VAL=true
+      shift
+      ;;
+    --disable)
+      CS_SET=1
+      CS_VAL=false
+      MI_SET=1
+      MI_VAL=false
+      shift
+      ;;
     -*)
       echo -e "${RED}Unknown option: $1${NC}" >&2
-      echo "Usage: filesync edit-repo <repo_name> [--rename=new] [--path=...] [--url=...] [--branch=...]" >&2
+      echo "Usage: filesync edit repo <repo_name> [--rename=…] [--path=…] [--url=…] [--branch=…] [--check-sync=…] [--mirror-in=…] [--enable] [--disable]" >&2
       exit 1
       ;;
     *)
@@ -73,13 +125,13 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$REPO_CURRENT" ]]; then
-  echo -e "${RED}Usage: filesync edit-repo <repo_name> [--rename=new] [--path=...] [--url=...] [--branch=...]${NC}" >&2
-  echo "At least one of --rename, --path, --url, or --branch is required." >&2
+  echo -e "${RED}Usage: filesync edit repo <repo_name> [options]${NC}" >&2
+  echo "At least one of --rename, --path, --url, --branch, --check-sync, --mirror-in, --enable, or --disable is required." >&2
   exit 1
 fi
 
-if [[ -z "$RENAME" ]] && [[ -z "$PATH_NEW" ]] && [[ -z "$URL_NEW" ]] && [[ -z "$BRANCH_NEW" ]]; then
-  echo -e "${RED}Error: specify at least one of --rename, --path, --url, --branch${NC}" >&2
+if [[ -z "$RENAME" ]] && [[ -z "$PATH_NEW" ]] && [[ -z "$URL_NEW" ]] && [[ -z "$BRANCH_NEW" ]] && [[ "$CS_SET" -eq 0 ]] && [[ "$MI_SET" -eq 0 ]]; then
+  echo -e "${RED}Error: specify at least one option${NC}" >&2
   exit 1
 fi
 
@@ -101,33 +153,55 @@ if [[ -n "$RENAME" ]] && [[ "$RENAME" != "$REPO_CURRENT" ]]; then
   fi
 fi
 
-tmp_repos="$(mktemp)"
+# Same directory as repos.json so rename is atomic; global lock serializes writers (see add-repo.sh).
+tmp_out="${repos}.tmp"
 cleanup_er() {
   # shellcheck disable=SC2317
-  rm -f "$tmp_repos"
+  rm -f "$tmp_out"
 }
 trap 'cleanup_er; filesync_global_lock_release 2>/dev/null || true' EXIT
+
+filesync_global_lock_acquire
+
+if ! jq -e --arg c "$REPO_CURRENT" 'any(.name == $c)' "$repos" &>/dev/null; then
+  echo -e "${RED}Error: Repo '$REPO_CURRENT' not found in repos.${NC}" >&2
+  exit 1
+fi
+if [[ -n "$RENAME" ]] && [[ "$RENAME" != "$REPO_CURRENT" ]]; then
+  if jq -e --arg n "$RENAME" 'any(.name == $n)' "$repos" &>/dev/null; then
+    echo -e "${RED}Error: Repo name '$RENAME' already exists.${NC}" >&2
+    exit 1
+  fi
+  if [[ -f "$FILESYNC_COLLECTIONS_FILE" ]] && filesync_collections_name_taken "$FILESYNC_COLLECTIONS_FILE" "$RENAME"; then
+    echo -e "${RED}Error: '$RENAME' is already a collection name.${NC}" >&2
+    exit 1
+  fi
+fi
 
 jq --arg c "$REPO_CURRENT" \
   --arg newname "$RENAME" \
   --arg p "$PATH_NEW" \
   --arg u "$URL_NEW" \
   --arg b "$BRANCH_NEW" \
+  --argjson cs_set "$CS_SET" \
+  --argjson cs_val "$CS_VAL" \
+  --argjson mi_set "$MI_SET" \
+  --argjson mi_val "$MI_VAL" \
   'map(
     if .name == $c then
       .name = (if $newname != "" then $newname else .name end)
       | .path = (if $p != "" then $p else .path end)
       | .url = (if $u != "" then $u else .url end)
       | .branch = (if $b != "" then $b else .branch end)
+      | .check_sync_enabled = (if $cs_set == 1 then $cs_val else .check_sync_enabled end)
+      | .mirror_in_enabled = (if $mi_set == 1 then $mi_val else .mirror_in_enabled end)
     else . end
-  )' "$repos" >"$tmp_repos"
+  )' "$repos" >"$tmp_out"
 
-filesync_global_lock_acquire
-
-mv "$tmp_repos" "$repos"
+mv "$tmp_out" "$repos"
 
 filesync_global_lock_release
-trap 'cleanup_er' EXIT
+trap - EXIT
 
 echo -e "${GREEN}Updated repo${NC} ${WHITE}$REPO_CURRENT${NC}:" >&2
 if [[ -n "$RENAME" ]] && [[ "$RENAME" != "$REPO_CURRENT" ]]; then
@@ -136,4 +210,6 @@ fi
 if [[ -n "$PATH_NEW" ]]; then echo "  path: $PATH_NEW" >&2; fi
 if [[ -n "$URL_NEW" ]]; then echo "  url: $URL_NEW" >&2; fi
 if [[ -n "$BRANCH_NEW" ]]; then echo "  branch: $BRANCH_NEW" >&2; fi
+if [[ "$CS_SET" -eq 1 ]]; then echo "  check_sync_enabled: $CS_VAL" >&2; fi
+if [[ "$MI_SET" -eq 1 ]]; then echo "  mirror_in_enabled: $MI_VAL" >&2; fi
 exit 0

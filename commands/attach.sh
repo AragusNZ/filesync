@@ -8,8 +8,8 @@ _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_CMD_ROOT/../lib/cli-help.sh"
 if filesync_argv_wants_help "$@"; then
   cat <<'EOF'
-Usage: filesync attach-file <local_path> [<local_path> ...]
-Alias: daf
+Usage: filesync attach file <local_path> [<local_path> ...]
+Also: da, da -f
 
 Re-couple detached mappings: refresh from master, clear status, run check for each file.
 EOF
@@ -30,7 +30,7 @@ declare -A FILESYNC_REPO_DIR_CACHE
 declare -a FILESYNC_CLONED_TEMP_DIRS
 
 if [[ $# -lt 1 ]]; then
-  echo -e "${RED}Usage: filesync attach-file|daf <local_path1> [local_path2 ...]${NC}" >&2
+  echo -e "${RED}Usage: filesync attach file <local_path1> [local_path2 ...]${NC}" >&2
   exit 1
 fi
 

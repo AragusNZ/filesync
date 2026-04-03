@@ -89,7 +89,7 @@ file_sync_compute_status() {
   echo "synced"
 }
 
-# Match .sync_status (or empty) against --status= CSV from sync / list-files.
+# Match .sync_status (or empty) against --status= CSV from sync / list files.
 # Optional third arg: include_detached true/false — when token "all" matches, detached rows
 # are included only if include_detached is true or token "detached" also appears in the CSV.
 # Comma-separated tokens (whitespace trimmed). OR across tokens.
@@ -156,7 +156,7 @@ file_sync_color_reset() {
   printf '%s' "${NC}"
 }
 
-# Colored repo | path mapping (no newline); same body as list-files / sync.
+# Colored repo | path mapping (no newline); same body as list files / sync.
 file_sync_fmt_mapping() {
   # shellcheck disable=SC2154
   local rn="$1" rp="$2" lp="$3"
@@ -167,7 +167,7 @@ file_sync_fmt_mapping() {
   fi
 }
 
-# One tracked-file line (same layout as list-files).
+# One tracked-file line (same layout as list files).
 # Args: repo_name repo_file_path local_path sync_status [marker_warnings_csv]
 file_sync_print_file_row() {
   # shellcheck disable=SC2154

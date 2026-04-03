@@ -36,8 +36,8 @@ mkdir -p "${proj}"
 		'[{"name":"origin","path":"../rmf-am-master","url":$url,"branch":"main"}]' >"${TMP}/seed-26.json"
 	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-26.json"
 
-	filesync add-file origin tools/a.txt
-	filesync add-file origin tools/b.txt
+	filesync add origin tools/a.txt
+	filesync add origin tools/b.txt
 	filesync sync
 	filesync check >/dev/null || die "check after sync"
 
@@ -48,7 +48,7 @@ mkdir -p "${proj}"
 	jq -e '.[] | select(.local_path=="tools/b.txt") | .sync_status == "synced"' ".filesync/files.json" >/dev/null \
 		|| die "expected tools/b.txt synced"
 
-	_out="$(filesync rmf --all-missing 2>&1)" || die "rmf --all-missing failed: ${_out}"
+	_out="$(filesync rm --all-missing 2>&1)" || die "rmf --all-missing failed: ${_out}"
 	[[ "${_out}" == *tools/a.txt* ]] || die "rmf --all-missing should mention removed path a: ${_out}"
 
 	jq -e '.[] | select(.local_path=="tools/a.txt")' ".filesync/files.json" >/dev/null 2>&1 && die "tools/a.txt row should be gone"
@@ -67,14 +67,14 @@ mkdir -p "${noop}"
 		--arg url "file://${master}" \
 		'[{"name":"origin","path":"../rmf-am-master","url":$url,"branch":"main"}]' >"${TMP}/seed-26b.json"
 	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-26b.json"
-	filesync add-file origin tools/b.txt
+	filesync add origin tools/b.txt
 	filesync sync
 	filesync check >/dev/null || die "noop check"
-	_no="$(filesync rmf --all-missing 2>&1)" && _ec=0 || _ec=$?
+	_no="$(filesync rm --all-missing 2>&1)" && _ec=0 || _ec=$?
 	[[ "${_ec}" -eq 0 ]] || die "rmf --all-missing with no error_missing_master should exit 0, got ${_ec}: ${_no}"
 	[[ "${_no}" == *error_missing_master* ]] || die "expected notice about no rows: ${_no}"
 
-	_bad="$(filesync rmf --not-a-flag 2>&1)" && _be=0 || _be=$?
+	_bad="$(filesync rm --not-a-flag 2>&1)" && _be=0 || _be=$?
 	[[ "${_be}" -eq 1 ]] || die "rmf unknown option should exit 1, got ${_be}: ${_bad}"
 	[[ "${_bad}" == *Unknown*option* ]] || die "expected Unknown option message: ${_bad}"
 )

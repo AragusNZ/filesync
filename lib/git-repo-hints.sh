@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Best-effort git metadata for interactive repo registration (init / add-repo).
+# Best-effort git metadata for interactive repo registration (init / new repo).
 
 # From a directory (typically a filesync project root), set hint variables when inside a git work tree:
 #   FILESYNC_GIT_HINT_TOP     — absolute path to git work tree root

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CLI: filesync edit-collection — rename collection or add/remove repo members.
+# CLI: filesync edit collection — rename collection or add/remove repo members.
 
 set -euo pipefail
 
@@ -8,8 +8,8 @@ _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_CMD_ROOT/../lib/cli-help.sh"
 if filesync_argv_wants_help "$@"; then
   cat <<'EOF'
-Usage: filesync edit-collection <name> [options]
-Alias: ecol
+Usage: filesync edit collection <name> [options]
+Also: e -col
 
 At least one option is required.
 
@@ -64,7 +64,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$CUR" ]]; then
-  echo -e "${RED}Usage: filesync edit-collection <name> [--rename=] [--add-repo=] [--remove-repo=]${NC}" >&2
+  echo -e "${RED}Usage: filesync edit collection <name> [--rename=] [--add-repo=] [--remove-repo=]${NC}" >&2
   exit 1
 fi
 

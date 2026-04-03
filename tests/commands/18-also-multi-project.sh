@@ -44,7 +44,7 @@ mkdir -p "${proj_a}"
 		]' >"${TMP}/seed-18.json"
 	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-18.json"
 
-	filesync add-file emissions tools/x.txt --also=greenlit-api
+	filesync add emissions tools/x.txt --also=greenlit-api
 
 	[[ -f "tools/x.txt" ]] || die "proj_a should have local clone"
 	grep -qE 'filesync kind=clone' "tools/x.txt" || die "proj_a local should be clone"
@@ -65,7 +65,7 @@ mkdir -p "${proj_a}"
 		echo "PROMOTE_ME"
 		echo "# filesync kind=clone path=tools/promoted.txt repo=emissions"
 	} >"tools/promoted.txt"
-	filesync add-master emissions tools/promoted.txt --also=greenlit-api
+	filesync add master emissions tools/promoted.txt --also=greenlit-api
 )
 
 grep -qE 'filesync kind=master' "${master}/tools/promoted.txt" || die "master repo should contain promoted master marker"

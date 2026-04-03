@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CLI: filesync remove-collection — drop a collection from collections.json.
+# CLI: filesync remove collection — drop a collection from collections.json.
 
 set -euo pipefail
 
@@ -8,8 +8,8 @@ _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_CMD_ROOT/../lib/cli-help.sh"
 if filesync_argv_wants_help "$@"; then
   cat <<'EOF'
-Usage: filesync remove-collection <name>
-Alias: rmcol
+Usage: filesync remove collection <name>
+Also: rm -col
 
 Remove a named collection from the global collections.json.
 
@@ -21,7 +21,7 @@ source "$_CMD_ROOT/../lib/runtime.sh"
 filesync_command_init_system "${BASH_SOURCE[0]}"
 
 if [[ $# -ne 1 ]] || [[ "$1" == -* ]]; then
-  echo -e "${RED}Usage: filesync remove-collection <name>${NC}" >&2
+  echo -e "${RED}Usage: filesync remove collection <name>${NC}" >&2
   exit 1
 fi
 

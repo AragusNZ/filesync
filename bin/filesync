@@ -35,6 +35,8 @@ fi
 
 # shellcheck source=/dev/null
 source "$ROOT/lib/colors.sh"
+# shellcheck source=/dev/null
+source "$ROOT/lib/compound-dispatch.sh"
 
 main() {
   if [[ $# -eq 1 && ($1 == '-V' || $1 == '--version') ]]; then
@@ -57,68 +59,29 @@ main() {
     init)
       exec "$ROOT/commands/init.sh" "$@"
       ;;
-    add-file|af)
-      exec "$ROOT/commands/add.sh" "$@"
+    list|l)
+      filesync_route_list "$@"
       ;;
-    add-master|am)
-      exec "$ROOT/commands/add-master.sh" "$@"
+    add|a)
+      filesync_route_add "$@"
       ;;
-    add-clone|ac)
-      exec "$ROOT/commands/add-clone.sh" "$@"
+    detach|d)
+      filesync_route_detach "$@"
+      ;;
+    attach|da)
+      filesync_route_attach "$@"
+      ;;
+    remove|rm)
+      filesync_route_remove "$@"
+      ;;
+    new|n)
+      filesync_route_new "$@"
+      ;;
+    edit|e)
+      filesync_route_edit "$@"
       ;;
     push)
       exec "$ROOT/commands/push.sh" "$@"
-      ;;
-    detach-file|ddf)
-      exec "$ROOT/commands/detach.sh" "$@"
-      ;;
-    attach-file|daf)
-      exec "$ROOT/commands/attach.sh" "$@"
-      ;;
-    detach-repo|ddr)
-      exec "$ROOT/commands/detach-repo.sh" "$@"
-      ;;
-    attach-repo|dar)
-      exec "$ROOT/commands/attach-repo.sh" "$@"
-      ;;
-    remove-file|rmf)
-      exec "$ROOT/commands/rm.sh" "$@"
-      ;;
-    remove-repo|rmr)
-      exec "$ROOT/commands/remove-repo.sh" "$@"
-      ;;
-    remove-collection|rmcol)
-      exec "$ROOT/commands/remove-collection.sh" "$@"
-      ;;
-    add-repo|ar)
-      exec "$ROOT/commands/add-repo.sh" "$@"
-      ;;
-    edit-repo|er)
-      exec "$ROOT/commands/edit-repo.sh" "$@"
-      ;;
-    add-collection|acol)
-      exec "$ROOT/commands/add-collection.sh" "$@"
-      ;;
-    edit-collection|ecol)
-      exec "$ROOT/commands/edit-collection.sh" "$@"
-      ;;
-    list-repos|lr)
-      exec "$ROOT/commands/list.sh" list-repos "$@"
-      ;;
-    list-files|lf)
-      exec "$ROOT/commands/list.sh" list-files "$@"
-      ;;
-    list-collections|lcol)
-      exec "$ROOT/commands/list.sh" list-collections "$@"
-      ;;
-    enable)
-      exec "$ROOT/commands/enable-disable.sh" enable "$@"
-      ;;
-    disable)
-      exec "$ROOT/commands/enable-disable.sh" disable "$@"
-      ;;
-    progress)
-      exec "$ROOT/commands/progress.sh" "$@"
       ;;
     config)
       exec "$ROOT/commands/config.sh" "$@"

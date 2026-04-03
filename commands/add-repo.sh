@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CLI: filesync add-repo — interactive append to global repos.json.
+# CLI: filesync new repo — interactive append to global repos.json.
 
 set -euo pipefail
 
@@ -8,8 +8,8 @@ _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_CMD_ROOT/../lib/cli-help.sh"
 if filesync_argv_wants_help "$@"; then
   cat <<'EOF'
-Usage: filesync add-repo
-Alias: ar
+Usage: filesync new repo
+Also: n -r
 
 Interactively append a new repo entry to the global repos.json (name, URL, branch, stable id).
 The checkout path is stored relative to your home directory when possible. Run from the repo

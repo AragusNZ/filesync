@@ -20,10 +20,10 @@ mkdir -p "${master}" "${p}"
 (
 	cd "${p}"
 	filesync init
-	if filesync add-master 2>/dev/null; then
+	if filesync add master 2>/dev/null; then
 		die "add-master with no args should fail"
 	fi
-	if filesync add-master onlyrepo 2>/dev/null; then
+	if filesync add master onlyrepo 2>/dev/null; then
 		die "add-master with no local path should fail"
 	fi
 )
@@ -36,7 +36,7 @@ filesync_test_seed_global_repos "${p}" "${TMP}/seed-11.json"
 (
 	cd "${p}"
 	touch missing.txt
-	if filesync add-master origin missing.txt 2>/dev/null; then
+	if filesync add master origin missing.txt 2>/dev/null; then
 		die "add-master should fail when local file has no marker"
 	fi
 )
@@ -47,7 +47,7 @@ filesync_test_seed_global_repos "${p}" "${TMP}/seed-11.json"
 		echo "promote-body"
 		echo "# filesync kind=clone path=tools/promoted.txt repo=origin"
 	} >to_promote.txt
-	filesync add-master origin to_promote.txt:tools/promoted.txt
+	filesync add master origin to_promote.txt:tools/promoted.txt
 	[[ -f "${master}/tools/promoted.txt" ]] || die "add-master should write master file"
 	grep -qE 'kind=master' "${master}/tools/promoted.txt" || die "master copy should have master marker"
 	jq -e '.[] | select(.local_path=="to_promote.txt")' ".filesync/files.json" >/dev/null || die "files.json should list mapping"

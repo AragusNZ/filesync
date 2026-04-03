@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Inspect or change system-level filesync settings (store path, preferences, repo flags).
+# Inspect or change system-level filesync settings (store path, preferences). Repo flags: edit repo.
 
 set -euo pipefail
 
@@ -13,13 +13,12 @@ Usage:
   filesync config doctor
   filesync config set system-home <absolute_dir>
   filesync config set progress <hidden|bar|percent>
-  filesync config repo <name> check-sync <true|false>
-  filesync config repo <name> mirror-in <true|false>
 
 show    Effective system home, pointer, repo path anchor, global JSON paths, preferences.
 doctor  Report pointer validity, FILESYNC_HOME override, and duplicate repo names in repos.json.
 set     system-home (pointer file) or progress (preferences.json).
-repo    Toggle per-repo flags in global repos.json.
+
+Per-repo check_sync_enabled / mirror_in_enabled: use filesync edit repo (see filesync edit repo -h).
 EOF
   exit 0
 fi
@@ -41,7 +40,7 @@ prefs="${FILESYNC_SYSTEM_HOME}/${FILESYNC_PREFERENCES_NAME}"
 ptr="$(filesync_system_home_pointer_path)"
 
 if [[ $# -lt 1 ]]; then
-  echo -e "${RED}Usage: filesync config show | doctor | set ... | repo ...${NC}" >&2
+  echo -e "${RED}Usage: filesync config show | doctor | set ...${NC}" >&2
   exit 1
 fi
 
@@ -128,49 +127,6 @@ case "$cmd" in
         exit 1
         ;;
     esac
-    ;;
-  repo)
-    [[ $# -ge 3 ]] || {
-      echo -e "${RED}Usage: filesync config repo <name> check-sync|mirror-in <true|false>${NC}" >&2
-      exit 1
-    }
-    rname="$1"
-    flag="$2"
-    val_raw="$3"
-    case "${val_raw,,}" in
-      true | 1 | yes) vjson=true ;;
-      false | 0 | no) vjson=false ;;
-      *)
-        echo -e "${RED}Expected true or false, got: $val_raw${NC}" >&2
-        exit 1
-        ;;
-    esac
-    jq -e --arg n "$rname" 'any(.name == $n)' "$repos" &>/dev/null || {
-      echo -e "${RED}No repo named '$rname'${NC}" >&2
-      exit 1
-    }
-    filesync_global_lock_acquire
-    trap 'filesync_global_lock_release' EXIT
-    tmp="$(mktemp)"
-    case "$flag" in
-      check-sync)
-        jq --arg n "$rname" --argjson v "$vjson" 'map(if .name == $n then .check_sync_enabled = $v else . end)' "$repos" >"$tmp"
-        ;;
-      mirror-in)
-        jq --arg n "$rname" --argjson v "$vjson" 'map(if .name == $n then .mirror_in_enabled = $v else . end)' "$repos" >"$tmp"
-        ;;
-      *)
-        echo -e "${RED}Unknown flag: $flag (use check-sync or mirror-in)${NC}" >&2
-        rm -f "$tmp"
-        filesync_global_lock_release
-        trap - EXIT
-        exit 1
-        ;;
-    esac
-    mv "$tmp" "$repos"
-    filesync_global_lock_release
-    trap - EXIT
-    echo -e "${GREEN}Updated repo '$rname': $flag = $vjson${NC}" >&2
     ;;
   *)
     echo -e "${RED}Unknown config subcommand: $cmd${NC}" >&2

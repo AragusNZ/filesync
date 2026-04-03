@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Usage: list.sh list-repos | list-files | list-collections (see dispatcher).
-# Dispatcher passes argv1; lr|lf|lcol accepted for direct script invocation.
+# Usage: list.sh repos | files | collections (first argv; invoked via filesync list …).
 
 set -euo pipefail
 
@@ -11,29 +10,29 @@ source "$_CMD_ROOT/../lib/cli-help.sh"
 sub="${1:-}"
 if filesync_argv_wants_help "$@"; then
   case "$sub" in
-    list-repos | lr)
+    repos)
       cat <<'EOF'
-Usage: filesync list-repos [--repo=name]
-Alias: lr
+Usage: filesync list repos [--repo=name]
+Also: l -r
 
 List configured repos from the global store. With --repo=, show only that repo (errors if missing).
 Does not require a project .filesync directory.
 EOF
       ;;
-    list-files | lf)
+    files)
       cat <<'EOF'
-Usage: filesync list-files [--repo=name] [--file=fragment] [--status=a,b,...] [--include-detached]
-Alias: lf
+Usage: filesync list files [options]
+Also: l, l -f
 
 List file mappings and status. Requires a filesync project (walk-up .filesync/ for files.json).
 --file filters by substring on local_path or repo_file_path.
 --status uses the same token rules as sync/check (see main "filesync -h" or man filesync).
 EOF
       ;;
-    list-collections | lcol)
+    collections)
       cat <<'EOF'
-Usage: filesync list-collections
-Alias: lcol
+Usage: filesync list collections
+Also: l -col
 
 List named repo collections from the global store (for use with --also=).
 Does not require a project .filesync directory.
@@ -42,11 +41,13 @@ EOF
     *)
       cat <<'EOF'
 Usage:
-  filesync list-repos [--repo=name]    (alias lr)
-  filesync list-files [options]        (alias lf)
-  filesync list-collections             (alias lcol)
+  filesync list repos [--repo=name]
+  filesync list files [options]
+  filesync list collections
 
-Run "filesync list-repos -h", "filesync list-files -h", or "filesync list-collections -h" for details.
+Shorthand: l -r | l | l -f | l -col
+
+Run "filesync list repos -h", "filesync list files -h", or "filesync list collections -h" for details.
 EOF
       ;;
   esac
@@ -56,7 +57,7 @@ fi
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
 
-_list_usage_triple='filesync list-repos [--repo=name] | filesync list-files [--repo=name] [--file=path_fragment] [--status=a,b,...] [--include-detached] | filesync list-collections'
+_list_usage_triple='filesync list repos [--repo=name] | filesync list files [--repo=name] [--file=path_fragment] [--status=a,b,...] [--include-detached] | filesync list collections'
 
 if [[ -z "$sub" ]]; then
   echo -e "${RED}Usage: ${_list_usage_triple}${NC}" >&2
@@ -100,61 +101,61 @@ while [[ $# -gt 0 ]]; do
 done
 
 case "$sub" in
-  list-repos|lr) ;;
-  list-files|lf) ;;
-  list-collections|lcol) ;;
+  repos) ;;
+  files) ;;
+  collections) ;;
   *)
     echo -e "${RED}Usage: ${_list_usage_triple}${NC}" >&2
     exit 1
     ;;
 esac
 
-if [[ "$sub" == list-repos || "$sub" == lr ]] && [[ -n "$FILE_FRAGMENT" ]]; then
-  echo -e "${RED}filesync list-repos does not accept --file${NC}" >&2
-  echo "Usage: filesync list-repos [--repo=name]" >&2
+if [[ "$sub" == repos ]] && [[ -n "$FILE_FRAGMENT" ]]; then
+  echo -e "${RED}filesync list repos does not accept --file${NC}" >&2
+  echo "Usage: filesync list repos [--repo=name]" >&2
   exit 1
 fi
 
-if [[ "$sub" == list-repos || "$sub" == lr ]] && [[ -n "$STATUS_CSV" ]]; then
-  echo -e "${RED}filesync list-repos does not accept --status${NC}" >&2
-  echo "Usage: filesync list-repos [--repo=name]" >&2
+if [[ "$sub" == repos ]] && [[ -n "$STATUS_CSV" ]]; then
+  echo -e "${RED}filesync list repos does not accept --status${NC}" >&2
+  echo "Usage: filesync list repos [--repo=name]" >&2
   exit 1
 fi
 
-if [[ "$sub" == list-repos || "$sub" == lr ]] && [[ "$INCLUDE_DETACHED" == true ]]; then
-  echo -e "${RED}filesync list-repos does not accept --include-detached${NC}" >&2
-  echo "Usage: filesync list-repos [--repo=name]" >&2
+if [[ "$sub" == repos ]] && [[ "$INCLUDE_DETACHED" == true ]]; then
+  echo -e "${RED}filesync list repos does not accept --include-detached${NC}" >&2
+  echo "Usage: filesync list repos [--repo=name]" >&2
   exit 1
 fi
 
-if [[ "$sub" == list-collections || "$sub" == lcol ]]; then
+if [[ "$sub" == collections ]]; then
   if [[ -n "$REPO_FILTER" ]]; then
-    echo -e "${RED}filesync list-collections does not accept --repo${NC}" >&2
-    echo "Usage: filesync list-collections" >&2
+    echo -e "${RED}filesync list collections does not accept --repo${NC}" >&2
+    echo "Usage: filesync list collections" >&2
     exit 1
   fi
   if [[ -n "$FILE_FRAGMENT" ]]; then
-    echo -e "${RED}filesync list-collections does not accept --file${NC}" >&2
-    echo "Usage: filesync list-collections" >&2
+    echo -e "${RED}filesync list collections does not accept --file${NC}" >&2
+    echo "Usage: filesync list collections" >&2
     exit 1
   fi
   if [[ -n "$STATUS_CSV" ]]; then
-    echo -e "${RED}filesync list-collections does not accept --status${NC}" >&2
-    echo "Usage: filesync list-collections" >&2
+    echo -e "${RED}filesync list collections does not accept --status${NC}" >&2
+    echo "Usage: filesync list collections" >&2
     exit 1
   fi
   if [[ "$INCLUDE_DETACHED" == true ]]; then
-    echo -e "${RED}filesync list-collections does not accept --include-detached${NC}" >&2
-    echo "Usage: filesync list-collections" >&2
+    echo -e "${RED}filesync list collections does not accept --include-detached${NC}" >&2
+    echo "Usage: filesync list collections" >&2
     exit 1
   fi
 fi
 
 case "$sub" in
-  list-files|lf)
+  files)
     filesync_command_init "${BASH_SOURCE[0]}"
     ;;
-  list-repos|lr|list-collections|lcol)
+  repos|collections)
     filesync_command_init_system "${BASH_SOURCE[0]}"
     # shellcheck source=/dev/null
     source "$_CMD_ROOT/../lib/json-state.sh"
@@ -170,7 +171,7 @@ source "$_CMD_ROOT/../lib/cli-banner.sh"
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
 case "$sub" in
-  list-repos|lr)
+  repos)
     filesync_print_section_title "Repos"
     if [[ -n "$REPO_FILTER" ]]; then
       filesync_print_filter_note "Filter: --repo=$REPO_FILTER"
@@ -186,7 +187,7 @@ case "$sub" in
       jq -r '.repos[] | "\(.name)\n  url: \(.url)\n  path: \(.path)\n  branch: \(.branch)\n"' "$CONFIG_FILE"
     fi
     ;;
-  list-files|lf)
+  files)
     filesync_print_list_files_heading
     filesync_print_filter_context "$REPO_FILTER" "$FILE_FRAGMENT" "$STATUS_CSV" "$INCLUDE_DETACHED" 0
     # shellcheck disable=SC2034  # Used via nameref in filesync_counts_inc/render helpers.
@@ -236,7 +237,7 @@ case "$sub" in
       filesync_print_status_summary "rows listed" "$printed" LIST_STATUS_COUNTS
     fi
     ;;
-  list-collections|lcol)
+  collections)
     filesync_print_section_title "Collections"
     if [[ ! -f "$FILESYNC_COLLECTIONS_FILE" ]]; then
       echo "(no collections.json)" >&2

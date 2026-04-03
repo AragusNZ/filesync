@@ -26,7 +26,7 @@ If files.json already exists, init exits with an error.
 
   --no-repo   Skip registering a global repo (non-interactive scripts and CI).
 
-If stdin is not a terminal, global repo registration is skipped; use add-repo later, run init
+If stdin is not a terminal, global repo registration is skipped; use new repo (n -r) later, or run init
 from a terminal, or pass --no-repo to silence the notice.
 EOF
   exit 0
@@ -110,7 +110,7 @@ if [[ "$SKIP_GLOBAL_REPO" -eq 1 ]]; then
 fi
 
 if [[ ! -t 0 ]]; then
-  echo -e "${GRAY}filesync: no terminal on stdin; skipped global repos.json entry (use ${BOLD}filesync add-repo${NC}${GRAY} or run init interactively).${NC}" >&2
+  echo -e "${GRAY}filesync: no terminal on stdin; skipped global repos.json entry (use ${BOLD}filesync new repo${NC}${GRAY}).${NC}" >&2
   exit 0
 fi
 

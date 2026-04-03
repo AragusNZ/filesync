@@ -44,9 +44,9 @@ mkdir -p "${proj_a}"
 		]' >"${TMP}/seed-27a.json"
 	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-27a.json"
 
-	filesync add-collection siblings --repos=greenlit-api
+	filesync new collection siblings --repos=greenlit-api
 
-	filesync add-file emissions tools/x.txt --also=siblings
+	filesync add emissions tools/x.txt --also=siblings
 
 	[[ -f "tools/x.txt" ]] || die "proj_a should have local clone"
 	grep -qE 'filesync kind=clone' "tools/x.txt" || die "proj_a local should be clone"
@@ -61,7 +61,7 @@ mkdir -p "${proj_a}"
 # add-collection name must not match repo name
 (
 	cd "${proj_a}"
-	if filesync add-collection emissions 2>/dev/null; then
+	if filesync new collection emissions 2>/dev/null; then
 		die "add-collection should reject repo-named emissions"
 	fi
 )
@@ -69,21 +69,21 @@ mkdir -p "${proj_a}"
 # add-repo name must not match collection name
 (
 	cd "${proj_a}"
-	filesync add-collection dupname --repos=greenlit-api
-	if printf '%s\n' 'dupname' 'u' '../x' 'main' | filesync add-repo 2>/dev/null; then
+	filesync new collection dupname --repos=greenlit-api
+	if printf '%s\n' 'dupname' 'u' '../x' 'main' | filesync new repo 2>/dev/null; then
 		die "add-repo should reject name dupname (collection exists)"
 	fi
-	filesync remove-collection dupname
+	filesync remove collection dupname
 )
 
 # edit-repo --rename must not target collection name
 (
 	cd "${proj_a}"
-	filesync add-collection holdname --repos=greenlit-api
-	if filesync edit-repo emissions --rename=holdname 2>/dev/null; then
+	filesync new collection holdname --repos=greenlit-api
+	if filesync edit repo emissions --rename=holdname 2>/dev/null; then
 		die "edit-repo should reject rename to collection holdname"
 	fi
-	filesync remove-collection holdname
+	filesync remove collection holdname
 )
 
 # remove-repo strips collection membership and drops empty collection
@@ -98,10 +98,10 @@ mkdir -p "${proj_a}"
 		cd "${TMP}/coll-also-x"
 		filesync init
 	)
-	filesync add-collection tworepo --repos=greenlit-api,solo
+	filesync new collection tworepo --repos=greenlit-api,solo
 	jq -e '.[] | select(.name=="tworepo") | .repos | length == 2' "${FILESYNC_HOME}/collections.json" >/dev/null || die "tworepo should list 2 repos"
-	filesync remove-repo -y solo
+	filesync remove repo -y solo
 	jq -e '.[] | select(.name=="tworepo") | .repos == ["greenlit-api"]' "${FILESYNC_HOME}/collections.json" >/dev/null || die "tworepo should only list greenlit-api after solo removed"
-	filesync remove-repo -y greenlit-api
+	filesync remove repo -y greenlit-api
 	! jq -e '.[] | select(.name=="tworepo")' "${FILESYNC_HOME}/collections.json" >/dev/null || die "empty tworepo collection should be removed"
 )

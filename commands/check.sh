@@ -11,7 +11,7 @@ source "$_CMD_ROOT/../lib/cli-help.sh"
 if filesync_argv_wants_help "$@"; then
   cat <<'EOF'
 Usage: filesync check [option] ...
-Alias: c
+Also: c
 
 Verify mappings against disk and repo checkouts; refresh row status in .filesync/files.json
 (including per-row last_check_at).
@@ -91,7 +91,7 @@ check_marker_warn_codes_json() {
   printf '%s\n' "${CHECK_MARKER_WARN_CODES[@]}" | jq -R . | jq -s .
 }
 
-# Both files must exist. Sets CHECK_MARKER_WARN_CODES (shown on the row line like list-files).
+# Both files must exist. Sets CHECK_MARKER_WARN_CODES (shown on the row line like list files).
 check_collect_marker_warnings() {
   CHECK_MARKER_WARN_CODES=()
   if has_clone_file_sync_marker "$FULL_MASTER_PATH" 2>/dev/null; then

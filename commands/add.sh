@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CLI: filesync add-file — add file mappings to .filesync/files.json (--also updates sibling projects' files.json).
+# CLI: filesync add file — add file mappings to .filesync/files.json (--also updates sibling projects' files.json).
 
 set -euo pipefail
 
@@ -8,8 +8,8 @@ _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_CMD_ROOT/../lib/cli-help.sh"
 if filesync_argv_wants_help "$@"; then
   cat <<'EOF'
-Usage: filesync add-file <repo_name> <path_in_repo>[:<local_path>] ... [options]
-Alias: af
+Usage: filesync add file <repo_name> <path_in_repo>[:<local_path>] ... [options]
+Also: a, a -f
 
 Track files from a repo checkout: path_in_repo is relative to the repo root. If local_path
 is omitted (no :suffix), it defaults to the same path as path_in_repo.
@@ -51,7 +51,7 @@ for arg in "$@"; do
 done
 
 if [[ ${#POSITIONAL_RAW[@]} -lt 2 ]]; then
-  echo -e "${RED}Usage: filesync add-file <repo_name> <path_in_repo> ... [--mark-master] [--also=names]${NC}" >&2
+  echo -e "${RED}Usage: filesync add file <repo_name> <path_in_repo> ... [--mark-master] [--also=names]${NC}" >&2
   exit 1
 fi
 
@@ -188,7 +188,7 @@ done
 
 for i in "${!REPO_FILE_PATHS[@]}"; do
   add_one "$PROJECT_ROOT" "$FILESYNC_FILES_FILE" "$FILESYNC_REPOS_FILE" "$REPO_PATH_ROOT" "$REPO_NAME" "${REPO_FILE_PATHS[$i]}" "${LOCAL_PATHS[$i]}" "current project" \
-    || filesync_die "add-file failed (see messages above)"
+    || filesync_die "add file failed (see messages above)"
 done
 
 for target_repo in "${TARGET_REPOS[@]}"; do
@@ -196,6 +196,6 @@ for target_repo in "${TARGET_REPOS[@]}"; do
   ofs="$target_project_root/.filesync"
   for i in "${!REPO_FILE_PATHS[@]}"; do
     add_one "$target_project_root" "$ofs/$FILESYNC_FILES_NAME" "$FILESYNC_REPOS_FILE" "$REPO_PATH_ROOT" "$REPO_NAME" "${REPO_FILE_PATHS[$i]}" "${LOCAL_PATHS[$i]}" "project at $target_project_root" \
-      || filesync_die "add-file failed (see messages above)"
+      || filesync_die "add file failed (see messages above)"
   done
 done

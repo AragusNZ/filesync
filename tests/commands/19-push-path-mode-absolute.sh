@@ -32,7 +32,7 @@ mkdir -p "${proj}"
 		'[{"name":"origin","path":$p,"url":null,"branch":"main"}]' >"${TMP}/seed-19.json"
 	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-19.json"
 
-	filesync add-file origin tools/p.txt
+	filesync add origin tools/p.txt
 	echo "LOCAL_EDIT" >>"tools/p.txt"
 	filesync push tools/p.txt
 )

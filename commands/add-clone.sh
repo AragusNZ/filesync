@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CLI: filesync add-clone — add clone file + mapping in a sibling project from a kind=master file in the current project.
+# CLI: filesync add clone — add clone file + mapping in a sibling project from a kind=master file in the current project.
 
 set -euo pipefail
 
@@ -8,8 +8,8 @@ _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_CMD_ROOT/../lib/cli-help.sh"
 if filesync_argv_wants_help "$@"; then
   cat <<'EOF'
-Usage: filesync add-clone <target_repo> <master_path>[:<local_path>] ... [--also=names]
-Alias: ac
+Usage: filesync add clone <target_repo> <master_path>[:<local_path>] ... [--also=names]
+Also: a -c
 
 Clone mappings from a kind=master file in this project into a sibling repo: creates the
 target-side file and row. Fails if the target local file already exists.
@@ -49,7 +49,7 @@ for arg in "$@"; do
 done
 
 if [[ ${#POSITIONAL_RAW[@]} -lt 2 ]]; then
-  echo -e "${RED}Usage: filesync add-clone <target_repo> <master_path>[:<local_path_in_target>] ... [--also=names]${NC}" >&2
+  echo -e "${RED}Usage: filesync add clone <target_repo> <master_path>[:<local_path_in_target>] ... [--also=names]${NC}" >&2
   exit 1
 fi
 

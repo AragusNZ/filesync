@@ -35,28 +35,28 @@ mkdir -p "${proj}"
 		--arg url "file://${master}" \
 		'[{"name":"origin","path":"../dar-master","url":$url,"branch":"main"}]' >"${TMP}/seed-24.json"
 	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-24.json"
-	filesync add-file origin tools/a.txt
-	filesync add-file origin tools/b.txt
+	filesync add origin tools/a.txt
+	filesync add origin tools/b.txt
 	filesync sync
 	filesync check >/dev/null || die "check before detach-repo"
-	filesync detach-repo origin
+	filesync detach files-in-repo origin
 	jq -e '.[] | select(.local_path=="tools/a.txt") | .sync_status == "detached"' ".filesync/files.json" >/dev/null || die "a detached"
 	jq -e '.[] | select(.local_path=="tools/b.txt") | .sync_status == "detached"' ".filesync/files.json" >/dev/null || die "b detached"
 	grep -q 'filesync kind=detached' tools/a.txt || die "a marker"
 	grep -q 'filesync kind=detached' tools/b.txt || die "b marker"
-	filesync attach-repo origin
+	filesync attach files-in-repo origin
 	jq -e '.[] | select(.local_path=="tools/a.txt") | .sync_status == "synced"' ".filesync/files.json" >/dev/null || die "a synced"
 	jq -e '.[] | select(.local_path=="tools/b.txt") | .sync_status == "synced"' ".filesync/files.json" >/dev/null || die "b synced"
 	grep -q 'filesync kind=clone' tools/a.txt || die "a clone"
 	grep -q 'filesync kind=clone' tools/b.txt || die "b clone"
-	if filesync detach-repo nosuchrepo_name 2>/dev/null; then
+	if filesync detach files-in-repo nosuchrepo_name 2>/dev/null; then
 		die "detach-repo unknown repo should fail"
 	fi
-	if filesync attach-repo nosuchrepo_name 2>/dev/null; then
+	if filesync attach files-in-repo nosuchrepo_name 2>/dev/null; then
 		die "attach-repo unknown repo should fail"
 	fi
-	filesync ddr origin >/dev/null || die "ddr alias"
-	filesync dar origin >/dev/null || die "dar alias"
+	filesync d -fir origin >/dev/null || die "d -fir shorthand"
+	filesync da -fir origin >/dev/null || die "da -fir shorthand"
 	_sweep="$(find "${TMPDIR}" -type f 2>/dev/null | wc -l)"
 	_sweep="${_sweep//[[:space:]]/}"
 	[[ "${_sweep}" -eq 0 ]] || die "expected no leaked temps in TMPDIR (got ${_sweep})"

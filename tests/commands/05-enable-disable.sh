@@ -29,10 +29,10 @@ mkdir -p "${proj}"
 		--arg url "file://${master}" \
 		'[{"name":"r","path":"../ed-master","url":$url,"branch":"main"}]' >"${TMP}/seed-05.json"
 	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-05.json"
-	filesync add-file r tools/f.txt
-	filesync disable r
+	filesync add r tools/f.txt
+	filesync edit repo r --disable
 	filesync check >/dev/null || die "check when repo disabled"
 	filesync sync >/dev/null || die "sync when repo disabled"
-	printf '%s\n' y | filesync enable r
+	filesync edit repo r --enable
 	filesync check >/dev/null || die "check after enable"
 )
