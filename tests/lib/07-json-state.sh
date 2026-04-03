@@ -51,11 +51,27 @@ else
 fi
 printf '%s\n' '[]' | jq . >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_GLOBAL_REPOS_NAME}"
 
-jq -n '[{name:"x",id:"a",path:"p",url:null,branch:"main"},{name:"x",id:"b",path:"q",url:null,branch:"main"}]' >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_GLOBAL_REPOS_NAME}"
+jq -n '[{name:"x",id:"a",path:"p",url:null,branch:"main",merge_using_git:false},{name:"x",id:"b",path:"q",url:null,branch:"main",merge_using_git:false}]' >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_GLOBAL_REPOS_NAME}"
 if filesync_assemble_state_to "${td}/dup.json" 2>/dev/null; then
 	bad "assemble_state should reject duplicate repo names"
 else
 	ok "assemble_state rejects duplicate repo names"
+fi
+printf '%s\n' '[]' | jq . >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_GLOBAL_REPOS_NAME}"
+
+jq -n '[{name:"solo",id:"id1",path:"p",url:null,branch:"main"}]' >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_GLOBAL_REPOS_NAME}"
+if filesync_assemble_state_to "${td}/no-mug.json" 2>/dev/null; then
+	bad "assemble_state should reject repos missing merge_using_git"
+else
+	ok "assemble_state rejects missing merge_using_git"
+fi
+printf '%s\n' '[]' | jq . >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_GLOBAL_REPOS_NAME}"
+
+jq -n '[{name:"solo",id:"id1",path:"p",url:null,branch:"main",merge_using_git:false}]' >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_GLOBAL_REPOS_NAME}"
+if filesync_assemble_state_to "${td}/ok-mug.json" && jq -e '.repos | length == 1' "${td}/ok-mug.json" >/dev/null; then
+	ok "assemble_state accepts merge_using_git"
+else
+	bad "assemble_state with merge_using_git"
 fi
 printf '%s\n' '[]' | jq . >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_GLOBAL_REPOS_NAME}"
 

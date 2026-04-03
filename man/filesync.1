@@ -147,7 +147,10 @@ Also ensures every global repo has an
 and every known
 .I files.json
 row has
-.BR repo_id .
+.BR repo_id ,
+and every global repo row has boolean
+.B merge_using_git
+(git work tree probe at the checkout path when the field was missing).
 .TP
 .B handle-missing
 Non-interactive repair for rows whose master or local paths are missing (see
@@ -334,6 +337,11 @@ rows so master replaces the local copy.
 .B \-\-showall
 prints a per-file line for rows that are already in sync with master; by default those lines are omitted (counts in the summary still include them).
 Coupled sync requires a master marker on the repo file.
+When a repo's
+.B merge_using_git
+is true and the project directory is a git work tree with a clean index and working tree,
+.B sync
+records content updates on a short-lived branch and merges into the previous branch (up to three merge attempts may exclude paths that conflict).
 Per-file lines start with a result symbol, use the same
 .IR repo " | " repo_file_path
 layout as
@@ -645,6 +653,7 @@ Also
 .RI [ \-\-branch= branch ]
 .RI [ \-\-check\-sync= true | false ]
 .RI [ \-\-mirror\-in= true | false ]
+.RI [ \-\-merge\-using\-git= true | false ]
 .RB [ \-\-enable ]
 .RB [ \-\-disable ]
 Edit a repo entry in the global store only; project
@@ -733,7 +742,11 @@ Version and other metadata.
 .TP
 .I repos.json
 Global array of repo definitions (
-.BR id ", " check_sync_enabled ", " mirror_in_enabled ", ..." ).
+.BR id ", " check_sync_enabled ", " mirror_in_enabled ", " merge_using_git ", ..." ).
+.B merge_using_git
+is required on every row; run
+.B migrate
+to backfill when upgrading.
 .TP
 .I collections.json
 Global array of

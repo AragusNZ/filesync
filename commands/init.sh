@@ -46,6 +46,8 @@ source "${FILESYNC_PKG_ROOT}/lib/collections.sh"
 # shellcheck source=/dev/null
 source "${FILESYNC_PKG_ROOT}/lib/paths.sh"
 # shellcheck source=/dev/null
+source "${FILESYNC_PKG_ROOT}/lib/repo-merge-using-git.sh"
+# shellcheck source=/dev/null
 source "${FILESYNC_PKG_ROOT}/lib/git-repo-hints.sh"
 # shellcheck source=/dev/null
 source "${FILESYNC_PKG_ROOT}/lib/repo-id.sh"
@@ -170,13 +172,19 @@ read -rp "Branch [${def_branch}]: " branch
 branch="${branch:-$def_branch}"
 
 rid="$(filesync_new_repo_id)"
+if filesync_dir_is_git_worktree "$def_checkout"; then
+  mug_json=true
+else
+  mug_json=false
+fi
 NEW_ENTRY=$(jq -n \
   --arg id "$rid" \
   --arg name "$name" \
   --arg url "$url" \
   --arg path "$path" \
   --arg branch "$branch" \
-  '{id: $id, name: $name, url: $url, path: $path, branch: $branch, check_sync_enabled: true, mirror_in_enabled: true}')
+  --argjson merge_using_git "$mug_json" \
+  '{id: $id, name: $name, url: $url, path: $path, branch: $branch, check_sync_enabled: true, mirror_in_enabled: true, merge_using_git: $merge_using_git}')
 
 filesync_global_lock_acquire
 trap 'filesync_global_lock_release' EXIT

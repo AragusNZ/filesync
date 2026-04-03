@@ -16,6 +16,9 @@ then remove those legacy files.
 
 Always ensures every global repo has a stable id and every known files.json row has repo_id.
 
+Also sets boolean merge_using_git on every global repo row (git work tree probe at checkout path)
+when missing.
+
 EOF
   exit 0
 fi
@@ -41,6 +44,8 @@ source "$_CMD_ROOT/../lib/paths.sh"
 source "$_CMD_ROOT/../lib/filesync-projects.sh"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/repos-json.sh"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/repo-merge-using-git.sh"
 
 filesync_resolve_or_exit
 filesync_require_files
@@ -149,12 +154,18 @@ jq -s '.' "$tmp_ids" >"${G_REPOS}.new"
 mv "${G_REPOS}.new" "$G_REPOS"
 rm -f "$tmp_ids"
 
+rroot="$(filesync_read_repo_path_root "$FILESYNC_SYSTEM_HOME")"
+filesync_repos_json_backfill_merge_using_git "$G_REPOS" "$rroot"
+
 if ! filesync_assert_global_repos_unique_names "$G_REPOS"; then
   echo "filesync: fix duplicate names in ${G_REPOS} and re-run migrate if needed." >&2
   exit 1
 fi
 
-rroot="$(filesync_read_repo_path_root "$FILESYNC_SYSTEM_HOME")"
+if ! filesync_assert_global_repos_have_merge_using_git "$G_REPOS"; then
+  echo "filesync: fix merge_using_git in ${G_REPOS} and re-run migrate if needed." >&2
+  exit 1
+fi
 
 _migrate_files_json() {
   local fp="$1"

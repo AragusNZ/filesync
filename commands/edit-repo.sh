@@ -21,6 +21,7 @@ Options:
   --branch=name           Change branch
   --check-sync=true|false Set check_sync_enabled
   --mirror-in=true|false  Set mirror_in_enabled
+  --merge-using-git=true|false  Set merge_using_git (sync uses git branch/merge in project when true)
   --enable                Set check_sync_enabled and mirror_in_enabled true
   --disable               Set check_sync_enabled and mirror_in_enabled false
 
@@ -44,6 +45,8 @@ CS_SET=0
 CS_VAL=false
 MI_SET=0
 MI_VAL=false
+MUG_SET=0
+MUG_VAL=false
 
 _bool_from_arg() {
   case "${1,,}" in
@@ -93,6 +96,16 @@ while [[ $# -gt 0 ]]; do
       [[ "$_b" == true ]] && MI_VAL=true || MI_VAL=false
       shift
       ;;
+    --merge-using-git=*)
+      _b="$(_bool_from_arg "${1#*=}")"
+      [[ -n "$_b" ]] || {
+        echo -e "${RED}--merge-using-git must be true or false${NC}" >&2
+        exit 1
+      }
+      MUG_SET=1
+      [[ "$_b" == true ]] && MUG_VAL=true || MUG_VAL=false
+      shift
+      ;;
     --enable)
       CS_SET=1
       CS_VAL=true
@@ -109,7 +122,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     -*)
       echo -e "${RED}Unknown option: $1${NC}" >&2
-      echo "Usage: filesync edit repo <repo_name> [--rename=…] [--path=…] [--url=…] [--branch=…] [--check-sync=…] [--mirror-in=…] [--enable] [--disable]" >&2
+      echo "Usage: filesync edit repo <repo_name> [--rename=…] [--path=…] [--url=…] [--branch=…] [--check-sync=…] [--mirror-in=…] [--merge-using-git=…] [--enable] [--disable]" >&2
       exit 1
       ;;
     *)
@@ -126,11 +139,11 @@ done
 
 if [[ -z "$REPO_CURRENT" ]]; then
   echo -e "${RED}Usage: filesync edit repo <repo_name> [options]${NC}" >&2
-  echo "At least one of --rename, --path, --url, --branch, --check-sync, --mirror-in, --enable, or --disable is required." >&2
+  echo "At least one of --rename, --path, --url, --branch, --check-sync, --mirror-in, --merge-using-git, --enable, or --disable is required." >&2
   exit 1
 fi
 
-if [[ -z "$RENAME" ]] && [[ -z "$PATH_NEW" ]] && [[ -z "$URL_NEW" ]] && [[ -z "$BRANCH_NEW" ]] && [[ "$CS_SET" -eq 0 ]] && [[ "$MI_SET" -eq 0 ]]; then
+if [[ -z "$RENAME" ]] && [[ -z "$PATH_NEW" ]] && [[ -z "$URL_NEW" ]] && [[ -z "$BRANCH_NEW" ]] && [[ "$CS_SET" -eq 0 ]] && [[ "$MI_SET" -eq 0 ]] && [[ "$MUG_SET" -eq 0 ]]; then
   echo -e "${RED}Error: specify at least one option${NC}" >&2
   exit 1
 fi
@@ -187,6 +200,8 @@ jq --arg c "$REPO_CURRENT" \
   --argjson cs_val "$CS_VAL" \
   --argjson mi_set "$MI_SET" \
   --argjson mi_val "$MI_VAL" \
+  --argjson mug_set "$MUG_SET" \
+  --argjson mug_val "$MUG_VAL" \
   'map(
     if .name == $c then
       .name = (if $newname != "" then $newname else .name end)
@@ -195,6 +210,7 @@ jq --arg c "$REPO_CURRENT" \
       | .branch = (if $b != "" then $b else .branch end)
       | .check_sync_enabled = (if $cs_set == 1 then $cs_val else .check_sync_enabled end)
       | .mirror_in_enabled = (if $mi_set == 1 then $mi_val else .mirror_in_enabled end)
+      | .merge_using_git = (if $mug_set == 1 then $mug_val else .merge_using_git end)
     else . end
   )' "$repos" >"$tmp_out"
 
@@ -212,4 +228,5 @@ if [[ -n "$URL_NEW" ]]; then echo "  url: $URL_NEW" >&2; fi
 if [[ -n "$BRANCH_NEW" ]]; then echo "  branch: $BRANCH_NEW" >&2; fi
 if [[ "$CS_SET" -eq 1 ]]; then echo "  check_sync_enabled: $CS_VAL" >&2; fi
 if [[ "$MI_SET" -eq 1 ]]; then echo "  mirror_in_enabled: $MI_VAL" >&2; fi
+if [[ "$MUG_SET" -eq 1 ]]; then echo "  merge_using_git: $MUG_VAL" >&2; fi
 exit 0

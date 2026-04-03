@@ -27,6 +27,15 @@ if (
 	filesync_resolve_or_exit 2>/dev/null
 ); then bad "resolve_or_exit should fail without .filesync"; else ok "resolve_or_exit fails without .filesync"; fi
 
+bl="${td}/broken-dotfilesync"
+mkdir -p "${bl}"
+ln -s /nonexistent/filesync-target "${bl}/.filesync"
+if (
+	cd "${bl}"
+	unset FILESYNC_PROJECT_ROOT FILESYNC_DIR
+	filesync_resolve_or_exit 2>/dev/null
+); then bad "resolve_or_exit should fail on broken .filesync symlink"; else ok "resolve_or_exit fails on broken .filesync symlink"; fi
+
 if (
 	_rf="${td}/reqfiles/.filesync"
 	mkdir -p "${_rf}"

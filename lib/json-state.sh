@@ -47,6 +47,10 @@ filesync_assemble_state_to() {
     rm -rf "$tmpd"
     return 1
   fi
+  if ! filesync_assert_global_repos_have_merge_using_git "${FILESYNC_REPOS_FILE}"; then
+    rm -rf "$tmpd"
+    return 1
+  fi
   if ! jq -e 'type == "array"' "${FILESYNC_DIR}/${FILESYNC_FILES_NAME}" &>/dev/null; then
     rm -rf "$tmpd"
     echo "filesync: ${FILESYNC_DIR}/${FILESYNC_FILES_NAME} must be a JSON array" >&2
@@ -123,6 +127,10 @@ filesync_assemble_global_catalog_state_to() {
     return 1
   fi
   if ! filesync_assert_global_repos_unique_names "${FILESYNC_REPOS_FILE}"; then
+    rm -rf "$tmpd"
+    return 1
+  fi
+  if ! filesync_assert_global_repos_have_merge_using_git "${FILESYNC_REPOS_FILE}"; then
     rm -rf "$tmpd"
     return 1
   fi

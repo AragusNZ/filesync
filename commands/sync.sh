@@ -27,6 +27,10 @@ Options:
 
 When --status= is omitted: syncs unset, sync_required, and error_missing_local; skips detached
 unless --include-detached.
+
+Per-repo merge_using_git (global repos.json): when true and this project is a git work tree with a
+clean index and working tree, content updates use a short-lived branch and git merge (see
+filesync(1) and docs/configuration.md). Otherwise sync writes files directly.
 EOF
   exit 0
 fi
@@ -37,6 +41,8 @@ filesync_command_init "${BASH_SOURCE[0]}"
 source "$_CMD_ROOT/../lib/cli-banner.sh"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/progress.sh"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/sync-git-merge.sh"
 
 REPO_FILTER=""
 FILE_FRAGMENT=""
@@ -115,13 +121,17 @@ SYNC_ROWS_TSV=""
 
 cleanup_sync_exit() {
   # shellcheck disable=SC2317
+  filesync_sync_git_emergency_cleanup "${PROJECT_ROOT:-}" || true
+  # shellcheck disable=SC2317
   filesync_progress_end || true
   # shellcheck disable=SC2317
-  rm -f "${FILESYNC_STATE_FILE:-}" "${SYNC_ROWS_TSV:-}"
+  rm -f "${FILESYNC_STATE_FILE:-}" "${SYNC_ROWS_TSV:-}" "${SYNC_ROWS_SORTED:-}"
   # shellcheck disable=SC2317
   rm -rf "${FILESYNC_CLONED_TEMP_DIRS[@]:-}"
 }
 trap cleanup_sync_exit EXIT
+
+filesync_sync_git_reset_state
 
 if ! jq -e '.repos | length > 0' "$CONFIG_FILE" >/dev/null 2>&1; then
   echo -e "${RED}Error: Config must have at least one entry in repos${NC}" >&2
@@ -142,8 +152,10 @@ filesync_print_sync_showall_banner "$SHOWALL"
 echo "" >&2
 
 SYNC_ROWS_TSV=$(mktemp)
+SYNC_ROWS_SORTED=$(mktemp)
 filesync_config_file_rows_tsv_to "$SYNC_ROWS_TSV" "$CONFIG_FILE" "$REPO_FILTER" "$FILE_FRAGMENT"
-FILES_WORK_COUNT=$(wc -l < "$SYNC_ROWS_TSV")
+LC_ALL=C sort -t $'\t' -k3,3 -s "$SYNC_ROWS_TSV" >"$SYNC_ROWS_SORTED"
+FILES_WORK_COUNT=$(wc -l < "$SYNC_ROWS_SORTED")
 FILES_WORK_COUNT="${FILES_WORK_COUNT//[[:space:]]/}"
 
 if [[ "$FILES_WORK_COUNT" -eq 0 ]] && filesync_files_only_blocked_by_check_sync "$CONFIG_FILE" "$REPO_FILTER" "$FILE_FRAGMENT"; then
@@ -182,6 +194,12 @@ while IFS=$'\t' read -r i REPO_ID REPO_NAME LOCAL_PATH REPO_FILE_PATH ROW_STATUS
 
   if [[ -z "$REPO_FILE_PATH" ]] || [[ "$REPO_FILE_PATH" == "null" ]]; then
     filesync_print_config_error_invalid_repo_file_path "$LOCAL_PATH"
+    FAILED=$((FAILED + 1))
+    filesync_sync_iter_progress
+    continue
+  fi
+
+  if ! filesync_sync_git_repo_transition "$PROJECT_ROOT" "$FILESYNC_FILES_FILE" "$CONFIG_FILE" "$REPO_NAME"; then
     FAILED=$((FAILED + 1))
     filesync_sync_iter_progress
     continue
@@ -253,7 +271,11 @@ while IFS=$'\t' read -r i REPO_ID REPO_NAME LOCAL_PATH REPO_FILE_PATH ROW_STATUS
       [[ "$SHOWALL" == true ]] && file_sync_print_sync_action_line "${GREEN}✓${NC}" "${GREEN}" "Already in sync" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
       ALREADY_SYNCED=$((ALREADY_SYNCED + 1))
       if [[ "$DRY_RUN" != true ]]; then
-        filesync_write_file_row "$FILESYNC_FILES_FILE" "$PROJECT_ROOT" "$LOCAL_PATH" "$FULL_MASTER_PATH" "synced"
+        if filesync_sync_git_use_merge_path "$CONFIG_FILE" "$REPO_NAME"; then
+          filesync_sync_git_defer_already_synced "$LOCAL_PATH" "$FULL_MASTER_PATH"
+        else
+          filesync_write_file_row "$FILESYNC_FILES_FILE" "$PROJECT_ROOT" "$LOCAL_PATH" "$FULL_MASTER_PATH" "synced"
+        fi
       fi
       filesync_sync_iter_progress
       continue
@@ -264,6 +286,9 @@ while IFS=$'\t' read -r i REPO_ID REPO_NAME LOCAL_PATH REPO_FILE_PATH ROW_STATUS
     file_sync_print_sync_action_line "${YELLOW}→${NC}" "${YELLOW}" "dry-run" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
   else
     mkdir -p "$(dirname "$FULL_LOCAL_PATH")"
+    if filesync_sync_git_use_merge_path "$CONFIG_FILE" "$REPO_NAME"; then
+      filesync_sync_git_start_batch "$PROJECT_ROOT" "$REPO_NAME"
+    fi
     _rid_render="${REPO_ID}"
     if [[ -f "$FULL_LOCAL_PATH" ]] && ! grep -q 'repo_id=' "$FULL_LOCAL_PATH"; then
       _rid_render=""
@@ -271,17 +296,28 @@ while IFS=$'\t' read -r i REPO_ID REPO_NAME LOCAL_PATH REPO_FILE_PATH ROW_STATUS
     if ! render_clone_from_master_file "$FULL_MASTER_PATH" "$REPO_FILE_PATH" "$REPO_NAME" "$FULL_LOCAL_PATH" "$_rid_render"; then
       file_sync_print_sync_action_line "${RED}✗${NC}" "${RED}" "could not render" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
       filesync_error "${LOCAL_PATH}: could not render clone from master ${REPO_NAME}/${REPO_FILE_PATH} (master file missing or unparsable filesync marker)"
+      if [[ "${FILESYNC_SYNC_GIT_ACTIVE_REPO:-}" == "$REPO_NAME" ]]; then
+        filesync_sync_git_abort_open_batch "$PROJECT_ROOT"
+      fi
       FAILED=$((FAILED + 1))
       filesync_sync_iter_progress
       continue
     fi
     file_sync_print_sync_action_line "${GREEN}✓${NC}" "${GREEN}" "synced" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
-    filesync_write_file_row "$FILESYNC_FILES_FILE" "$PROJECT_ROOT" "$LOCAL_PATH" "$FULL_MASTER_PATH" "synced"
+    if filesync_sync_git_use_merge_path "$CONFIG_FILE" "$REPO_NAME"; then
+      filesync_sync_git_record_pending "$LOCAL_PATH" "$FULL_MASTER_PATH" "$REPO_ID"
+    else
+      filesync_write_file_row "$FILESYNC_FILES_FILE" "$PROJECT_ROOT" "$LOCAL_PATH" "$FULL_MASTER_PATH" "synced"
+    fi
   fi
   SYNCED=$((SYNCED + 1))
 
   filesync_sync_iter_progress
-done < "$SYNC_ROWS_TSV"
+done < "$SYNC_ROWS_SORTED"
+
+if ! filesync_sync_git_finish_last_repo "$PROJECT_ROOT" "$FILESYNC_FILES_FILE" "$CONFIG_FILE"; then
+  FAILED=$((FAILED + 1))
+fi
 
 filesync_progress_end
 

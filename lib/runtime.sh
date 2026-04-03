@@ -36,6 +36,8 @@ filesync_command_init_system() {
   source "$FILESYNC_PKG_ROOT/lib/system-resolve.sh"
   # shellcheck source=/dev/null
   source "$FILESYNC_PKG_ROOT/lib/data-names.sh"
+  # shellcheck source=/dev/null
+  source "$FILESYNC_PKG_ROOT/lib/repos-json.sh"
 
   filesync_require_jq
   filesync_log_enable_debug
@@ -44,6 +46,7 @@ filesync_command_init_system() {
   export FILESYNC_SYSTEM_HOME
   export FILESYNC_REPOS_FILE="${FILESYNC_SYSTEM_HOME}/${FILESYNC_GLOBAL_REPOS_NAME}"
   export FILESYNC_COLLECTIONS_FILE="${FILESYNC_SYSTEM_HOME}/${FILESYNC_GLOBAL_COLLECTIONS_NAME}"
+  filesync_assert_global_repos_have_merge_using_git "$FILESYNC_REPOS_FILE" || filesync_die "invalid global repos (see message above)"
 }
 
 filesync_command_init() {

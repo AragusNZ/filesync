@@ -69,6 +69,12 @@ filesync_resolve_or_exit() {
       export PROJECT_ROOT FILESYNC_DIR
       return 0
     fi
+    # Broken symlink, plain file, etc.: [[ -d ]] is false; explain instead of walking past it.
+    if [[ -e "$dir/.filesync" || -L "$dir/.filesync" ]]; then
+      filesync_error "not a directory: $dir/.filesync (broken symlink or wrong type?)"
+      filesync_error "filesync requires a real .filesync/ directory here (walk started from $(pwd -P))."
+      exit 1
+    fi
     dir="$(dirname "$dir")"
   done
 

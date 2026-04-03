@@ -13,7 +13,7 @@ mkdir -p "$td"
 repos="${td}/repos.json"
 coll="${td}/collections.json"
 
-printf '%s\n' '[{"name":"alpha","path":"x","url":"","branch":"main"},{"name":"beta","path":"y","url":"","branch":"main"}]' >"$repos"
+printf '%s\n' '[{"name":"alpha","path":"x","url":"","branch":"main","merge_using_git":false},{"name":"beta","path":"y","url":"","branch":"main","merge_using_git":false}]' >"$repos"
 printf '%s\n' '[{"name":"grp","repos":["alpha"]}]' >"$coll"
 
 if filesync_collection_add_repo "$coll" "$repos" grp beta; then

@@ -10,7 +10,7 @@ Layout and command bootstrap matrix. User-facing docs: `docs/configuration.md` a
 | Env override | `FILESYNC_HOME` — absolute path; intended for tests/CI (not per-project `.env`) |
 | Optional path anchor | `FILESYNC_REPO_PATH_ANCHOR` — overrides `$HOME` for resolving relative `path` in `repos.json` (tests) |
 | `system.json` | `$FILESYNC_HOME/system.json` — e.g. `{ "version": 2 }` |
-| Global repos | `$FILESYNC_HOME/repos.json` — array with `id`, `name`, `url`, `path`, `branch`, flags |
+| Global repos | `$FILESYNC_HOME/repos.json` — array with `id`, `name`, `url`, `path`, `branch`, `merge_using_git`, flags |
 | Global collections | `$FILESYNC_HOME/collections.json` |
 | Preferences | `$FILESYNC_HOME/preferences.json` |
 | Lock file | `$FILESYNC_HOME/.lock` — `flock` for mutating commands |
@@ -20,6 +20,7 @@ Layout and command bootstrap matrix. User-facing docs: `docs/configuration.md` a
 
 - `id` — stable UUID string (required after `migrate` / new repos).
 - `name`, `url`, `path`, `branch` — as documented.
+- `merge_using_git` — required boolean; `migrate` backfills when missing.
 - `check_sync_enabled`, `mirror_in_enabled` — default true if omitted.
 
 ## File row object

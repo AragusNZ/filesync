@@ -16,7 +16,7 @@ mkdir -p "${PROJECT_ROOT}/repodir"
 REPO_PATH_ROOT="$(cd "${PROJECT_ROOT}" && pwd)"
 jq -n \
   --arg rroot "$REPO_PATH_ROOT" \
-  '{repos: [{name: "origin", path: "repodir", url: null, branch: "main"}], files: [], repo_path_root: $rroot, progress_display: "percent"}' >"${td}/state_repos.json"
+  '{repos: [{name: "origin", path: "repodir", url: null, branch: "main", merge_using_git: false}], files: [], repo_path_root: $rroot, progress_display: "percent"}' >"${td}/state_repos.json"
 # shellcheck disable=SC2034
 declare -A FILESYNC_REPO_DIR_CACHE
 # shellcheck disable=SC2034

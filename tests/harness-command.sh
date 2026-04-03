@@ -27,7 +27,7 @@ filesync_test_seed_global_repos() {
 	local abs_root
 	abs_root="$(cd "$path_root" && pwd)"
 	export FILESYNC_REPO_PATH_ANCHOR="$abs_root"
-	jq 'map(if (.id // "") == "" then . + {id: ("testid-" + .name)} else . end)' "$repos_file" >"${FILESYNC_HOME}/repos.json"
+	jq 'map((if (.id // "") == "" then . + {id: ("testid-" + .name)} else . end) | if (.merge_using_git | type) != "boolean" then . + {merge_using_git: false} else . end)' "$repos_file" >"${FILESYNC_HOME}/repos.json"
 	if [[ ! -f "${FILESYNC_HOME}/system.json" ]]; then
 		jq -n '{version: 2}' >"${FILESYNC_HOME}/system.json"
 	else
@@ -48,7 +48,7 @@ filesync_test_append_global_repos() {
 		echo "filesync_test_append_global_repos: no global repos.json" >&2
 		return 1
 	}
-	jq -s '.[0] + (.[1] | map(if (.id // "") == "" then . + {id: ("testid-" + .name)} else . end))' \
+	jq -s '.[0] + (.[1] | map((if (.id // "") == "" then . + {id: ("testid-" + .name)} else . end) | if (.merge_using_git | type) != "boolean" then . + {merge_using_git: false} else . end))' \
 		"${FILESYNC_HOME}/repos.json" "$repos_file" >"${FILESYNC_HOME}/repos.json.tmp"
 	mv "${FILESYNC_HOME}/repos.json.tmp" "${FILESYNC_HOME}/repos.json"
 }

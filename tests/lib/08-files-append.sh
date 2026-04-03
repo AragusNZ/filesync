@@ -9,7 +9,7 @@ source "${TESTS}/harness-lib.sh"
 source "${ROOT}/lib/files-append.sh"
 
 td="${LIB_TEST_TMP}"
-printf '%s\n' '[{"name":"r1","path":"repodir","url":"","branch":"main"}]' >"${td}/repos_fa.json"
+printf '%s\n' '[{"name":"r1","path":"repodir","url":"","branch":"main","merge_using_git":false}]' >"${td}/repos_fa.json"
 printf '%s\n' '[]' >"${td}/files_fa.json"
 entry='{"local_path":"tools/x.txt","repo_name":"r1","repo_file_path":"tools/x.txt","sync_status":"synced"}'
 if filesync_files_append_entry "${td}/files_fa.json" "${td}/repos_fa.json" "r1" "${entry}" && [[ "$(jq 'length' "${td}/files_fa.json")" -eq 1 ]]; then

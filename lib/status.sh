@@ -236,3 +236,15 @@ filesync_write_file_row() {
     )' "$files_path" > "${files_path}.tmp"
   mv "${files_path}.tmp" "$files_path"
 }
+
+# Set only sync_status for a row (e.g. merge conflict). Args: files_json_path local_path status
+filesync_set_file_row_sync_status() {
+  local files_path="$1"
+  local local_path="$2"
+  local sync_status_val="${3:?}"
+
+  jq --arg lp "$local_path" \
+    --arg st "$sync_status_val" \
+    'map(if .local_path == $lp then . + {sync_status: $st} else . end)' "$files_path" >"${files_path}.tmp"
+  mv "${files_path}.tmp" "$files_path"
+}

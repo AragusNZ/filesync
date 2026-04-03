@@ -16,7 +16,7 @@ If you have an old copy of the global store at **`~/.filesync`** (not the projec
 Files in that directory:
 
 - **`system.json`** — metadata (e.g. **`version`**).
-- **`repos.json`** — array of repo objects: stable **`id`** (UUID), **`name`**, **`url`**, **`path`**, **`branch`**, optional **`check_sync_enabled`** and **`mirror_in_enabled`** (both default true if omitted). Each **`name`** must be unique; duplicate names make resolution ambiguous and are rejected when loading project state. Each repo’s **`path`** is resolved with `filesync_resolve_repo_checkout_dir`: **relative** paths are under your **home directory** (or **`FILESYNC_REPO_PATH_ANCHOR`** when set); absolute **`path`** values are used as-is.
+- **`repos.json`** — array of repo objects: stable **`id`** (UUID), **`name`**, **`url`**, **`path`**, **`branch`**, required boolean **`merge_using_git`**, optional **`check_sync_enabled`** and **`mirror_in_enabled`** (both default true if omitted). New rows from **`init`** / **`new repo`** set **`merge_using_git`** from a git probe at the registered checkout directory; **`migrate`** backfills the field on older catalogs. Each **`name`** must be unique; duplicate names make resolution ambiguous and are rejected when loading project state. Each repo’s **`path`** is resolved with `filesync_resolve_repo_checkout_dir`: **relative** paths are under your **home directory** (or **`FILESYNC_REPO_PATH_ANCHOR`** when set); absolute **`path`** values are used as-is.
 - **`collections.json`** — array of `{ "name", "repos": [ … ] }` for **`--also=`** expansion.
 - **`preferences.json`** — merged over `share/defaults/preferences.default.json`; **`progress_display`** is **`percent`**, **`bar`**, or **`hidden`**. Set it with **`filesync config set progress …`**; inspect the effective value with **`filesync config show`**.
 
@@ -32,7 +32,7 @@ Optional **`marker_style`** per row overrides comment wrapping for that path whe
 
 ### Legacy per-project files
 
-If **`repos.json`**, **`collections.json`**, or **`config.json`** still exist under `.filesync/`, run **`filesync migrate`** once to import them into the global store (backups under **`.filesync/legacy-backup/`**). **`migrate`** also assigns missing **`id`** values on global repos and **`repo_id`** on **`files.json`** rows in every known project. Afterwards the project should keep **`files.json`** only.
+If **`repos.json`**, **`collections.json`**, or **`config.json`** still exist under `.filesync/`, run **`filesync migrate`** once to import them into the global store (backups under **`.filesync/legacy-backup/`**). **`migrate`** also assigns missing **`id`** values on global repos, **`repo_id`** on **`files.json`** rows in every known project, and **`merge_using_git`** on global repo rows when missing. Afterwards the project should keep **`files.json`** only.
 
 ### Sync markers (text files)
 
@@ -63,7 +63,16 @@ When **stdin is a terminal** and **`--no-repo`** is not passed, **`init`** promp
 
 ### Enable / disable (per repo)
 
-Use **`filesync edit repo <name> --enable`** or **`--disable`** to set both **`check_sync_enabled`** and **`mirror_in_enabled`** true or false in **global** **`repos.json`**, or set them independently with **`--check-sync=true|false`** and **`--mirror-in=true|false`**. Rows referencing a repo with **`check_sync_enabled: false`** are skipped by **`check`** and **`sync`**.
+Use **`filesync edit repo <name> --enable`** or **`--disable`** to set both **`check_sync_enabled`** and **`mirror_in_enabled`** true or false in **global** **`repos.json`**, or set them independently with **`--check-sync=true|false`** and **`--mirror-in=true|false`**. Use **`--merge-using-git=true|false`** to control whether **`sync`** applies tracked-file updates via a short-lived git branch and merge in the project (requires a clean git working tree there). Rows referencing a repo with **`check_sync_enabled: false`** are skipped by **`check`** and **`sync`**.
+
+### `merge_using_git` and `sync`
+
+Each global repo row’s **`merge_using_git`** only affects how **`sync`** writes **tracked file content** into the **current project** when that project’s root is a **git work tree**:
+
+- **`true`**: before the first content-changing sync for that repo in a run, the project must have an **empty** `git status --porcelain` (no staged or unstaged changes). **`sync`** creates a branch `filesync/sync-…`, writes updated clones there, commits, checks out your previous branch, and **`git merge`**’s the sync branch (then deletes it on success). Conflicting paths may be marked **`conflict`** in **`files.json`**; up to **three** merge attempts can drop conflicting paths and retry the rest. Use normal git conflict resolution if a merge stops mid-way.
+- **`false`**: **`sync`** overwrites local paths directly (same as older behavior).
+
+If the project is **not** a git repository, **`merge_using_git`** is ignored for that run (direct writes). The add-time probe sets **`merge_using_git`** from whether the **registered checkout directory** (that row’s **`path`**) is a git work tree; **`edit repo --merge-using-git=`** overrides. Upgrading old **`repos.json`** without the field: run **`filesync migrate`**.
 
 ## Assembled state
 
@@ -71,7 +80,7 @@ Internally, project commands build a **temporary** JSON file with **`repos`**, *
 
 ## Repo metadata (`edit repo`)
 
-**`filesync edit repo <repo_name>`** (short: **`e -r`**) updates **global** **`repos.json`** only (system store). Pass at least one of **`--rename=`**, **`--path=`**, **`--url=`**, **`--branch=`**, **`--check-sync=true|false`**, **`--mirror-in=true|false`**, **`--enable`**, or **`--disable`** (the **`=`** options use a single argument, e.g. **`--rename=myrepo`**). It does **not** modify project **`files.json`** or local sync markers; the new name must not match any **collection** name in **global** **`collections.json`**.
+**`filesync edit repo <repo_name>`** (short: **`e -r`**) updates **global** **`repos.json`** only (system store). Pass at least one of **`--rename=`**, **`--path=`**, **`--url=`**, **`--branch=`**, **`--check-sync=true|false`**, **`--mirror-in=true|false`**, **`--merge-using-git=true|false`**, **`--enable`**, or **`--disable`** (the **`=`** options use a single argument, e.g. **`--rename=myrepo`**). It does **not** modify project **`files.json`** or local sync markers; the new name must not match any **collection** name in **global** **`collections.json`**.
 
 ## Adding mappings (`add file`, `add master`, `add clone`)
 

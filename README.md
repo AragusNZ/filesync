@@ -106,9 +106,11 @@ Run `filesync` with no arguments to print a short usage summary (same idea as **
 
 ## User data: system store + project `.filesync/`
 
-**System metadata** (always **`~/.filesync-root`**, or **`FILESYNC_HOME`** when that environment variable is set — intended for tests and automation; do not point different projects at different catalogs): `repos.json`, `collections.json`, `system.json` (version and other metadata), and `preferences.json` (**`progress_display`**, etc.). Relative repo `path` values in `repos.json` resolve under your home directory (or **`FILESYNC_REPO_PATH_ANCHOR`** when set); absolute paths are used as-is. **`filesync config show`** prints the effective repo path anchor.
+**System metadata** (always **`~/.filesync-root`**, or **`FILESYNC_HOME`** when that environment variable is set — intended for tests and automation; do not point different projects at different catalogs): `repos.json`, `collections.json`, `system.json` (version and other metadata), and `preferences.json` (**`progress_display`**, etc.). Each repo row includes required boolean **`merge_using_git`** (set when adding a repo from a git probe at that checkout, or backfilled by **`migrate`**). Relative repo `path` values in `repos.json` resolve under your home directory (or **`FILESYNC_REPO_PATH_ANCHOR`** when set); absolute paths are used as-is. **`filesync config show`** prints the effective repo path anchor.
 
 **Per project** (discovered like git: walk up for **`.filesync/`**): **`files.json`** only. If you still have old per-project `repos.json` / `collections.json` / `config.json`, run **`filesync migrate`** once to import them into the global store.
+
+**`sync` and git:** If a repo’s **`merge_using_git`** is **`true`** and the project is a **clean** git work tree, **`sync`** applies updates on a short-lived branch and merges back so you can resolve conflicts with normal git tools; otherwise it writes files directly. See [docs/configuration.md](docs/configuration.md) (`merge_using_git` and `sync`).
 
 Basenames are defined in `lib/data-names.sh` if you need to change them in a fork.
 

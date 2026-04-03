@@ -13,6 +13,17 @@ filesync_global_repos_duplicate_names() {
     end' "$f" 2>/dev/null
 }
 
+# Return 0 if every repo row has boolean merge_using_git (vacuously true for empty array).
+filesync_assert_global_repos_have_merge_using_git() {
+  local f="${1:?}"
+  [[ -f "$f" ]] || return 0
+  if ! jq -e 'all(.[]?; (.merge_using_git | type) == "boolean")' "$f" &>/dev/null; then
+    echo "filesync: every repo in ${f} must have boolean merge_using_git (run: filesync migrate)" >&2
+    return 1
+  fi
+  return 0
+}
+
 # Return 0 if no duplicates; else print errors to stderr and return 1.
 filesync_assert_global_repos_unique_names() {
   local f="${1:?}" d
