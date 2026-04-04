@@ -427,6 +427,7 @@ Also
 .RI [ \-\-repo\-file= fragment " ..." ]
 .RI [ \-\-all\-files= fragment " ..." ]
 .RI [ \-c " | " \-\-check ]
+.RI [ \-\-no\-commit ]
 .RI [ \-\-dry\-run ]
 .RI [ \-f " | " \-\-force ]
 .RI [ \-\-showall ]
@@ -514,6 +515,10 @@ any other dirty path blocks this path.
 records content updates and refreshed
 .I files.json
 on a short-lived branch, commits them together, and merges into the previous branch (up to three merge attempts may exclude paths that conflict), so the work tree is clean after a successful batch.
+.B \-\-no\-commit
+forces the direct-write path for this run (as if
+.B merge_using_git
+were false): no temporary branch, merge, or filesync sync commit; a dirty work tree does not block sync the way it does for the merge path.
 Per-file lines start with a result symbol, use the same
 .IR repo " | " repo_file_path
 layout as

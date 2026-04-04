@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Sync from master repos into project (updates .filesync/files.json rows).
-# Usage: sync.sh [--repo=name] [--file=...] [--repo-file=...] [--all-files=...] [-c|--check] ...
+# Usage: sync.sh [--repo=name] [--file=...] [--repo-file=...] [--all-files=...] [-c|--check] [--no-commit] ...
 # Path fragments: same rules as filesync check (AND across --file / --repo-file / --all-files).
 
 set -euo pipefail
@@ -8,7 +8,7 @@ set -euo pipefail
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/cli-help.sh"
-FILESYNC_CMD_USAGE='Usage: filesync sync [--repo=name] [--file=path_fragment ...] [--repo-file=path_fragment ...] [--all-files=path_fragment ...] [-c|--check] [--dry-run] [-f|--force] [--showall] [--status=a,b,...] [--include-detached] [--move|--mv]'
+FILESYNC_CMD_USAGE='Usage: filesync sync [--repo=name] [--file=path_fragment ...] [--repo-file=path_fragment ...] [--all-files=path_fragment ...] [-c|--check] [--no-commit] [--dry-run] [-f|--force] [--showall] [--status=a,b,...] [--include-detached] [--move|--mv]'
 if filesync_argv_wants_help "$@"; then
   cat <<EOF
 ${FILESYNC_CMD_USAGE}
@@ -23,6 +23,7 @@ Options:
   --repo-file=fragment   Match part of the path inside the repo checkout
   --all-files=fragment   Match either local or repo path
   -c, --check            Run filesync check with the same filters before copying
+  --no-commit            Write files in place this run (skip git branch/merge even if enabled for the repo)
   --dry-run              Show what would happen without writing files
   -f, --force            Include 'local newer' and 'conflict' rows (normally skipped)
   --showall              Print one line per file
@@ -33,9 +34,13 @@ Options:
 When --status= is omitted: updates unset, sync_required, error_missing_local, and master_file_moved;
 detached rows stay skipped unless you add --include-detached.
 
-Per-repo merge_using_git: when on, and this tree is a clean git worktree except possibly
-.filesync/files.json, sync may use a short-lived branch and merge (see filesync(1)). Otherwise files
-are copied directly.
+When a repo is set up for git-style updates (merge_using_git in the catalog) and this project is a
+git repo with a clean working tree—nothing else modified except possibly .filesync/files.json—sync
+may use a short side branch and merge so conflicts look like normal git merges. Otherwise it copies
+from master into your tracked paths directly.
+
+--no-commit always uses that direct copy for this run, even when git-style mode is on—useful when
+you have other local changes and sync would otherwise ask for a clean tree (see filesync(1)).
 EOF
   exit 0
 fi
@@ -60,9 +65,11 @@ INCLUDE_DETACHED=false
 SHOWALL=false
 RUN_CHECK=false
 SYNC_MOVE=false
+NO_COMMIT=false
 
 while [[ $# -gt 0 ]]; do
   case $1 in
+    --no-commit) NO_COMMIT=true; shift ;;
     --dry-run) DRY_RUN=true; shift ;;
     --move|--mv)
       # shellcheck disable=SC2034
@@ -101,6 +108,10 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+if [[ "$NO_COMMIT" == true ]]; then
+  FILESYNC_SYNC_NO_COMMIT=1
+fi
+
 mapfile -t FILE_FRAGMENTS_nonempty < <(filesync_emit_nonempty_file_fragments FILE_FRAGMENTS)
 if [[ ${#FILE_FRAGMENTS_nonempty[@]} -eq 0 ]]; then
   FRAGS_JSON='[]'
@@ -135,6 +146,7 @@ declare -a FILESYNC_SYNC_COMMIT_OPT_PARTS=()
 [[ "$RUN_CHECK" == true ]] && FILESYNC_SYNC_COMMIT_OPT_PARTS+=("check")
 [[ "$SYNC_MOVE" == true ]] && FILESYNC_SYNC_COMMIT_OPT_PARTS+=("move")
 [[ "$INCLUDE_DETACHED" == true ]] && FILESYNC_SYNC_COMMIT_OPT_PARTS+=("include-detached")
+[[ "$NO_COMMIT" == true ]] && FILESYNC_SYNC_COMMIT_OPT_PARTS+=("no-commit")
 [[ -n "$REPO_FILTER" ]] && FILESYNC_SYNC_COMMIT_OPT_PARTS+=("repo=${REPO_FILTER}")
 [[ -n "$STATUS_CSV" ]] && FILESYNC_SYNC_COMMIT_OPT_PARTS+=("status=${STATUS_CSV}")
 [[ -n "$FILE_FILTER_LABEL" ]] && FILESYNC_SYNC_COMMIT_OPT_PARTS+=("file=${FILE_FILTER_LABEL}")

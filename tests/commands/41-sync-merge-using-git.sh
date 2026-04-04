@@ -102,6 +102,43 @@ mkdir -p "${proj2}"
 	[[ "${_out}" == *"clean git"* ]] || die "expected clean-tree message, got: ${_out}"
 )
 
+# F: merge_using_git true + dirty index + --no-commit → direct path; no clean-tree requirement.
+projF="${TMP}/smug-projF"
+rm -rf "${projF}"
+mkdir -p "${projF}"
+(
+	cd "${projF}"
+	filesync init --no-repo
+	git init -b main
+	git config user.email ci@test
+	git config user.name ci
+	git add .filesync
+	git commit -q -m base
+	jq -n \
+		--arg url "file://${master}" \
+		'[{"name":"origin","path":"../smug-master","url":$url,"branch":"main","merge_using_git":true}]' >"${TMP}/seed-35f.json"
+	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-35f.json"
+	filesync add origin tools/x.txt
+	git add -A
+	git commit -q -m "track filesync files" || die "commit after add (F)"
+	{
+		echo "MASTER_FOR_F"
+		echo "# filesync kind=master"
+	} >"${master}/tools/x.txt"
+	git -C "${master}" add tools/x.txt
+	git -C "${master}" commit -q -m for-f
+	filesync check >/dev/null || die "check (F)"
+	git add .filesync
+	git commit -q -m "refresh status" || die "commit after check (F)"
+	printf 'x\n' >staged-only-f.txt
+	git add staged-only-f.txt
+	_before="$(git rev-parse HEAD)"
+	filesync sync --no-commit >/dev/null || die "sync --no-commit with dirty tree should succeed (F)"
+	! git log --oneline --grep='filesync: sync' -1 | grep -q . || die "should not create filesync sync commit with --no-commit (F)"
+	grep -q 'MASTER_FOR_F' tools/x.txt || die "content should match master (--no-commit F)"
+	[[ "${_before}" == "$(git rev-parse HEAD)" ]] || die "expected no new commit on HEAD for --no-commit (F)"
+)
+
 # C: merge_using_git false + consumer git → direct write; no filesync sync commit message in log.
 proj3="${TMP}/smug-proj3"
 rm -rf "${proj3}"
