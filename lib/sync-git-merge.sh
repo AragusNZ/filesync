@@ -178,6 +178,18 @@ filesync_sync_git_worktree_ok_for_merge_batch() {
   return 0
 }
 
+# Args: project_root branch_name. git checkout -b; on ref-namespace failure prints a hint.
+filesync_sync_git_checkout_new_batch_branch() {
+  local proot="${1:?}" branch="${2:?}"
+  local err
+  err="$(git -C "$proot" checkout -b "$branch" 2>&1)" && return 0
+  printf '%s\n' "$err" >&2
+  if [[ "$err" == *"cannot create"* && "$err" == *"exists"* ]]; then
+    echo "filesync: Git cannot create the temporary sync branch because another branch name blocks that path (e.g. branch \"filesync\" blocks names like \"filesync/sync-...\"). Rename or remove the blocking branch, then retry — for example: git branch -m filesync my-filesync-work" >&2
+  fi
+  return 1
+}
+
 # Start a git batch for repo (checkout new branch). Exits process if working tree not clean.
 filesync_sync_git_start_batch() {
   local proot="${1:?}"
@@ -195,8 +207,12 @@ filesync_sync_git_start_batch() {
     exit 1
   fi
   FILESYNC_SYNC_GIT_ORIG="$(git -C "$proot" symbolic-ref -q --short HEAD 2>/dev/null || git -C "$proot" rev-parse HEAD)"
-  FILESYNC_SYNC_GIT_BRANCH="filesync/sync-$$-${RANDOM}"
-  git -C "$proot" checkout -b "$FILESYNC_SYNC_GIT_BRANCH"
+  FILESYNC_SYNC_GIT_BRANCH="filesync-sync-$$-${RANDOM}"
+  if ! filesync_sync_git_checkout_new_batch_branch "$proot" "$FILESYNC_SYNC_GIT_BRANCH"; then
+    FILESYNC_SYNC_GIT_BRANCH=""
+    FILESYNC_SYNC_GIT_ORIG=""
+    return 1
+  fi
   FILESYNC_SYNC_GIT_ACTIVE_REPO="$repo_name"
 }
 
@@ -233,9 +249,12 @@ filesync_sync_git_finalize_merge_batch() {
     if [[ "$attempt" -gt 1 ]]; then
       git -C "$proot" checkout --force "$orig"
       git -C "$proot" branch -D "$br" 2>/dev/null || true
-      FILESYNC_SYNC_GIT_BRANCH="filesync/sync-$$-${RANDOM}-a${attempt}"
+      FILESYNC_SYNC_GIT_BRANCH="filesync-sync-$$-${RANDOM}-a${attempt}"
       br="$FILESYNC_SYNC_GIT_BRANCH"
-      git -C "$proot" checkout -b "$br"
+      if ! filesync_sync_git_checkout_new_batch_branch "$proot" "$br"; then
+        filesync_sync_git_abort_open_batch "$proot"
+        return 1
+      fi
       for idx in "${!work_lp[@]}"; do
         lp="${work_lp[idx]}"
         fm="${work_fm[idx]}"
@@ -360,7 +379,7 @@ filesync_sync_git_finalize_merge_batch() {
       return 1
     fi
 
-    FILESYNC_SYNC_GIT_BRANCH="filesync/sync-$$-${RANDOM}-n${attempt}"
+    FILESYNC_SYNC_GIT_BRANCH="filesync-sync-$$-${RANDOM}-n${attempt}"
   done
 
   git -C "$proot" checkout --force "$orig" 2>/dev/null || true

@@ -409,7 +409,13 @@ while IFS=$'\t' read -r i REPO_ID REPO_NAME LOCAL_PATH REPO_FILE_PATH ROW_STATUS
   else
     mkdir -p "$(dirname "$FULL_LOCAL_PATH")"
     if filesync_sync_git_use_merge_path "$CONFIG_FILE" "$REPO_NAME"; then
-      filesync_sync_git_start_batch "$PROJECT_ROOT" "$REPO_NAME"
+      if ! filesync_sync_git_start_batch "$PROJECT_ROOT" "$REPO_NAME"; then
+        file_sync_print_sync_action_line "${RED}✗${NC}" "${RED}" "git batch start failed" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH"
+        filesync_error "${LOCAL_PATH}: could not create temporary sync branch (see messages above)"
+        FAILED=$((FAILED + 1))
+        filesync_sync_iter_progress
+        continue
+      fi
     fi
     _rid_render="${REPO_ID}"
     if [[ -f "$FULL_LOCAL_PATH" ]] && ! grep -q 'repo_id=' "$FULL_LOCAL_PATH"; then
