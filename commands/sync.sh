@@ -14,33 +14,37 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: s
 
-Pull the latest content from master repos into this project and refresh each row's status in
-.filesync/files.json.
+Pull content from master repos into this project (from each file's registered checkout) and refresh
+row status in .filesync/files.json.
 
-Options:
-  --repo=name            Only files tied to this repo
-  --file=fragment        Match part of the local path (repeat for OR; combine with --repo as usual)
-  --repo-file=fragment   Match part of the path inside the repo checkout
-  --all-files=fragment   Match either local or repo path
-  -c, --check            Run filesync check with the same filters before copying
-  --no-commit            Write files in place this run (skip git branch/merge even if enabled for the repo)
-  --dry-run              Show what would happen without writing files
-  -f, --force            Include 'local newer' and 'conflict' rows (normally skipped)
-  --showall              Print quiet rows: [Already in sync] and gray skips for status=synced
-  --status=a,b,...       Only rows in these states (OR). Tokens: filesync -h or man filesync
-  --include-detached     Include detached rows (normally skipped)
-  --move, --mv           If status is master_file_moved, move the local file to the new path first
+Filters (same rules as check; repeat a flag for OR within a dimension; combine with AND):
 
-When --status= is omitted: updates unset, sync_required, error_missing_local, and master_file_moved;
-detached rows stay skipped unless you add --include-detached.
+  --repo=name              Only rows for this repo
+  --file=fragment          Substring on local path
+  --repo-file=fragment     Substring on path inside the checkout
+  --all-files=fragment     Match either local or repo path
+  --status=a,b,...         Only these states (OR). Tokens: filesync -h or man filesync
+  --include-detached       Include detached rows (normally skipped)
 
-When a repo is set up for git-style updates (merge_using_git in the catalog) and this project is a
-git repo with a clean working tree—nothing else modified except possibly .filesync/files.json—sync
-may use a short side branch and merge so conflicts look like normal git merges. Otherwise it copies
-from master into your tracked paths directly.
+Run mode:
 
---no-commit always uses that direct copy for this run, even when git-style mode is on—useful when
-you have other local changes and sync would otherwise ask for a clean tree (see filesync(1)).
+  -c, --check              Run check with the same filters before copying
+  --no-commit              Write files directly this run (skip git branch/merge even if enabled)
+  --dry-run                Show planned work without writing files
+  -f, --force              Include local_newer and conflict when no explicit --status= (and allow
+                           overwriting clones without a marker)
+  --showall                Print lines normally hidden: [Already in sync] and gray skips for cached
+                           synced rows under the default filter
+  --move, --mv             If status is master_file_moved, move the local file to the new path first
+
+Default when --status= is omitted:
+  Rows in unset, sync_required, error_missing_local, or master_file_moved are updated; detached
+  stays skipped unless you add --include-detached.
+
+Git-style sync (merge_using_git):
+  When enabled for a repo and this project is a clean git worktree (except possibly
+  .filesync/files.json), sync may use a short branch and merge. Otherwise it copies into your paths
+  directly. --no-commit always forces the direct path for this run (see filesync(1)).
 EOF
   exit 0
 fi

@@ -12,7 +12,12 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: rm -col
 
-Delete a named group from collections.json.
+Remove a named repo group from collections.json. Repos themselves are unchanged; only the grouping is
+dropped.
+
+Arguments:
+
+  <name>    Collection name to delete.
 
 EOF
   exit 0

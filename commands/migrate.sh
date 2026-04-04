@@ -10,17 +10,17 @@ if filesync_argv_wants_help "$@"; then
   cat <<'EOF'
 Usage: filesync migrate
 
-Run inside a filesync project. If you still have .filesync/repos.json from an older layout, this
-merges those repos and collections into the shared store (see docs), saves a backup under
-.filesync/legacy-backup/<timestamp>/, then removes the legacy files.
+One-time upgrade for older layouts. Run inside a project that still has .filesync/repos.json.
 
-Repos are matched by name: if the name already exists globally, the global row wins (legacy path/URL/branch
-are ignored) and you get a notice when they differ.
+What it does:
 
-Ensures every repo in the shared catalog has a stable id and every known files.json row points at a
-repo by id (fails if a row cannot be matched).
-
-Also fills in merge_using_git on each global repo when missing (probes the checkout with git).
+  • Merges legacy repos and collections into the shared store (see docs), writes a backup under
+    .filesync/legacy-backup/<timestamp>/, then removes the legacy files.
+  • Matches repos by name: if the name already exists globally, the global entry wins (legacy
+    path/URL/branch are ignored) and you get a notice when they differ.
+  • Ensures every catalog repo has a stable id and every files.json row references a repo by id
+    (fails if a row cannot be matched).
+  • Fills in merge_using_git on each global repo when missing (probes each checkout with git).
 
 EOF
   exit 0

@@ -11,9 +11,12 @@ if filesync_argv_wants_help "$@"; then
 Usage: filesync new repo
 Also: n -r
 
-Interactively walks you through adding a repo to the shared repos.json (name, URL, branch, stable id).
-The checkout path is saved relative to your home when possible. Run from inside the repo you are
-registering; a project .filesync/ is not required.
+Interactively add one repository to the shared catalog (repos.json): name, URL, branch, stable id,
+and checkout path.
+
+When to use it:
+  Run from inside the repo you are registering (sensible git defaults). You do not need a project
+  .filesync/ folder. The checkout path is stored relative to your home when possible.
 EOF
   exit 0
 fi

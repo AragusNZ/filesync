@@ -14,17 +14,24 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
        filesync i <local-path> [--fix-marker]
 
-Given a path, show how filesync sees it: either a tracked file in this project or the source copy
-inside a registered checkout. Lists every mapping that shares the same source, runs filesync check for
-that path, then prints a short summary (clone vs master, related rows).
+Show how filesync classifies a path: tracked clone in this project, or canonical master inside a
+registered checkout. Lists every row that shares the same source, runs filesync check on that path,
+then summarizes clone vs master and related mappings.
 
-If the source file's on-disk marker does not match whether clones exist, you get a prompt in a terminal
-to fix it. In scripts, use --fix-marker to apply the fix without prompting (or read the hint only).
+Arguments:
 
-See also: filesync info repo <name>; filesync info --help for file + repo on one page.
+  <local-path>    Any path that resolves to a tracked file or a master in a checkout (same rules as
+                  the rest of the info file command).
+
+Marker mismatch:
+  If the source file's marker does not match whether clones exist, an interactive terminal offers to
+  fix it. In scripts, use --fix-marker to apply the fix without a prompt.
 
 Options:
-  --fix-marker   Fix the source-file marker without a prompt (non-interactive)
+
+  --fix-marker    Apply the source marker fix non-interactively
+
+See also: filesync info repo <name>  ·  filesync info --help (file + repo on one page)
 EOF
   exit 0
 fi

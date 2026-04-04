@@ -14,13 +14,15 @@ ${FILESYNC_CMD_USAGE}
 
 Also: filesync i repo <repo-name>   or   filesync i -r <repo-name>
 
-From a project directory, show catalog details for <repo-name>, confirm the checkout path exists
-(same rules as filesync config doctor), count how many tracked rows use that repo, and summarize
-their statuses (run filesync check --repo=… to refresh them).
+From a project (walk-up .filesync/), show global catalog fields for this repo, verify the checkout
+path the same way config doctor does, count tracked rows in this project, and summarize their cached
+statuses. Run filesync check --repo=… to refresh statuses first if needed.
 
-Requires a project .filesync/ (walk-up from cwd).
+Arguments:
 
-Both file and repo info on one page: filesync info --help
+  <repo-name>    Name as stored in repos.json.
+
+See also: filesync info --help (file + repo on one page)
 EOF
   exit 0
 fi

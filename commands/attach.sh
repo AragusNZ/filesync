@@ -12,7 +12,12 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: da, da -f
 
-Re-couple detached paths: copy from the source, clear detached state, and run check for each file.
+Re-couple detached paths: for each path, copy from the source in the repo, clear the detached marker
+and status, and run filesync check on that file.
+
+Arguments:
+
+  <local_path> ...    One or more project paths that are currently tracked as detached.
 EOF
   exit 0
 fi

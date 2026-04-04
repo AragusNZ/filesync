@@ -12,7 +12,11 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: d -fir
 
-Detach every tracked file for that repo (same steps as detach file, per path).
+Same as detach file, but for every row in this project tied to the given repo.
+
+Arguments:
+
+  <repo_name>    Registered repo name.
 EOF
   exit 0
 fi

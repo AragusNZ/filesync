@@ -13,19 +13,33 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: retarget -m
 
-The first path is resolved like filesync info file when it still exists (the source file in a
-checkout). If git mv already removed it, you can pass the old repo-relative path instead; filesync
-then uses <new_repo_file_path> in the checkout to find the source file when it is unique.
+Run this after you move or rename a master file in the upstream repo (e.g. git mv). filesync updates
+every mapping that pointed at that master—across all projects that track it (same breadth as other
+global master operations).
 
-Updates the stored source path for every related row (same scope as info file / remove repo).
+Arguments:
 
-Without --move/--mv: rows get status master_file_moved; run filesync sync --move to move local copies.
-With --move/--mv: moves each local clone to the new path (fails if two rows in one project would
-collide at the destination).
+  <local_master|old_repo_path>
+    If the old master file still exists on disk, give its path (anywhere under a registered checkout);
+    resolution works like "filesync info file" on that path.
+    If git mv already removed the old file, give the old path relative to the repo instead. filesync
+    then finds the moved master using <new_repo_file_path> in your checkouts; if more than one
+    checkout could match, run this from inside the checkout you mean.
 
-<new_repo_file_path> must exist in the checkout as the source file after git mv.
+  <new_repo_file_path>
+    Where the master file lives in the repo after the move. That file must exist and carry a master
+    marker (kind=master).
 
-To change only one clone row in the current project:
+What happens next:
+
+  Default (no --move): rows are marked master_file_moved. In each consumer project, run
+    filesync sync --move
+  to relocate local copies.
+
+  --move / --mv: move each local tracked file to the new path in this command (fails if two rows in
+  one project would end up at the same destination).
+
+To retarget a single clone row in the current project only:
   filesync retarget clone …
 EOF
   exit 0

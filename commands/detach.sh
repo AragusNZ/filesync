@@ -12,7 +12,12 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: d, d -f
 
-Keep each mapping but pause syncing: mark the row detached and write the detached marker on disk.
+Pause syncing for these paths without removing them from files.json: each row becomes detached and
+the file gets a detached marker on disk.
+
+Arguments:
+
+  <local_path> ...    One or more tracked paths in this project.
 EOF
   exit 0
 fi

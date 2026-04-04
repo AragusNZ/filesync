@@ -12,15 +12,23 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: a -c
 
-The source file is in this project; for each target checkout, filesync creates the matching file there
-and adds a row in that project's files.json pointing back here. Fails if the destination path
+Use this when this project holds the master copy: filesync creates the matching file in each target
+checkout and adds a row in that project's files.json pointing back here. Fails if a destination path
 already exists.
 
-The first argument is a repo or collection name (same expansion rules as --also=). Extra targets from
---also= are merged (duplicates removed); this project's checkout is skipped.
+Arguments:
+
+  <target_repo_or_collection>
+    Repo or collection name (same expansion rules as --also=). Targets from --also= are merged in;
+    duplicates are removed and this project's own checkout is skipped.
+
+  <master_path>[:<local_path>] ...
+    Master path in this project; optional :local_path is where the clone is created under each target
+    project (default: same as master_path).
 
 Options:
-  --also=names         Comma-separated repo or collection names
+
+  --also=names    Comma-separated repo or collection names (extra targets)
 
 EOF
   exit 0

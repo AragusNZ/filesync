@@ -12,16 +12,23 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: a, a -f
 
-Track files that already live under a registered repo checkout. path_in_repo is relative to that
-repo's root. If you omit :local_path, the local path defaults to the same as path_in_repo.
+Track files that already exist under a registered checkout: each row ties a path in the repo to a
+path in this project.
 
-The repo argument must name exactly one registered repo (or a collection that contains only one
-repo). If a collection has several repos, name the source repo explicitly and list the collection
-with --also=names.
+Arguments:
+
+  <repo_name>
+    Must resolve to exactly one repo (or a single-repo collection). If the collection has several
+    repos, name the repo that holds the files and pass the collection with --also=.
+
+  <path_in_repo>[:<local_path>] ...
+    Path inside the repo root. If you omit :local_path, the project path defaults to the same as
+    path_in_repo.
 
 Options:
-  --mark-master        Treat this path as the source copy other projects sync from
-  --also=names         Comma-separated repo or collection names (also add rows in those projects)
+
+  --mark-master     Treat this path as the canonical master other projects sync from
+  --also=names      Comma-separated repo or collection names (mirror rows into those projects)
 
 EOF
   exit 0

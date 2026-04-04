@@ -12,10 +12,18 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: rm, rm -f
 
-Stop tracking the given paths: remove their rows from .filesync/files.json and clear clone/detached
-markers on disk. If a path is marked as the source master, that marker is kept.
+Remove mappings from this project's files.json and strip clone or detached markers from disk. If a
+path is the canonical master, the kind=master marker is left in place.
 
-  --all-missing        Also drop every mapping whose source file is missing (error_missing_master)
+Arguments:
+
+  [<local_path> ...]    Paths to stop tracking. With only --all-missing and no paths, every
+                        error_missing_master row is removed.
+
+Options:
+
+  --all-missing    Include all rows whose source file in the repo is missing (error_missing_master)
+
 EOF
   exit 0
 fi

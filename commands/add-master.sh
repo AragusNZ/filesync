@@ -12,15 +12,24 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: a -m
 
-The source file lives in another repo checkout: this command creates/updates it there, turns the
-paths in this project into linked copies, and records everything in this project's files.json (and
-optional --also= sibling projects). If you omit :path_in_repo, it defaults to the same path as local_path.
+Use this when the canonical source should live in another checkout: filesync writes or updates the
+master file there, turns the paths you name in this project into linked clones, and records rows in
+this project's files.json (and in any sibling projects you list with --also=).
 
-The repo argument must name exactly one registered repo (or a single-repo collection). For
-multi-repo collections, name the master repo and pass the collection with --also=names.
+Arguments:
+
+  <repo_name>
+    Must resolve to exactly one registered repo (or a collection that contains only one repo). If you
+    use a multi-repo collection, name the repo that will hold the master and pass the collection via
+    --also=.
+
+  <local_path>[:<path_in_repo>] ...
+    Paths in this project to track as clones. If you omit :path_in_repo, the master path in the repo
+    defaults to the same relative path as local_path.
 
 Options:
-  --also=names         Comma-separated repo or collection names
+
+  --also=names    Comma-separated repo or collection names (also add rows in those projects)
 
 EOF
   exit 0

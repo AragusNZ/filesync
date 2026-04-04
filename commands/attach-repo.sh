@@ -12,7 +12,12 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: da -fir
 
-Attach every tracked file for that repo (same steps as attach file, per path).
+Same as attach file, but for every row in this project that uses the given repo: re-copy from
+source, clear detached state, and check each path.
+
+Arguments:
+
+  <repo_name>    Registered repo name (must appear in global repos.json).
 EOF
   exit 0
 fi

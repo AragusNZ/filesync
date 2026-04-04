@@ -13,19 +13,26 @@ if filesync_argv_wants_help "$@"; then
   cat <<EOF
 ${FILESYNC_CMD_USAGE}
 
-Creates .filesync/ at the project root (default: current directory) so this folder can track synced files.
-Also creates the shared filesync data directory if needed (usually ~/.filesync-root; FILESYNC_HOME overrides for scripts).
+Prepare a directory as a filesync project: create .filesync/ (default: current directory) and ensure
+the shared data directory exists (usually ~/.filesync-root; FILESYNC_HOME overrides for automation).
 
-When your terminal is interactive and you omit --no-repo, init offers to register the first repo (name,
-URL, branch). Inside a git checkout, sensible defaults come from that repo; otherwise the project folder
-is used. The path you pass (or cwd) is always the project root—parent folders are not searched.
+Arguments:
 
-If .filesync/files.json already exists, init exits with an error.
+  [directory]    Project root; defaults to cwd. Parent directories are not searched—only this folder
+                 becomes the project.
 
-  --no-repo   Skip the repo wizard (for CI or non-interactive use).
+Options:
 
-Without a TTY, the repo wizard is skipped automatically; add a repo later with filesync new repo (n -r),
-run init from a terminal, or pass --no-repo to avoid the notice.
+  --no-repo    Skip the interactive first-repo wizard (CI / scripts).
+
+First repo wizard:
+  With a TTY and without --no-repo, init can register the first repo (name, URL, branch). Inside a
+  git checkout you get sensible defaults; otherwise the project directory anchors paths. Without a TTY
+  the wizard is skipped automatically—add a repo later with filesync new repo, run init from a
+  terminal, or use --no-repo.
+
+Note:
+  If .filesync/files.json already exists, init exits with an error.
 EOF
   exit 0
 fi

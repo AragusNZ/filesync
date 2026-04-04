@@ -13,13 +13,17 @@ if filesync_argv_wants_help "$@"; then
 	cat <<EOF
 ${FILESYNC_CMD_USAGE}
 
-Compare this install to the latest release on GitHub. If a newer version exists and this layout can
-be updated (git checkout or unpacked .deb), you are prompted to apply it (git pull + make install,
-or dpkg -i the release .deb).
+Compare this filesync install to the latest GitHub release. If a newer version exists and the install
+layout supports it (git clone or unpacked .deb), you get a prompt to upgrade (git pull + make install,
+or install the release .deb).
 
-  -y, --yes   Apply immediately when an update is available (no prompt).
+Options:
 
-Env: FILESYNC_INSTALL_PREFIX — override PREFIX for git+make install when autodetection is wrong.
+  -y, --yes    If an update exists, apply it without prompting.
+
+Environment:
+
+  FILESYNC_INSTALL_PREFIX    Override PREFIX when git+make install autodetection is wrong.
 EOF
 	exit 0
 fi

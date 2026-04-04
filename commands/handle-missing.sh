@@ -11,13 +11,23 @@ if filesync_argv_wants_help "$@"; then
   cat <<EOF
 ${FILESYNC_CMD_USAGE}
 
-Run inside a project (walk-up .filesync/). Picks the mapping by local_path.
+Fix a broken mapping when the local file or its source is missing. Run from a project directory
+(filesync discovers .filesync/ upward). The row is selected by local_path.
 
-  --unmap                     Stop tracking: remove the row and clear clone markers on disk if any.
-  --delete-local-and-unmap    Delete the local file, then stop tracking (same as --unmap for the row).
-  --recreate-from-master      Copy from the source file in the repo back into the local path (source must exist).
+Arguments:
 
-Choose exactly one action flag.
+  <local_path>    Tracked path in this project.
+
+Choose exactly one action:
+
+  --unmap
+    Stop tracking: remove the row and clear clone markers on disk when present.
+
+  --delete-local-and-unmap
+    Delete the local file, then stop tracking (row removal same as --unmap).
+
+  --recreate-from-master
+    Copy from the source file in the repo checkout into the local path (source must exist).
 EOF
   exit 0
 fi

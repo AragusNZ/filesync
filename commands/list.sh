@@ -23,8 +23,11 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_LIST_REPOS_USAGE}
 Also: l -r
 
-List repos from the shared store. With --repo=, show only that repo (errors if it is missing).
-No project .filesync/ needed.
+Print repos from the shared catalog. No project .filesync/ required.
+
+Options:
+
+  --repo=name    Show only that repo (error if the name is missing).
 EOF
       ;;
     files)
@@ -32,10 +35,16 @@ EOF
 ${FILESYNC_LIST_FILES_USAGE}
 Also: l, l -f
 
-List tracked files and their status. Requires a project (walk-up .filesync/ for files.json).
-Path filters work like sync/check: --file (local path), --repo-file (path in repo), --all-files (either);
-repeat a flag for OR within that kind; combine kinds with AND.
---status uses the same tokens as sync/check (filesync -h or man filesync).
+Print tracked files and cached status for the current project (walk-up .filesync/ for files.json).
+
+Filters (same as sync/check):
+
+  --repo=name              Only rows for this repo
+  --file=fragment          Substring on local path (repeat for OR)
+  --repo-file=fragment     Substring on path inside checkout
+  --all-files=fragment     Either path dimension
+  --status=a,b,...         Same tokens as sync/check (filesync -h or man filesync)
+  --include-detached       List detached rows too
 EOF
       ;;
     collections)
@@ -43,8 +52,8 @@ EOF
 ${FILESYNC_LIST_COLLECTIONS_USAGE}
 Also: l -col
 
-List named repo groups from the shared store (for use with --also= when adding files).
-No project .filesync/ needed.
+Print named repo groups from the shared store (use these names with --also= when adding files). No
+project .filesync/ required.
 EOF
       ;;
     *)
@@ -56,7 +65,13 @@ Usage:
 
 Shorthand: l -r | l | l -f | l -col
 
-Run filesync list repos -h, list files -h, or list collections -h for more detail.
+Subcommands:
+
+  list repos         Shared catalog; optional --repo= filter
+  list files         This project's files.json; filters like sync/check
+  list collections   Shared collection names
+
+Run filesync list <subcommand> -h for full option lists.
 EOF
       ;;
   esac

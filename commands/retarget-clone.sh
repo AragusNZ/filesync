@@ -13,14 +13,21 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: retarget -c
 
-Fix one tracked clone in this project after you moved or renamed the source file in git. The path must
-be a clone filesync already knows (same resolution as filesync info file). The new path is relative
-to the repo root and must exist in the checkout as the source file after git mv.
+After git mv on the master, update one clone row in this project only. The first path must be a
+tracked clone (same resolution as filesync info file). The second path is repo-relative and must
+exist in the checkout as the moved master (kind=master).
 
-Without --move/--mv: marks the row ready to sync; your local file stays where it is.
-With --move/--mv: moves the local file to match the new path and updates the stored local path.
+Arguments:
 
-To retarget every project that shares the same source file, use:
+  <local_clone>           Clone path in this project.
+  <new_repo_file_path>    New path to the master inside the repo.
+
+What happens next:
+
+  Default (no --move): row is marked so sync can refresh content; the local file is not moved yet.
+  --move / --mv: move the local file to the new path and update the stored local_path.
+
+For every project that shares the same master, use:
   filesync retarget master …
 EOF
   exit 0

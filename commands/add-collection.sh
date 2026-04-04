@@ -12,11 +12,16 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: n -col
 
-Create a named group of repos in collections.json for use with add file / add master / add clone --also=.
-The name must not match any existing repo name in repos.json.
+Create a named group of repos in collections.json so you can pass that name to --also= on add file,
+add master, or add clone.
+
+Arguments:
+
+  <name>    Must not match any existing repo name in repos.json.
 
 Options:
-  --repos=a,b   Optional starting members (each must already exist in repos.json)
+
+  --repos=a,b    Optional starting members (each name must already exist in repos.json)
 
 EOF
   exit 0

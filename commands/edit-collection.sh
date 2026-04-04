@@ -12,12 +12,17 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: e -col
 
-Pass at least one option.
+Rename a collection or change which repos belong to it. You must pass at least one flag below.
+
+Arguments:
+
+  <name>    Existing collection name.
 
 Options:
-  --rename=new_name     New name (must not clash with a repo or another collection)
-  --add-repo=name       Add a repo that already exists in repos.json
-  --remove-repo=name    Drop a repo from the group (no error if it was not listed)
+
+  --rename=new_name       New name (must not clash with a repo or another collection)
+  --add-repo=name         Add a repo that already exists in repos.json
+  --remove-repo=name      Remove a repo from the group (no error if it was not listed)
 
 EOF
   exit 0

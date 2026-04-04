@@ -15,17 +15,20 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: c
 
-Verify mappings against disk and repo checkouts; refresh row status in .filesync/files.json
-(including per-row last_check_at).
+Verify mappings: compare tracked files to the repo checkout and disk, then update each row's status
+(and last_check_at) in .filesync/files.json.
 
-Options:
-  --repo=name            Only files tied to this repo
-  --file=fragment        Match part of the local path (repeat for OR)
-  --repo-file=fragment   Match part of the path inside the repo checkout
-  --all-files=fragment   Match either local or repo path
-  --status=a,b,...       Only rows in these states (OR). Tokens: filesync -h or man filesync
+Filters (path rules match sync; repeat a flag for OR within that dimension; combine dimensions with AND):
 
-If every matching repo has checking turned off (check_sync_enabled false), prints a hint and exits without scanning.
+  --repo=name              Only rows for this repo
+  --file=fragment          Substring on local path
+  --repo-file=fragment     Substring on path inside the checkout
+  --all-files=fragment     Match either local or repo path
+  --status=a,b,...         Only these row states (OR). Tokens: filesync -h or man filesync
+
+Note:
+  If every matching repo has checking disabled (check_sync_enabled false), filesync prints a hint and
+  exits without scanning.
 EOF
   exit 0
 fi

@@ -12,11 +12,17 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: rm -r
 
-Remove a repo from the shared repos.json. Filesync looks for mappings the same way sync does: every
-registered checkout that has .filesync/files.json, plus the current project.
+Drop a repo from the global catalog. Before removal, filesync scans the same project set as sync:
+every registered checkout that contains .filesync/files.json, plus the current project.
 
-  -y, --yes    Skip the confirmation prompt (needed after --force when mappings were removed)
-  --force      Required if any tracked row still references this repo (drops those mappings first)
+Arguments:
+
+  <repo_name>    Repo name in repos.json.
+
+Options:
+
+  -y, --yes    Skip confirmation (often used after --force once mappings were stripped)
+  --force      Allow removal while rows still reference this repo (those mappings are removed first)
 
 EOF
   exit 0

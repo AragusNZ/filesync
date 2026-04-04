@@ -14,12 +14,22 @@ Usage:
   filesync config doctor
   filesync config set progress <hidden|bar|percent>
 
-show    Print where filesync stores data, resolved paths, and current preferences (summary line at the end).
-doctor  Sanity-check the shared repo catalog; from inside a project, also check tracked files, markers,
-        and mismatches. Output is grouped with a short summary of warnings and notes.
-set     Change preferences (for example progress display: hidden, bar, or percent).
+Inspect or change user-wide filesync settings (not per-repo flags).
 
-Per-repo options (whether to run check/mirror on sync): filesync edit repo … (see filesync edit repo -h).
+Commands:
+
+  show
+    Print where data lives, resolved paths, and current preferences (ends with a one-line summary).
+
+  doctor
+    Validate the shared repo catalog. From inside a project, also review tracked files, markers, and
+    common mismatches. Warnings and notes are grouped with a short recap.
+
+  set progress <hidden|bar|percent>
+    Change how progress is shown during long scans (for example sync/check).
+
+Related:
+  Per-repo behavior (check on sync, mirror-in, merge_using_git): filesync edit repo -h
 EOF
   exit 0
 fi
