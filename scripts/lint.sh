@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run ShellCheck on the same paths as .github/workflows/ci.yml; optionally tests and deb+lintian.
+# Run ShellCheck on the same paths as .github/workflows/ci.yml (options from .shellcheckrc); optionally tests and deb+lintian.
 # Usage: from repo root — bash scripts/lint.sh [--tests|-t] [--deb] [--all]
 #        VERSION=1.2.3  bash scripts/lint.sh --deb   (defaults to 0.0.0-ci for lintian)
 set -euo pipefail
@@ -12,7 +12,7 @@ run_shellcheck() {
 		echo "lint.sh: shellcheck not found (e.g. apt install shellcheck)" >&2
 		return 127
 	}
-	shellcheck -x --source-path=SCRIPTDIR \
+	shellcheck \
 		bin/filesync \
 		commands/*.sh \
 		lib/*.sh \

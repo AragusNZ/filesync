@@ -24,7 +24,6 @@ filesync_route_list() {
     *)
       echo -e "${RED}Unknown list target: $1 (use repos, files, collections, -r, -f, or -col)${NC}" >&2
       exec "$ROOT/commands/help.sh" >&2
-      exit 1
       ;;
   esac
 }

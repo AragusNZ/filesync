@@ -1,17 +1,23 @@
 #!/usr/bin/env bash
 # Standard init for filesync commands (after set -euo pipefail in caller).
 
+# Shared by filesync_command_init_* (colors, log, deps).
+_filesync_source_core_libs() {
+  local pkg_root="${1:?}"
+  # shellcheck source=/dev/null
+  source "$pkg_root/lib/colors.sh"
+  # shellcheck source=/dev/null
+  source "$pkg_root/lib/log.sh"
+  # shellcheck source=/dev/null
+  source "$pkg_root/lib/deps.sh"
+}
+
 filesync_command_init_lite() {
   local script_path="${1:?}"
   FILESYNC_PKG_ROOT="$(cd "$(dirname "$script_path")/.." && pwd)"
   export FILESYNC_PKG_ROOT
 
-  # shellcheck source=/dev/null
-  source "$FILESYNC_PKG_ROOT/lib/colors.sh"
-  # shellcheck source=/dev/null
-  source "$FILESYNC_PKG_ROOT/lib/log.sh"
-  # shellcheck source=/dev/null
-  source "$FILESYNC_PKG_ROOT/lib/deps.sh"
+  _filesync_source_core_libs "$FILESYNC_PKG_ROOT"
   # shellcheck source=/dev/null
   source "$FILESYNC_PKG_ROOT/lib/resolve.sh"
 
@@ -26,12 +32,7 @@ filesync_command_init_system() {
   FILESYNC_PKG_ROOT="$(cd "$(dirname "$script_path")/.." && pwd)"
   export FILESYNC_PKG_ROOT
 
-  # shellcheck source=/dev/null
-  source "$FILESYNC_PKG_ROOT/lib/colors.sh"
-  # shellcheck source=/dev/null
-  source "$FILESYNC_PKG_ROOT/lib/log.sh"
-  # shellcheck source=/dev/null
-  source "$FILESYNC_PKG_ROOT/lib/deps.sh"
+  _filesync_source_core_libs "$FILESYNC_PKG_ROOT"
   # shellcheck source=/dev/null
   source "$FILESYNC_PKG_ROOT/lib/system-resolve.sh"
   # shellcheck source=/dev/null
@@ -59,12 +60,7 @@ _filesync_command_init_project_full() {
   FILESYNC_PKG_ROOT="$(cd "$(dirname "$script_path")/.." && pwd)"
   export FILESYNC_PKG_ROOT
 
-  # shellcheck source=/dev/null
-  source "$FILESYNC_PKG_ROOT/lib/colors.sh"
-  # shellcheck source=/dev/null
-  source "$FILESYNC_PKG_ROOT/lib/log.sh"
-  # shellcheck source=/dev/null
-  source "$FILESYNC_PKG_ROOT/lib/deps.sh"
+  _filesync_source_core_libs "$FILESYNC_PKG_ROOT"
   # shellcheck source=/dev/null
   source "$FILESYNC_PKG_ROOT/lib/resolve.sh"
   # shellcheck source=/dev/null

@@ -1,0 +1,3 @@
+# Used by `scripts/lint.sh` and `.github/workflows/ci.yml` (run from repo root).
+external-sources=true
+source-path=SCRIPTDIR
