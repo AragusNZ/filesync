@@ -42,7 +42,7 @@ GitHub Releases publish a **source tarball** (`make install` from the extracted 
 
 ### Updating filesync
 
-- **`filesync update`** — compares your install to the [latest GitHub release](https://github.com/AragusNZ/filesync/releases/latest). If a newer version exists and the install can be upgraded automatically (git checkout of filesync, or a matching release **`.deb`**), prompts to apply it (**`git pull`** + **`make install`**, or **`dpkg -i`** the **`.deb`**; **`sudo`** is used when on `PATH`). Use **`-y`** or **`--yes`** to skip the prompt. If you are already up to date, it says so; if an update exists but cannot be applied from this layout, it points you to the release page.
+- **`filesync update`** — compares your install to the [latest GitHub release](https://github.com/AragusNZ/tool-filesync/releases/latest). If a newer version exists and the install can be upgraded automatically (git checkout of filesync, or a matching release **`.deb`**), prompts to apply it (**`git pull`** + **`make install`**, or **`dpkg -i`** the **`.deb`**; **`sudo`** is used when on `PATH`). Use **`-y`** or **`--yes`** to skip the prompt. If you are already up to date, it says so; if an update exists but cannot be applied from this layout, it points you to the release page.
 
 ## Usage
 

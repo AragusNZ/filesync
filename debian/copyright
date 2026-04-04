@@ -1,7 +1,7 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: filesync
 Upstream-Contact: AragusNZ <AragusNZ@users.noreply.github.com>
-Source: https://github.com/AragusNZ/filesync
+Source: https://github.com/AragusNZ/tool-filesync
 
 Files: *
 Copyright: 2026 AragusNZ <AragusNZ@users.noreply.github.com>

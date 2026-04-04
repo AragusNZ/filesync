@@ -48,7 +48,7 @@ Section: utils
 Priority: optional
 Architecture: all
 Maintainer: AragusNZ <AragusNZ@users.noreply.github.com>
-Homepage: https://github.com/AragusNZ/filesync
+Homepage: https://github.com/AragusNZ/tool-filesync
 Depends: jq, git
 Description: map and sync files across git checkouts
  This package provides a Bash CLI that maps and synchronizes files across

@@ -36,7 +36,7 @@ source "${FILESYNC_PKG_ROOT}/lib/deps.sh"
 
 filesync_require_jq
 
-REPO_SLUG="AragusNZ/filesync"
+REPO_SLUG="AragusNZ/tool-filesync"
 YES=false
 
 while [[ $# -gt 0 ]]; do
