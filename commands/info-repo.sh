@@ -51,37 +51,42 @@ fi
 rroot="$(jq -r '.repo_path_root' "$CONFIG_FILE")"
 path_raw="$(jq -r --arg n "$REPO_NAME" 'first(.repos[] | select(.name == $n)) | .path // ""' "$CONFIG_FILE")"
 
-filesync_print_section_title "info repo: $REPO_NAME"
-filesync_print_filter_note "Project: $PROJECT_ROOT"
+filesync_print_info_heading "Repo: $REPO_NAME"
+filesync_print_info_kv "Project root" "$PROJECT_ROOT"
 
-filesync_print_section_title "Repository (global catalog)"
+filesync_print_info_heading "Catalog (repos.json)"
 jq -r --arg n "$REPO_NAME" '.repos[] | select(.name == $n) |
-  "name:               \(.name)
-id:                 \(.id // "")
-path (repos.json):  \(.path // "")
-url:                \(.url // "null")
-branch:             \(.branch // "null")
-merge_using_git:    \(.merge_using_git)
-check_sync_enabled: \(if (.check_sync_enabled | type) == "boolean" then (.check_sync_enabled | tostring) else "true (default when omitted)" end)
-mirror_in_enabled:  \(if (.mirror_in_enabled | type) == "boolean" then (.mirror_in_enabled | tostring) else "true (default when omitted)" end)"' "$CONFIG_FILE" >&2
+  [
+    ["Name", .name],
+    ["ID", (.id // "")],
+    ["Path", (.path // "")],
+    ["URL", (if .url == null or .url == "" then "—" else (.url | tostring) end)],
+    ["Branch", (if .branch == null or .branch == "" then "—" else (.branch | tostring) end)],
+    ["merge_using_git", (.merge_using_git | tostring)],
+    ["check_sync_enabled", (if (.check_sync_enabled | type) == "boolean" then (.check_sync_enabled | tostring) else "true (default when omitted)" end)],
+    ["mirror_in_enabled", (if (.mirror_in_enabled | type) == "boolean" then (.mirror_in_enabled | tostring) else "true (default when omitted)" end)]
+  ] | .[] | @tsv' "$CONFIG_FILE" | while IFS=$'\t' read -r _ik _iv; do
+  [[ -z "${_ik:-}" ]] && continue
+  filesync_print_info_kv "$_ik" "$_iv"
+done
 
-filesync_print_section_title "Checkout on disk"
-echo "Repo path anchor: ${rroot}" >&2
+filesync_print_info_heading "Checkout"
+filesync_print_info_kv "Repo path anchor" "$rroot"
 resolved=""
 if [[ -z "$path_raw" || "$path_raw" == "null" ]]; then
-  echo -e "${YELLOW}Warning: repo has no path in repos.json (cannot verify checkout).${NC}" >&2
+  echo -e "  ${YELLOW}Warning: repo has no path in repos.json (cannot verify checkout).${NC}" >&2
 else
+  filesync_print_info_kv "Configured path" "$path_raw"
   resolved="$(filesync_resolve_repo_checkout_dir "$rroot" "$path_raw" 2>/dev/null)" || true
   if [[ -n "$resolved" ]] && [[ -d "$resolved" ]]; then
-    echo "Resolved checkout: ${resolved}" >&2
-    echo -e "${GREEN}Checkout directory exists.${NC}" >&2
+    filesync_print_info_kv "Resolved checkout" "$resolved"
+    echo -e "  ${GREEN}Checkout directory exists.${NC}" >&2
   else
-    echo -e "${YELLOW}Warning: checkout path missing or not a directory (same check as filesync config doctor).${NC}" >&2
-    echo "  Configured path: ${path_raw}" >&2
+    echo -e "  ${YELLOW}Warning: checkout path missing or not a directory (same check as filesync config doctor).${NC}" >&2
   fi
 fi
 
-filesync_print_section_title "Mappings in this project"
+filesync_print_info_heading "Mappings (this project)"
 # shellcheck disable=SC2034
 declare -A INFO_REPO_STATUS_COUNTS=()
 count=0
@@ -91,10 +96,10 @@ while IFS=$'\t' read -r lp st || [[ -n "${lp:-}" ]]; do
   filesync_counts_inc INFO_REPO_STATUS_COUNTS "${st:-unset}"
 done < <(jq -r --arg n "$REPO_NAME" '.files[] | select(.repo_name == $n) | "\(.local_path)\t\(.sync_status // "")"' "$CONFIG_FILE")
 
-echo "File rows linked to this repo: ${count}" >&2
+echo "  File rows linked to this repo: ${count}" >&2
 if [[ "$count" -gt 0 ]]; then
   filesync_print_status_summary "file rows" "$count" INFO_REPO_STATUS_COUNTS
-  filesync_print_filter_note "Run: filesync check --repo=${REPO_NAME} (to refresh status in files.json)"
+  echo -e "  ${GRAY}Tip: filesync check --repo=${REPO_NAME} refreshes status in files.json${NC}" >&2
 else
-  echo "(no files.json rows for this repo in this project)" >&2
+  echo -e "  ${GRAY}(no files.json rows for this repo in this project)${NC}" >&2
 fi

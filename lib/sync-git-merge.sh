@@ -118,6 +118,41 @@ filesync_sync_git_record_pending() {
   FILESYNC_SYNC_GIT_PENDING_RID+=("$3")
 }
 
+# Echo path of FILESYNC_FILES_FILE relative to proot (pwd -P), or return 1 if not under proot.
+filesync_sync_git_repo_rel_files_json() {
+  local proot="${1:?}"
+  local fj="${FILESYNC_FILES_FILE:?}"
+  local pa pb rel
+  pa="$(cd "$proot" && pwd -P)" || return 1
+  pb="$(cd "$(dirname "$fj")" && pwd -P)/$(basename "$fj")"
+  if command -v realpath >/dev/null 2>&1; then
+    rel="$(realpath --relative-to="$pa" "$pb" 2>/dev/null)" || return 1
+  else
+    [[ "$pb" == "$pa"/* ]] || return 1
+    rel="${pb#"${pa}/"}"
+  fi
+  [[ -n "$rel" && "$rel" != ../* ]] || return 1
+  printf '%s\n' "$rel"
+}
+
+# True if proot has no porcelain changes, or embedded check ran and only files.json differs from HEAD / is untracked.
+filesync_sync_git_worktree_ok_for_merge_batch() {
+  local proot="${1:?}"
+  [[ -z "$(git -C "$proot" status --porcelain)" ]] && return 0
+  [[ "${FILESYNC_SYNC_EMBEDDED_CHECK:-}" == 1 ]] || return 1
+  local allowed p
+  allowed="$(filesync_sync_git_repo_rel_files_json "$proot")" || return 1
+  while IFS= read -r p; do
+    [[ -z "$p" ]] && continue
+    [[ "$p" == "$allowed" ]] || return 1
+  done < <(
+    git -C "$proot" diff --name-only HEAD
+    git -C "$proot" diff --cached --name-only HEAD
+    git -C "$proot" ls-files --others --exclude-standard
+  )
+  return 0
+}
+
 # Start a git batch for repo (checkout new branch). Exits process if working tree not clean.
 filesync_sync_git_start_batch() {
   local proot="${1:?}"
@@ -130,7 +165,7 @@ filesync_sync_git_start_batch() {
     echo "filesync: internal error: git batch repo mismatch" >&2
     return 1
   fi
-  if [[ -n "$(git -C "$proot" status --porcelain)" ]]; then
+  if ! filesync_sync_git_worktree_ok_for_merge_batch "$proot"; then
     echo "filesync: sync with merge_using_git requires a clean git working tree at ${proot}" >&2
     exit 1
   fi

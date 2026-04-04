@@ -53,6 +53,27 @@ filesync_print_section_title() {
   echo -e "${BOLD}${WHITE}$1...${NC}" >&2
 }
 
+# Section heading for info commands (stderr): blank line, title, gray rule.
+filesync_print_info_heading() {
+  local title="$1"
+  local ulen="${#title}"
+  echo "" >&2
+  echo -e "  ${BOLD}${WHITE}${title}${NC}" >&2
+  if [[ "$ulen" -gt 0 ]]; then
+    printf '  %b' "${GRAY}" >&2
+    local i
+    for ((i = 0; i < ulen; i++)); do
+      printf '─'
+    done
+    printf '%b\n' "${NC}" >&2
+  fi
+}
+
+# One "label: value" line for info output (stderr).
+filesync_print_info_kv() {
+  printf '  %b%s:%b %s\n' "${GRAY}" "$1" "${NC}" "$2" >&2
+}
+
 filesync_print_list_files_heading() {
   echo -e "${BOLD}${WHITE}Listing files (run FILESYNC check to refresh status)...${NC}" >&2
 }

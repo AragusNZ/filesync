@@ -130,3 +130,33 @@ mkdir -p "${proj3}"
 	! git log --oneline --grep='filesync: sync' -1 | grep -q . || die "should not create filesync sync commit when merge_using_git false"
 	grep -q 'MASTER_V2C' tools/x.txt || die "content should match master (direct)"
 )
+
+# D: merge_using_git true + sync -c after master bump without committing files.json first (embedded check dirties only files.json).
+proj4="${TMP}/smug-proj4"
+rm -rf "${proj4}"
+mkdir -p "${proj4}"
+(
+	cd "${proj4}"
+	filesync init --no-repo
+	git init -b main
+	git config user.email ci@test
+	git config user.name ci
+	git add .filesync
+	git commit -q -m base
+	jq -n \
+		--arg url "file://${master}" \
+		'[{"name":"origin","path":"../smug-master","url":$url,"branch":"main","merge_using_git":true}]' >"${TMP}/seed-35d.json"
+	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-35d.json"
+	filesync add origin tools/x.txt
+	git add -A
+	git commit -q -m "track filesync files" || die "commit after add (D)"
+	{
+		echo "MASTER_V2D"
+		echo "# filesync kind=master"
+	} >"${master}/tools/x.txt"
+	git -C "${master}" add tools/x.txt
+	git -C "${master}" commit -q -m v2d
+	filesync sync -c >/dev/null || die "sync -c with merge_using_git true should succeed (D)"
+	[[ $(git branch 2>/dev/null | grep -c 'filesync/sync' || true) -eq 0 ]] || die "temp sync branch should be removed (D)"
+	grep -q 'MASTER_V2D' tools/x.txt || die "content should match bumped master (D)"
+)

@@ -112,24 +112,38 @@ fi
 
 # --- Print report ---
 echo "" >&2
-filesync_print_section_title "filesync info file"
+filesync_print_info_heading "Summary"
 if [[ "$FILESYNC_REL_MODE" == "clone" ]]; then
-  echo -e "${WHITE}Role:${NC} clone" >&2
+  filesync_print_info_kv "Role" "clone"
 else
-  echo -e "${WHITE}Role:${NC} master" >&2
+  filesync_print_info_kv "Role" "master"
 fi
-echo -e "${WHITE}Queried path:${NC} $FILESYNC_REL_ABS_TARGET" >&2
-echo -e "${WHITE}Master:${NC} repo=$FILESYNC_REL_RNAME repo_file_path=$FILESYNC_REL_RFP repo_id=${FILESYNC_REL_RID:-}" >&2
+filesync_print_info_kv "Queried path" "$FILESYNC_REL_ABS_TARGET"
+filesync_print_info_kv "Repo" "$FILESYNC_REL_RNAME"
+filesync_print_info_kv "Repo file path" "$FILESYNC_REL_RFP"
+_rid="${FILESYNC_REL_RID:-}"
+[[ -z "$_rid" ]] && _rid="—"
+filesync_print_info_kv "Repo id" "$_rid"
 if [[ "$FILESYNC_REL_MODE" == "master-at-checkout" ]]; then
-  echo -e "${GRAY}Clones below: each tracked row (same repo + repo_file_path) across union projects — usually one source repo, many consumer paths.${NC}" >&2
+  echo -e "  ${GRAY}Clones below: each line is a tracked row (same repo + repo_file_path) across projects.${NC}" >&2
 fi
 if [[ "$FILESYNC_REL_MODE" == "clone" ]]; then
-  echo -e "${GRAY}Current project row (local_path=$FILESYNC_REL_MATCH_LP):${NC}" >&2
-  jq --arg lp "$FILESYNC_REL_MATCH_LP" '.[] | select(.local_path == $lp)' "$FILESYNC_FILES_FILE" >&2
+  echo "" >&2
+  echo -e "  ${GRAY}Current project row (local_path=$FILESYNC_REL_MATCH_LP):${NC}" >&2
+  _row_json="$(jq -c --arg lp "$FILESYNC_REL_MATCH_LP" '.[] | select(.local_path == $lp)' "$FILESYNC_FILES_FILE" | head -1)"
+  if [[ -n "$_row_json" ]]; then
+    echo "$_row_json" | jq . | sed 's/^/  /' >&2
+  fi
 fi
 echo "" >&2
-filesync_print_filter_note "Related mappings ($CLONE_COUNT row(s))"
+filesync_print_info_heading "Related mappings ($CLONE_COUNT)"
+_rel_first=true
 for entry in "${FILESYNC_RELATED_LINES[@]}"; do
+  if [[ "$_rel_first" == true ]]; then
+    _rel_first=false
+  else
+    echo "" >&2
+  fi
   proot="${entry%%	*}"
   jrow="${entry#*	}"
   lp="$(printf '%s' "$jrow" | jq -r '.local_path // ""')"
@@ -139,8 +153,9 @@ for entry in "${FILESYNC_RELATED_LINES[@]}"; do
   if [[ "$(filesync_canonical_existing "$proot/$lp" 2>/dev/null)" == "$FILESYNC_REL_ABS_TARGET" ]]; then
     mark=" (queried)"
   fi
+  printf '  ' >&2
   file_sync_print_file_row "$FILESYNC_REL_RNAME" "$FILESYNC_REL_RFP" "$lp" "$st" "$mw" >&2
-  echo -e "  ${GRAY}project:${NC} $proot$mark" >&2
+  echo -e "    ${GRAY}project:${NC} $proot$mark" >&2
 done
 
 if [[ "$FILESYNC_REL_MODE" == "master-at-checkout" ]] && [[ -f "${MASTER_ABS:-}" ]] && ! has_master_file_sync_marker "$MASTER_ABS" 2>/dev/null; then

@@ -33,7 +33,8 @@ unless --include-detached.
 
 Per-repo merge_using_git (global repos.json): when true and this project is a git work tree with a
 clean index and working tree, content updates use a short-lived branch and git merge (see
-filesync(1) and docs/configuration.md). Otherwise sync writes files directly.
+filesync(1) and docs/configuration.md). With -c/--check only, changes limited to this project's
+files.json after the embedded check are allowed. Otherwise sync writes files directly.
 EOF
   exit 0
 fi
@@ -114,6 +115,7 @@ if [[ "$RUN_CHECK" == true ]]; then
     exit 1
   fi
   filesync_assemble_state_to "$FILESYNC_STATE_FILE" || filesync_die "could not reload project configuration after --check"
+  export FILESYNC_SYNC_EMBEDDED_CHECK=1
 fi
 
 sync_entry_allowed() {
@@ -144,6 +146,7 @@ declare -a FILESYNC_CLONED_TEMP_DIRS
 SYNC_ROWS_TSV=""
 
 cleanup_sync_exit() {
+  unset FILESYNC_SYNC_EMBEDDED_CHECK || true
   # shellcheck disable=SC2317
   filesync_sync_git_emergency_cleanup "${PROJECT_ROOT:-}" || true
   # shellcheck disable=SC2317
