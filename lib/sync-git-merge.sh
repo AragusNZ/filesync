@@ -135,6 +135,36 @@ filesync_sync_git_repo_rel_files_json() {
   printf '%s\n' "$rel"
 }
 
+# After metadata writes, stage this project's files.json and commit (amend merge commit when HEAD is a merge).
+# Args: project_root repo_name
+filesync_sync_git_commit_files_json_after_sync() {
+  local proot="${1:?}"
+  local repo_name="${2:?}"
+  local rel parent_count
+
+  git -C "$proot" rev-parse --is-inside-work-tree &>/dev/null || return 0
+  rel="$(filesync_sync_git_repo_rel_files_json "$proot")" || return 0
+  [[ -f "$proot/$rel" ]] || return 0
+
+  git -C "$proot" add -- "$rel"
+  if git -C "$proot" diff --cached --quiet HEAD; then
+    return 0
+  fi
+
+  parent_count=$(git -C "$proot" rev-parse HEAD^@ 2>/dev/null | wc -l)
+  parent_count=${parent_count//[[:space:]]/}
+  if [[ "${parent_count:-0}" -ge 2 ]]; then
+    if ! git -C "$proot" commit -q --amend --no-edit; then
+      echo "filesync: warning: could not amend merge commit to include files.json (commit manually)" >&2
+    fi
+  else
+    if ! git -C "$proot" commit -q -m "filesync: update files.json after sync from ${repo_name}"; then
+      echo "filesync: warning: could not commit files.json (${repo_name}); commit manually" >&2
+    fi
+  fi
+  return 0
+}
+
 # True if proot has no porcelain changes, or the only paths differing from HEAD are this project's files.json (tracked/staged/untracked).
 filesync_sync_git_worktree_ok_for_merge_batch() {
   local proot="${1:?}"
@@ -192,6 +222,7 @@ filesync_sync_git_finalize_merge_batch() {
     FILESYNC_SYNC_GIT_ORIG=""
     FILESYNC_SYNC_GIT_ACTIVE_REPO=""
     filesync_sync_git_flush_deferred_meta "$proot" "$files_json"
+    filesync_sync_git_commit_files_json_after_sync "$proot" "$repo_name"
     return 0
   fi
 
@@ -259,6 +290,7 @@ filesync_sync_git_finalize_merge_batch() {
       FILESYNC_SYNC_GIT_PENDING_FM=()
       FILESYNC_SYNC_GIT_PENDING_RID=()
       filesync_sync_git_flush_deferred_meta "$proot" "$files_json"
+      filesync_sync_git_commit_files_json_after_sync "$proot" "$repo_name"
       return 0
     fi
 

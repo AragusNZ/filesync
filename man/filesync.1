@@ -501,7 +501,9 @@ is true and the project directory is a git work tree, there must be no changes e
 .BR .filesync/files.json ) ;
 any other dirty path blocks this path.
 .B sync
-records content updates on a short-lived branch and merges into the previous branch (up to three merge attempts may exclude paths that conflict).
+records content updates on a short-lived branch and merges into the previous branch (up to three merge attempts may exclude paths that conflict), then records refreshed
+.I files.json
+in git (amending the merge commit when applicable) so the work tree is clean after a successful batch.
 Per-file lines start with a result symbol, use the same
 .IR repo " | " repo_file_path
 layout as

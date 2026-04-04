@@ -51,6 +51,7 @@ mkdir -p "${proj}"
 	git add .filesync
 	git commit -q -m "refresh status" || die "commit after check"
 	filesync sync >/dev/null || die "sync with merge_using_git true should succeed"
+	[[ -z "$(git status --porcelain 2>/dev/null)" ]] || die "expected clean tree after sync (A)"
 	[[ $(git branch 2>/dev/null | grep -c 'filesync/sync' || true) -eq 0 ]] || die "temp sync branch should be removed"
 	_gitlog="$(git log --oneline -8 2>/dev/null)"
 	[[ "${_gitlog}" == *Merge* || "${_gitlog}" == *filesync:* ]] || die "expected merge or filesync commit in log, got: ${_gitlog}"
@@ -157,6 +158,7 @@ mkdir -p "${proj4}"
 	git -C "${master}" add tools/x.txt
 	git -C "${master}" commit -q -m v2d
 	filesync sync -c >/dev/null || die "sync -c with merge_using_git true should succeed (D)"
+	[[ -z "$(git status --porcelain 2>/dev/null)" ]] || die "expected clean tree after sync (D)"
 	[[ $(git branch 2>/dev/null | grep -c 'filesync/sync' || true) -eq 0 ]] || die "temp sync branch should be removed (D)"
 	grep -q 'MASTER_V2D' tools/x.txt || die "content should match bumped master (D)"
 )
@@ -188,6 +190,7 @@ mkdir -p "${proj5}"
 	git -C "${master}" commit -q -m v2e
 	filesync check >/dev/null || die "check (E)"
 	filesync sync >/dev/null || die "sync without -c with only files.json dirty should succeed (E)"
+	[[ -z "$(git status --porcelain 2>/dev/null)" ]] || die "expected clean tree after sync (E)"
 	[[ $(git branch 2>/dev/null | grep -c 'filesync/sync' || true) -eq 0 ]] || die "temp sync branch should be removed (E)"
 	grep -q 'MASTER_V2E' tools/x.txt || die "content should match bumped master (E)"
 )
