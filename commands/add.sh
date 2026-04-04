@@ -15,6 +15,10 @@ Also: a, a -f
 Track files from a repo checkout: path_in_repo is relative to the repo root. If local_path
 is omitted (no :suffix), it defaults to the same path as path_in_repo.
 
+The first argument must resolve to exactly one global repo name (plain repo name, or a
+collection that contains a single repo). If a collection lists multiple repos, specify the
+source repo explicitly and pass the collection with --also=names.
+
 Options:
   --mark-master        Set kind=master on the local file (promote as master source)
   --also=names         Comma-separated repo names and/or collection names (see global collections)
@@ -56,7 +60,20 @@ if [[ ${#POSITIONAL_RAW[@]} -lt 2 ]]; then
   exit 1
 fi
 
-REPO_NAME="${POSITIONAL_RAW[0]}"
+REPO_NAME_RAW="${POSITIONAL_RAW[0]}"
+declare -a _add_file_repo_resolved=()
+if ! filesync_also_expand_to_array "$REPO_NAME_RAW" "$FILESYNC_REPOS_FILE" "$FILESYNC_COLLECTIONS_FILE" _add_file_repo_resolved; then
+  exit 1
+fi
+if [[ ${#_add_file_repo_resolved[@]} -eq 0 ]]; then
+  echo -e "${RED}Error: No repo resolved for '${REPO_NAME_RAW}'.${NC}" >&2
+  exit 1
+fi
+if [[ ${#_add_file_repo_resolved[@]} -gt 1 ]]; then
+  echo -e "${RED}Error: '${REPO_NAME_RAW}' expands to multiple repos; specify a single source repo name, or use --also= with a collection to mirror mappings into sibling projects.${NC}" >&2
+  exit 1
+fi
+REPO_NAME="${_add_file_repo_resolved[0]}"
 declare -a POSITIONAL=("${POSITIONAL_RAW[@]:1}")
 declare -a REPO_FILE_PATHS=()
 declare -a LOCAL_PATHS=()

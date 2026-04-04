@@ -94,6 +94,13 @@ filesync_collections_prune_repo() {
   fi
 }
 
+# Expand comma-separated tokens into repo names (stdout, one per line, order-preserving unique).
+# Same rules as --also=: each token is a global repo name or a collection name (expanded to .repos).
+# Args: raw_csv repos_json_path collections_json_path
+filesync_resolve_repo_tokens_to_repos() {
+  filesync_also_expand_repos "$@"
+}
+
 # Expand --also CSV into repo names (stdout, one per line, order-preserving unique).
 # Args: raw_csv repos_json_path collections_json_path
 filesync_also_expand_repos() {
@@ -138,7 +145,7 @@ filesync_also_expand_repos() {
       elif ($c.repos | length) == 0 then error("collection \($t) has no repos (cannot use with --also)")
       else $c.repos[] end
     elif is_repo($t) then $t
-    else error("unknown --also name \($t): not a repo in repos.json or a collection in collections.json")
+    else error("unknown name \($t): not a repo in repos.json or a collection in collections.json")
     end
     end
     '); then

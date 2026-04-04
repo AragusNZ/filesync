@@ -124,3 +124,44 @@ filesync_test_append_global_repos "${TMP}/seed-22d.json"
 	jq -e '.[] | select(.local_path=="tools/z.txt")' "${pb}/.filesync/files.json" >/dev/null || die "pb row"
 	jq -e '.[] | select(.local_path=="tools/z.txt")' "${pc}/.filesync/files.json" >/dev/null || die "pc row"
 )
+
+# Primary target may be a collection name (expanded like --also=)
+master4="${TMP}/ac-master4" pd="${TMP}/ac-pd" pe="${TMP}/ac-pe"
+rm -rf "${master4}" "${pd}" "${pe}"
+mkdir -p "${master4}/tools" "${pd}" "${pe}"
+
+(
+	cd "${master4}"
+	filesync init
+	{
+		echo "COLL_PRIMARY"
+		echo "# filesync kind=master"
+	} >tools/coll.txt
+)
+jq -n \
+	--arg d "${pd}" \
+	--arg e "${pe}" \
+	'[
+		{"name":"pd","path":$d,"url":null,"branch":null},
+		{"name":"pe","path":$e,"url":null,"branch":null}
+	]' >"${TMP}/seed-22e.json"
+filesync_test_seed_global_repos "${master4}" "${TMP}/seed-22e.json"
+for d in "${pd}" "${pe}"; do
+	(
+		cd "${d}"
+		filesync init
+	)
+done
+jq -n \
+	--arg m "${master4}" \
+	'[{"name":"m4","path":$m,"url":null,"branch":null}]' >"${TMP}/seed-22f.json"
+filesync_test_append_global_repos "${TMP}/seed-22f.json"
+printf '%s\n' '[{"name":"grp2","repos":["pd","pe"]}]' | jq . >"${FILESYNC_HOME}/collections.json"
+
+(
+	cd "${master4}"
+	filesync add clone grp2 tools/coll.txt
+	[[ -f "${pd}/tools/coll.txt" && -f "${pe}/tools/coll.txt" ]] || die "collection as primary should write both targets"
+	jq -e '.[] | select(.local_path=="tools/coll.txt")' "${pd}/.filesync/files.json" >/dev/null || die "pd row"
+	jq -e '.[] | select(.local_path=="tools/coll.txt")' "${pe}/.filesync/files.json" >/dev/null || die "pe row"
+)

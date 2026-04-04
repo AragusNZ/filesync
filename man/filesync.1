@@ -582,7 +582,18 @@ List named repo collections from the global
 These names can be used in
 .B \-\-also=
 with
-.BR "add " file ", " "add " master ", and " "add " clone .
+.BR "add " file ", " "add " master ", and " "add " clone ,
+and as the primary
+.I target_repo
+for
+.BR "add " clone
+(subject to expansion rules in that section).
+For
+.BR "add " file
+and
+.BR "add " master ","
+only single-member collections are accepted in the primary repo slot (same resolution rules as
+.BR \-\-also= ).
 Accepts no options.
 .SS "Mappings and repos"
 .TP
@@ -592,6 +603,14 @@ Also
 .I repo_name path_in_repo \fR[\fI:local_path\fR] \fR...
 .RI [ \-\-mark\-master ]
 .RI [ \-\-also= names ]
+The first argument
+.I repo_name
+must resolve to exactly one global repo: a name in
+.B repos.json
+or a collection in
+.B collections.json
+that lists exactly one repo (multi-member collections are rejected; specify the source repo explicitly and use
+.BR \-\-also= ).
 Track files from a repo checkout into the project. Each path token is relative to the repo; append
 .IB : local_path
 when the project-relative path differs.
@@ -627,6 +646,10 @@ Also
 .BR "a " \-m .
 .I target_repo local_path \fR[\fI:path_in_repo\fR] \fR...
 .RI [ \-\-also= names ]
+The first argument
+.I target_repo
+must resolve to exactly one global repo (repo name or a single-member collection); multi-member collections are rejected (use an explicit master repo and
+.BR \-\-also= ).
 Promote local files into the master repo and add mappings. Omit
 .IB : path_in_repo
 when the master path matches
@@ -646,6 +669,16 @@ Also
 .BR "a " \-c .
 .I target_repo master_path \fR[\fI:local_path\fR] \fR...
 .RI [ \-\-also= names ]
+The first argument
+.I target_repo
+is a repo name or a collection name (expanded like
+.BR \-\-also= );
+multiple targets from the primary argument and
+.B \-\-also=
+are merged (deduplicated), then the same skip and
+.B mirror_in_enabled
+rules apply as for
+.BR "add " file .
 Add a
 .B kind=clone
 copy and

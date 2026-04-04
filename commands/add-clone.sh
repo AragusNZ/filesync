@@ -6,7 +6,7 @@ set -euo pipefail
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/cli-help.sh"
-FILESYNC_CMD_USAGE='Usage: filesync add clone <target_repo> <master_path>[:<local_path>] ... [--also=names]'
+FILESYNC_CMD_USAGE='Usage: filesync add clone <target_repo_or_collection> <master_path>[:<local_path>] ... [--also=names]'
 if filesync_argv_wants_help "$@"; then
   cat <<EOF
 ${FILESYNC_CMD_USAGE}
@@ -14,6 +14,9 @@ Also: a -c
 
 Clone mappings from a kind=master file in this project into a sibling repo: creates the
 target-side file and row. Fails if the target local file already exists.
+
+The first argument is a repo name or a collection name (expanded like --also=). Multiple
+targets are merged with --also= (deduplicated); the current project checkout is skipped.
 
 Options:
   --also=names         Comma-separated repo names and/or collection names
@@ -54,7 +57,7 @@ if [[ ${#POSITIONAL_RAW[@]} -lt 2 ]]; then
   exit 1
 fi
 
-PRIMARY_TARGET_REPO="${POSITIONAL_RAW[0]}"
+PRIMARY_TARGET_RAW="${POSITIONAL_RAW[0]}"
 declare -a POSITIONAL=("${POSITIONAL_RAW[@]:1}")
 declare -a MASTER_PATHS=()
 declare -a TARGET_LOCAL_PATHS=()
@@ -79,19 +82,37 @@ for i in "${!TARGET_LOCAL_PATHS[@]}"; do
   SEEN_TARGET_LOCAL["$lp"]=1
 done
 
+declare -a PRIMARY_EXPANDED=()
+if ! filesync_also_expand_to_array "$PRIMARY_TARGET_RAW" "$FILESYNC_REPOS_FILE" "$FILESYNC_COLLECTIONS_FILE" PRIMARY_EXPANDED; then
+  exit 1
+fi
+
 declare -a ALSO_REPOS=()
 if ! filesync_also_expand_to_array "$TARGET_REPOS_RAW" "$FILESYNC_REPOS_FILE" "$FILESYNC_COLLECTIONS_FILE" ALSO_REPOS; then
   exit 1
 fi
-if ! filesync_also_targets_finalize ALSO_REPOS "$PROJECT_ROOT" "$REPO_PATH_ROOT" "$FILESYNC_REPOS_FILE"; then
+
+declare -a ALL_TARGET_REPOS=()
+declare -A SEEN_ALL_TARGETS=()
+for r in "${PRIMARY_EXPANDED[@]}"; do
+  [[ -n "${SEEN_ALL_TARGETS[$r]:-}" ]] && continue
+  SEEN_ALL_TARGETS[$r]=1
+  ALL_TARGET_REPOS+=("$r")
+done
+for r in "${ALSO_REPOS[@]}"; do
+  [[ -n "${SEEN_ALL_TARGETS[$r]:-}" ]] && continue
+  SEEN_ALL_TARGETS[$r]=1
+  ALL_TARGET_REPOS+=("$r")
+done
+
+if ! filesync_also_targets_finalize ALL_TARGET_REPOS "$PROJECT_ROOT" "$REPO_PATH_ROOT" "$FILESYNC_REPOS_FILE"; then
   exit 1
 fi
 
-declare -a ALL_TARGET_REPOS=("$PRIMARY_TARGET_REPO")
-for r in "${ALSO_REPOS[@]}"; do
-  [[ "$r" == "$PRIMARY_TARGET_REPO" ]] && continue
-  ALL_TARGET_REPOS+=("$r")
-done
+if [[ ${#ALL_TARGET_REPOS[@]} -eq 0 ]]; then
+  echo -e "${RED}Error: No target repos after resolving targets (only the current project matched, or all targets were skipped).${NC}" >&2
+  exit 1
+fi
 
 for target_repo in "${ALL_TARGET_REPOS[@]}"; do
   if ! filesync_repo_mirror_in_enabled "$FILESYNC_REPOS_FILE" "$target_repo"; then

@@ -132,6 +132,17 @@ else
 	bad "also_expand_to_array failed"
 fi
 
+_out=""
+if _out=$(filesync_resolve_repo_tokens_to_repos "grp" "$repos" "$coll" 2>&1); then
+	if [[ "$_out" == alpha ]]; then
+		ok "resolve_repo_tokens_to_repos matches expand"
+	else
+		bad "resolve_repo_tokens_to_repos got '${_out}'"
+	fi
+else
+	bad "resolve_repo_tokens_to_repos failed"
+fi
+
 printf '%s\n' '[{"name":"g1","repos":["alpha","beta"]},{"name":"g2","repos":["alpha"]}]' >"$coll"
 if filesync_collections_prune_repo "$coll" alpha; then
 	:

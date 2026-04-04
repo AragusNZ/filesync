@@ -15,6 +15,10 @@ Also: a -m
 Promote local files as masters: add mappings with kind=master. If path_in_repo is omitted
 (no :suffix), it defaults to the same path as local_path.
 
+The first argument must resolve to exactly one global repo name (plain repo name, or a
+collection that contains a single repo). If a collection lists multiple repos, specify the
+master repo explicitly and pass the collection with --also=names.
+
 Options:
   --also=names         Comma-separated repo names and/or collection names
 
@@ -38,7 +42,7 @@ if [[ $# -lt 2 ]]; then
   exit 1
 fi
 
-TARGET_REPO="$1"
+TARGET_REPO_RAW="$1"
 TARGET_REPOS_RAW=""
 declare -a POSITIONAL=()
 declare -a LOCAL_PATHS=()
@@ -80,10 +84,19 @@ for local_path in "${LOCAL_PATHS[@]}"; do
   SEEN_LOCAL_PATHS["$local_path"]=1
 done
 
-if ! jq -e --arg n "$TARGET_REPO" 'any(.name == $n)' "$FILESYNC_REPOS_FILE" &>/dev/null; then
-  echo -e "${RED}Error: Target repo '$TARGET_REPO' is not in repos.${NC}" >&2
+declare -a _master_repo_resolved=()
+if ! filesync_also_expand_to_array "$TARGET_REPO_RAW" "$FILESYNC_REPOS_FILE" "$FILESYNC_COLLECTIONS_FILE" _master_repo_resolved; then
   exit 1
 fi
+if [[ ${#_master_repo_resolved[@]} -eq 0 ]]; then
+  echo -e "${RED}Error: No repo resolved for '${TARGET_REPO_RAW}'.${NC}" >&2
+  exit 1
+fi
+if [[ ${#_master_repo_resolved[@]} -gt 1 ]]; then
+  echo -e "${RED}Error: '${TARGET_REPO_RAW}' expands to multiple repos; specify a single master repo name, or use --also= with a collection to mirror mappings into sibling projects.${NC}" >&2
+  exit 1
+fi
+TARGET_REPO="${_master_repo_resolved[0]}"
 
 TARGET_REPO_DIR="$(filesync_project_resolve_repo_dir "$REPO_PATH_ROOT" "$FILESYNC_REPOS_FILE" "$TARGET_REPO")"
 if [[ -z "$TARGET_REPO_DIR" ]]; then
