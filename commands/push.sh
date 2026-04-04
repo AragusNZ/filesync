@@ -12,17 +12,17 @@ if filesync_argv_wants_help "$@"; then
   cat <<EOF
 ${FILESYNC_CMD_USAGE}
 
-Copy local content to linked master paths in the repo checkout and update .filesync/files.json.
+Copy your edited files to their source paths in the repo checkout and update .filesync/files.json.
 
-  --all              Push every clone mapping in the project (otherwise list explicit paths)
+  --all              Push every clone mapping in this project (otherwise name each path)
 
-  --to-clones <path>  After editing the canonical master (clone path or file under a repo checkout),
-                      sync that master into every tracked clone row sharing the same master key
-                      across all union project roots (inverse of default push; runs filesync sync per project).
-  --dry-run           With --to-clones: pass through to sync (no clone overwrites; sync still runs -c first)
+  --to-clones <path> After you edit the source copy (any path that resolves to the master), push that
+                      content into every linked clone across all projects that track it (runs
+                      filesync sync in each project—the opposite of the usual push direction).
+  --dry-run           With --to-clones only: show sync actions without overwriting clones (check still runs first)
 
-Either --all or at least one local_path is required for normal push.
---to-clones requires exactly one path and must not be combined with --all or other local_path arguments.
+Normal push: either --all or at least one local path.
+Do not combine --to-clones with --all or extra paths.
 EOF
   exit 0
 fi

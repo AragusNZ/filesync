@@ -12,7 +12,7 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: rm -col
 
-Remove a named collection from the global collections.json.
+Delete a named group from collections.json.
 
 EOF
   exit 0

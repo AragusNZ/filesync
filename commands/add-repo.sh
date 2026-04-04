@@ -11,9 +11,9 @@ if filesync_argv_wants_help "$@"; then
 Usage: filesync new repo
 Also: n -r
 
-Interactively append a new repo entry to the global repos.json (name, URL, branch, stable id).
-The checkout path is stored relative to your home directory when possible. Run from the repo
-checkout you are registering; does not require a project .filesync.
+Interactively walks you through adding a repo to the shared repos.json (name, URL, branch, stable id).
+The checkout path is saved relative to your home when possible. Run from inside the repo you are
+registering; a project .filesync/ is not required.
 EOF
   exit 0
 fi

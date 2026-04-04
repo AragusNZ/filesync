@@ -14,11 +14,12 @@ Usage:
   filesync config doctor
   filesync config set progress <hidden|bar|percent>
 
-show    Effective system home, repo path anchor, global JSON paths, preferences.
-doctor  Report global catalog issues and (from a project) files.json sanity, clone marker vs rows, orphan clone markers, and master markers without tracked clones. Sections and a summary of warnings/notes.
-set     progress (preferences.json).
+show    Print where filesync stores data, resolved paths, and current preferences (summary line at the end).
+doctor  Sanity-check the shared repo catalog; from inside a project, also check tracked files, markers,
+        and mismatches. Output is grouped with a short summary of warnings and notes.
+set     Change preferences (for example progress display: hidden, bar, or percent).
 
-Per-repo check_sync_enabled / mirror_in_enabled: use filesync edit repo (see filesync edit repo -h).
+Per-repo options (whether to run check/mirror on sync): filesync edit repo … (see filesync edit repo -h).
 EOF
   exit 0
 fi

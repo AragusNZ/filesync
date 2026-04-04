@@ -12,10 +12,10 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: rm, rm -f
 
-Drop the row from .filesync/files.json; strip clone/detached markers from the local file;
-keep kind=master when present.
+Stop tracking the given paths: remove their rows from .filesync/files.json and clear clone/detached
+markers on disk. If a path is marked as the source master, that marker is kept.
 
-  --all-missing        Also remove every mapping whose sync_status is error_missing_master
+  --all-missing        Also drop every mapping whose source file is missing (error_missing_master)
 EOF
   exit 0
 fi

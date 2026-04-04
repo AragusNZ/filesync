@@ -13,14 +13,14 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: retarget -c
 
-Update a single files.json row: the path must be a tracked clone in the current project
-(resolved like "filesync info file"). Sets repo_file_path to <new_repo_file_path>
-(repo-relative; must exist in the checkout with kind=master after git mv).
+Fix one tracked clone in this project after you moved or renamed the source file in git. The path must
+be a clone filesync already knows (same resolution as filesync info file). The new path is relative
+to the repo root and must exist in the checkout as the source file after git mv.
 
-Without --move/--mv: sync_status sync_required; local file stays at local_path.
-With --move/--mv: mv the local file to <new_repo_file_path> (project-relative) and update local_path.
+Without --move/--mv: marks the row ready to sync; your local file stays where it is.
+With --move/--mv: moves the local file to match the new path and updates the stored local path.
 
-To update every mapping for a canonical master across projects, use:
+To retarget every project that shares the same source file, use:
   filesync retarget master …
 EOF
   exit 0

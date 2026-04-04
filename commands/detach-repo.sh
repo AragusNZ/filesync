@@ -12,7 +12,7 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: d -fir
 
-Detach every files.json row for the given repo_name (same per-file behavior as detach file).
+Detach every tracked file for that repo (same steps as detach file, per path).
 EOF
   exit 0
 fi

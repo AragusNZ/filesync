@@ -13,20 +13,19 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: retarget -m
 
-The first path is resolved like "filesync info file" when it exists (master file under a
-registered checkout). If that path is already gone after git mv, you may still pass the old
-repo-relative path as the first argument: filesync will use <new_repo_file_path> in the
-checkout as the on-disk anchor when it uniquely identifies a kind=master file.
+The first path is resolved like filesync info file when it still exists (the source file in a
+checkout). If git mv already removed it, you can pass the old repo-relative path instead; filesync
+then uses <new_repo_file_path> in the checkout to find the source file when it is unique.
 
-Updates repo_file_path for every sibling row (same union as "info file" / "remove repo").
+Updates the stored source path for every related row (same scope as info file / remove repo).
 
-Without --move/--mv: master_file_moved on each row; run "filesync sync --move" to relocate locals.
-With --move/--mv: mv each local clone to <new_repo_file_path> and update local_path (rejected if
-two rows in the same project share this master — destination collision).
+Without --move/--mv: rows get status master_file_moved; run filesync sync --move to move local copies.
+With --move/--mv: moves each local clone to the new path (fails if two rows in one project would
+collide at the destination).
 
-<new_repo_file_path> must exist in the checkout with kind=master (e.g. after git mv).
+<new_repo_file_path> must exist in the checkout as the source file after git mv.
 
-To retarget only the current project's tracked clone row, use:
+To change only one clone row in the current project:
   filesync retarget clone …
 EOF
   exit 0

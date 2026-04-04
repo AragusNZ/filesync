@@ -11,13 +11,13 @@ if filesync_argv_wants_help "$@"; then
   cat <<EOF
 ${FILESYNC_CMD_USAGE}
 
-Run from a filesync project (walk-up .filesync/). Selects the mapping row by local_path.
+Run inside a project (walk-up .filesync/). Picks the mapping by local_path.
 
-  --unmap                     Remove the row from files.json and strip clone marker on disk if present.
-  --delete-local-and-unmap    Delete the local project file, then unmap (same row removal as --unmap).
-  --recreate-from-master      Copy from repo master into the local path (requires master file to exist).
+  --unmap                     Stop tracking: remove the row and clear clone markers on disk if any.
+  --delete-local-and-unmap    Delete the local file, then stop tracking (same as --unmap for the row).
+  --recreate-from-master      Copy from the source file in the repo back into the local path (source must exist).
 
-Exactly one action flag is required.
+Choose exactly one action flag.
 EOF
   exit 0
 fi

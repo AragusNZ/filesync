@@ -104,7 +104,7 @@ filesync_route_new() {
   case "${1-}" in
     -h | --help)
       if [[ $# -eq 1 ]]; then
-        filesync_print_compound_help_stdout "$ROOT" "filesync new: repo and collection" \
+        filesync_print_compound_help_stdout "$ROOT" "filesync new: register a repo or create a collection" \
           "new repo" "add-repo.sh" \
           "new collection" "add-collection.sh"
         exit 0
@@ -131,7 +131,7 @@ filesync_route_edit() {
   case "${1-}" in
     -h | --help)
       if [[ $# -eq 1 ]]; then
-        filesync_print_compound_help_stdout "$ROOT" "filesync edit: repo and collection" \
+        filesync_print_compound_help_stdout "$ROOT" "filesync edit: change a repo or collection in the shared store" \
           "edit repo" "edit-repo.sh" \
           "edit collection" "edit-collection.sh"
         exit 0
@@ -165,7 +165,7 @@ filesync_route_info() {
   case "$1" in
     -h | --help)
       if [[ $# -eq 1 ]]; then
-        filesync_print_compound_help_stdout "$ROOT" "filesync info: file and repo" \
+        filesync_print_compound_help_stdout "$ROOT" "filesync info: inspect a file path or a registered repo" \
           "info file (local path)" "info-file.sh" \
           "info repo" "info-repo.sh"
         exit 0
@@ -188,7 +188,7 @@ filesync_route_retarget() {
   case "${1-}" in
     "" | -h | --help)
       if [[ $# -le 1 ]]; then
-        filesync_print_compound_help_stdout "$ROOT" "filesync retarget: clone and master" \
+        filesync_print_compound_help_stdout "$ROOT" "filesync retarget: fix paths after git mv (one mapping or all)" \
           "retarget clone" "retarget-clone.sh" \
           "retarget master" "retarget-master.sh"
         exit 0

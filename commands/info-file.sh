@@ -14,19 +14,17 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
        filesync i <local-path> [--fix-marker]
 
-Resolve a path to a tracked clone (row in this project's files.json) or to the canonical
-master file under a registered repo checkout. Lists all mappings sharing the same master
-(repo_file_path + repo identity), refreshes their status via filesync check --file=…,
-then prints a summary on stderr (Role: clone or Role: master, master key, related rows).
+Given a path, show how filesync sees it: either a tracked file in this project or the source copy
+inside a registered checkout. Lists every mapping that shares the same source, runs filesync check for
+that path, then prints a short summary (clone vs master, related rows).
 
-If the canonical master file's marker does not match whether any clones are tracked, you are
-prompted to add or strip kind=master (TTY). Non-interactive: prints a hint; use --fix-marker
-to perform the update without prompting.
+If the source file's on-disk marker does not match whether clones exist, you get a prompt in a terminal
+to fix it. In scripts, use --fix-marker to apply the fix without prompting (or read the hint only).
 
-See also: filesync info repo <name>; filesync info --help (file + repo).
+See also: filesync info repo <name>; filesync info --help for file + repo on one page.
 
 Options:
-  --fix-marker   Add or remove kind=master on the master file without a TTY prompt
+  --fix-marker   Fix the source-file marker without a prompt (non-interactive)
 EOF
   exit 0
 fi

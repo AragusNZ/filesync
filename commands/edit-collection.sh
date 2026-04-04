@@ -12,12 +12,12 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: e -col
 
-At least one option is required.
+Pass at least one option.
 
 Options:
-  --rename=new_name     Rename the collection (must not match a repo or other collection)
-  --add-repo=name       Add a repo that exists in global repos.json
-  --remove-repo=name    Remove a repo from the collection (ok if already absent)
+  --rename=new_name     New name (must not clash with a repo or another collection)
+  --add-repo=name       Add a repo that already exists in repos.json
+  --remove-repo=name    Drop a repo from the group (no error if it was not listed)
 
 EOF
   exit 0

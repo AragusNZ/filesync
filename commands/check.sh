@@ -19,13 +19,13 @@ Verify mappings against disk and repo checkouts; refresh row status in .filesync
 (including per-row last_check_at).
 
 Options:
-  --repo=name            Limit to mappings for this repo
-  --file=fragment        Substring on local_path only (repeat for OR; after --repo)
-  --repo-file=fragment   Substring on repo_file_path only (repeat for OR)
-  --all-files=fragment   Substring on local_path OR repo_file_path (repeat for OR)
-  --status=a,b,...       Filter by row status (OR). Tokens: see main "filesync -h" or man filesync
+  --repo=name            Only files tied to this repo
+  --file=fragment        Match part of the local path (repeat for OR)
+  --repo-file=fragment   Match part of the path inside the repo checkout
+  --all-files=fragment   Match either local or repo path
+  --status=a,b,...       Only rows in these states (OR). Tokens: filesync -h or man filesync
 
-If every matching row is skipped because each repo has check_sync_enabled false, prints a hint and exits without scanning.
+If every matching repo has checking turned off (check_sync_enabled false), prints a hint and exits without scanning.
 EOF
   exit 0
 fi

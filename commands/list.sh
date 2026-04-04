@@ -23,8 +23,8 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_LIST_REPOS_USAGE}
 Also: l -r
 
-List configured repos from the global store. With --repo=, show only that repo (errors if missing).
-Does not require a project .filesync directory.
+List repos from the shared store. With --repo=, show only that repo (errors if it is missing).
+No project .filesync/ needed.
 EOF
       ;;
     files)
@@ -32,9 +32,10 @@ EOF
 ${FILESYNC_LIST_FILES_USAGE}
 Also: l, l -f
 
-List file mappings and status. Requires a filesync project (walk-up .filesync/ for files.json).
-Path filters match sync/check: --file (local_path), --repo-file (repo_file_path), --all-files (either); repeat for OR within each; dimensions AND.
---status uses the same token rules as sync/check (see main "filesync -h" or man filesync).
+List tracked files and their status. Requires a project (walk-up .filesync/ for files.json).
+Path filters work like sync/check: --file (local path), --repo-file (path in repo), --all-files (either);
+repeat a flag for OR within that kind; combine kinds with AND.
+--status uses the same tokens as sync/check (filesync -h or man filesync).
 EOF
       ;;
     collections)
@@ -42,8 +43,8 @@ EOF
 ${FILESYNC_LIST_COLLECTIONS_USAGE}
 Also: l -col
 
-List named repo collections from the global store (for use with --also=).
-Does not require a project .filesync directory.
+List named repo groups from the shared store (for use with --also= when adding files).
+No project .filesync/ needed.
 EOF
       ;;
     *)
@@ -55,7 +56,7 @@ Usage:
 
 Shorthand: l -r | l | l -f | l -col
 
-Run "filesync list repos -h", "filesync list files -h", or "filesync list collections -h" for details.
+Run filesync list repos -h, list files -h, or list collections -h for more detail.
 EOF
       ;;
   esac

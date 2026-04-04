@@ -12,7 +12,7 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: da, da -f
 
-Re-couple detached mappings: refresh from master, clear status, run check for each file.
+Re-couple detached paths: copy from the source, clear detached state, and run check for each file.
 EOF
   exit 0
 fi

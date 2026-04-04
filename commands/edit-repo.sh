@@ -12,19 +12,19 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: e -r
 
-Update a repo entry in the global store (repos.json). Does not read or modify any project
-.filesync/files.json or sync markers. At least one option is required.
+Change a repo entry in the shared catalog (repos.json). Does not touch any project's tracked files
+or on-disk markers. You must pass at least one option.
 
 Options:
-  --rename=new_name       Set display name (must not match a collection name)
-  --path=new_path         Set checkout path
-  --url=new_url           Set remote URL
-  --branch=name           Change branch
-  --check-sync=true|false Set check_sync_enabled
-  --mirror-in=true|false  Set mirror_in_enabled
-  --merge-using-git=true|false  Set merge_using_git (sync uses git branch/merge in project when true)
-  --enable                Set check_sync_enabled and mirror_in_enabled true
-  --disable               Set check_sync_enabled and mirror_in_enabled false
+  --rename=new_name       New display name (must not match a collection name)
+  --path=new_path         Checkout directory for this repo
+  --url=new_url           Remote URL
+  --branch=name           Default branch
+  --check-sync=true|false Whether to run check on this repo during sync
+  --mirror-in=true|false  Whether to mirror content in during sync
+  --merge-using-git=true|false  Use a git branch/merge in clean trees when syncing (advanced)
+  --enable                Turn check and mirror-in on
+  --disable               Turn check and mirror-in off
 
 EOF
   exit 0

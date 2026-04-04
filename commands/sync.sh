@@ -14,29 +14,28 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: s
 
-Copy from master repos into the project and update .filesync/files.json row status.
+Pull the latest content from master repos into this project and refresh each row's status in
+.filesync/files.json.
 
 Options:
-  --repo=name            Limit to mappings for this repo
-  --file=fragment        Substring on local_path only (repeat for OR; after --repo)
-  --repo-file=fragment   Substring on repo_file_path only (repeat for OR)
-  --all-files=fragment   Substring on local_path OR repo_file_path (repeat for OR)
-  -c, --check            Run "filesync check" with matching filters before syncing
-  --dry-run              Show actions without copying
-  -f, --force            Also sync local_newer and conflict rows (default skips them)
-  --showall              Verbose per-file output
-  --status=a,b,...       Filter by row status (OR). Tokens: see main "filesync -h" or man filesync
-  --include-detached     Include detached rows (default skips them)
-  --move, --mv           For rows with sync_status master_file_moved, move the local file to
-                         repo_file_path (project-relative) before syncing
+  --repo=name            Only files tied to this repo
+  --file=fragment        Match part of the local path (repeat for OR; combine with --repo as usual)
+  --repo-file=fragment   Match part of the path inside the repo checkout
+  --all-files=fragment   Match either local or repo path
+  -c, --check            Run filesync check with the same filters before copying
+  --dry-run              Show what would happen without writing files
+  -f, --force            Include 'local newer' and 'conflict' rows (normally skipped)
+  --showall              Print one line per file
+  --status=a,b,...       Only rows in these states (OR). Tokens: filesync -h or man filesync
+  --include-detached     Include detached rows (normally skipped)
+  --move, --mv           If status is master_file_moved, move the local file to the new path first
 
-When --status= is omitted: syncs unset, sync_required, error_missing_local, and master_file_moved;
-skips detached unless --include-detached.
+When --status= is omitted: updates unset, sync_required, error_missing_local, and master_file_moved;
+detached rows stay skipped unless you add --include-detached.
 
-Per-repo merge_using_git (global repos.json): when true and this project is a git work tree with no
-dirty paths except possibly this project's files.json (see filesync(1)), content updates use a
-short-lived branch and git merge. Otherwise (merge_using_git false, non-git project, or other dirty
-paths) sync writes tracked files directly.
+Per-repo merge_using_git: when on, and this tree is a clean git worktree except possibly
+.filesync/files.json, sync may use a short-lived branch and merge (see filesync(1)). Otherwise files
+are copied directly.
 EOF
   exit 0
 fi

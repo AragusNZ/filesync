@@ -13,9 +13,9 @@ if filesync_argv_wants_help "$@"; then
 	cat <<EOF
 ${FILESYNC_CMD_USAGE}
 
-Compare this install to the latest GitHub release on GitHub. If a newer release exists and can
-be installed from this layout (git clone or unpacked .deb), you are prompted to apply it
-(git pull + make install, or dpkg -i the release .deb).
+Compare this install to the latest release on GitHub. If a newer version exists and this layout can
+be updated (git checkout or unpacked .deb), you are prompted to apply it (git pull + make install,
+or dpkg -i the release .deb).
 
   -y, --yes   Apply immediately when an update is available (no prompt).
 

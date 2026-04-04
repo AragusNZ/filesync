@@ -12,7 +12,7 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: da -fir
 
-Attach every files.json row for the given repo_name (same per-file behavior as attach file).
+Attach every tracked file for that repo (same steps as attach file, per path).
 EOF
   exit 0
 fi

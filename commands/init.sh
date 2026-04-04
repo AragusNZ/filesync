@@ -13,22 +13,19 @@ if filesync_argv_wants_help "$@"; then
   cat <<EOF
 ${FILESYNC_CMD_USAGE}
 
-Create .filesync/files.json at the project root (default: current working directory).
-Also ensures the system filesync store exists (default ~/.filesync-root; FILESYNC_HOME overrides) with repos and collections.
+Creates .filesync/ at the project root (default: current directory) so this folder can track synced files.
+Also creates the shared filesync data directory if needed (usually ~/.filesync-root; FILESYNC_HOME overrides for scripts).
 
-When stdin is a terminal and --no-repo is not passed, prompts to add a repo entry to the global
-repos.json (name, URL, branch). The checkout path (relative to home when possible) is derived from this
-project directory (git work tree top when inside git, otherwise the project root). If the project
-is inside a git work tree, defaults are also taken from git for name, remote URL, and branch.
+When your terminal is interactive and you omit --no-repo, init offers to register the first repo (name,
+URL, branch). Inside a git checkout, sensible defaults come from that repo; otherwise the project folder
+is used. The path you pass (or cwd) is always the project root—parent folders are not searched.
 
-Does not walk parent directories: the given directory becomes the filesync project root.
+If .filesync/files.json already exists, init exits with an error.
 
-If files.json already exists, init exits with an error.
+  --no-repo   Skip the repo wizard (for CI or non-interactive use).
 
-  --no-repo   Skip registering a global repo (non-interactive scripts and CI).
-
-If stdin is not a terminal, global repo registration is skipped; use new repo (n -r) later, or run init
-from a terminal, or pass --no-repo to silence the notice.
+Without a TTY, the repo wizard is skipped automatically; add a repo later with filesync new repo (n -r),
+run init from a terminal, or pass --no-repo to avoid the notice.
 EOF
   exit 0
 fi

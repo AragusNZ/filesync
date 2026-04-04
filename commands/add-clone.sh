@@ -12,15 +12,15 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: a -c
 
-The master file is in this project (kind=master): for each target repo, creates the clone
-on disk there and adds a files.json row in that project pointing back here as master. Fails
-if the target's local path already exists.
+The source file is in this project; for each target checkout, filesync creates the matching file there
+and adds a row in that project's files.json pointing back here. Fails if the destination path
+already exists.
 
-The first argument is a repo name or a collection name (expanded like --also=). Multiple
-targets are merged with --also= (deduplicated); the current project checkout is skipped.
+The first argument is a repo or collection name (same expansion rules as --also=). Extra targets from
+--also= are merged (duplicates removed); this project's checkout is skipped.
 
 Options:
-  --also=names         Comma-separated repo names and/or collection names
+  --also=names         Comma-separated repo or collection names
 
 EOF
   exit 0

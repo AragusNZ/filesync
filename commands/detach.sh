@@ -12,7 +12,7 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: d, d -f
 
-Keep each mapping but set sync status to detached and write the detached marker on disk.
+Keep each mapping but pause syncing: mark the row detached and write the detached marker on disk.
 EOF
   exit 0
 fi
