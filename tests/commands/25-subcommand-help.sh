@@ -17,6 +17,7 @@ assert_help() {
 
 assert_help "sync --help" "--dry-run" sync --help
 assert_help "sync --help" "-c, --check" sync --help
+assert_help "sync --help" "exact-local" sync --help
 assert_help "sync alias s -h" "master repos" s -h
 assert_help "check --help" "last_check_at" check --help
 assert_help "check --help" "exact-local" check --help
@@ -40,6 +41,7 @@ assert_help "add file --help" "path_in_repo" add file --help
 assert_help "add master -h" "add master" add master -h
 assert_help "add clone --help" "add clone" add clone --help
 assert_help "push --help" "--all" push --help
+assert_help "push --help" "to-clones" push --help
 assert_help "detach file --help" "detached" detach file --help
 assert_help "attach file --help" "Re-couple" attach file --help
 assert_help "detach files-in-repo --help" "detach files-in-repo" detach files-in-repo --help

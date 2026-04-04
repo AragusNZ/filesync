@@ -6,9 +6,10 @@ set -euo pipefail
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/cli-help.sh"
+FILESYNC_CMD_USAGE='Usage: filesync edit collection <name> [options]'
 if filesync_argv_wants_help "$@"; then
-  cat <<'EOF'
-Usage: filesync edit collection <name> [options]
+  cat <<EOF
+${FILESYNC_CMD_USAGE}
 Also: e -col
 
 At least one option is required.
@@ -48,14 +49,14 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     -*)
-      echo -e "${RED}Unknown option: $1${NC}" >&2
+      filesync_unknown_option_stderr "$1" "$FILESYNC_CMD_USAGE"
       exit 1
       ;;
     *)
       if [[ -z "$CUR" ]]; then
         CUR="$1"
       else
-        echo -e "${RED}Unexpected argument: $1${NC}" >&2
+        filesync_unexpected_arg_stderr "$1" "$FILESYNC_CMD_USAGE"
         exit 1
       fi
       shift
@@ -64,7 +65,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$CUR" ]]; then
-  echo -e "${RED}Usage: filesync edit collection <name> [--rename=] [--add-repo=] [--remove-repo=]${NC}" >&2
+  filesync_usage_error_stderr "$FILESYNC_CMD_USAGE"
   exit 1
 fi
 

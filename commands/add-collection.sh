@@ -6,9 +6,10 @@ set -euo pipefail
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/cli-help.sh"
+FILESYNC_CMD_USAGE='Usage: filesync new collection <name> [--repos=a,b]'
 if filesync_argv_wants_help "$@"; then
-  cat <<'EOF'
-Usage: filesync new collection <name> [--repos=a,b]
+  cat <<EOF
+${FILESYNC_CMD_USAGE}
 Also: n -col
 
 Create a collection in the global collections.json for use with add file / add master / add clone --also=.
@@ -37,13 +38,12 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     -*)
-      echo -e "${RED}Unknown option: $1${NC}" >&2
-      echo "Usage: filesync new collection <name> [--repos=a,b]" >&2
+      filesync_unknown_option_stderr "$1" "$FILESYNC_CMD_USAGE"
       exit 1
       ;;
     *)
       if [[ -n "$NAME" ]]; then
-        echo -e "${RED}Unexpected argument: $1${NC}" >&2
+        filesync_unexpected_arg_stderr "$1" "$FILESYNC_CMD_USAGE"
         exit 1
       fi
       NAME="$1"
@@ -53,7 +53,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$NAME" ]]; then
-  echo -e "${RED}Usage: filesync new collection <name> [--repos=a,b]${NC}" >&2
+  filesync_usage_error_stderr "$FILESYNC_CMD_USAGE"
   exit 1
 fi
 

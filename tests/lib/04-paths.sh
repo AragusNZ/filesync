@@ -25,4 +25,8 @@ mkdir -p "${td}/rr2/nested/here"
 pr="$(filesync_path_for_repos_json "${td}/rr2" "${td}/rr2/nested/here")"
 if [[ "${pr}" == "nested/here" ]]; then ok "path_for_repos_json relative"; else bad "relative got ${pr}"; fi
 
+printf 'x\n' >"${td}/rr2/canfile.txt"
+can="$(cd "${td}/rr2" && filesync_canonical_existing "canfile.txt")"
+if [[ "${can}" == "$(cd "${td}/rr2" && pwd -P)/canfile.txt" ]]; then ok "canonical_existing relative file"; else bad "canonical got ${can}"; fi
+
 if [[ "${fail}" -ne 0 ]]; then exit 1; fi

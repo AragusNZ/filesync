@@ -6,9 +6,10 @@ set -euo pipefail
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/cli-help.sh"
+FILESYNC_CMD_USAGE='Usage: filesync detach file <local_path> [<local_path> ...]'
 if filesync_argv_wants_help "$@"; then
-  cat <<'EOF'
-Usage: filesync detach file <local_path> [<local_path> ...]
+  cat <<EOF
+${FILESYNC_CMD_USAGE}
 Also: d, d -f
 
 Keep each mapping but set sync status to detached and write the detached marker on disk.
@@ -24,7 +25,7 @@ source "$_CMD_ROOT/../lib/progress.sh"
 trap 'filesync_progress_end || true; rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
 if [[ $# -lt 1 ]]; then
-  echo -e "${RED}Usage: filesync detach file <local_path1> [local_path2 ...]${NC}" >&2
+  filesync_usage_error_stderr "$FILESYNC_CMD_USAGE"
   exit 1
 fi
 

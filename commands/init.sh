@@ -8,9 +8,10 @@ _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FILESYNC_PKG_ROOT="$(cd "${_CMD_ROOT}/.." && pwd)"
 # shellcheck source=/dev/null
 source "${FILESYNC_PKG_ROOT}/lib/cli-help.sh"
+FILESYNC_CMD_USAGE='Usage: filesync init [directory] [--no-repo]'
 if filesync_argv_wants_help "$@"; then
-  cat <<'EOF'
-Usage: filesync init [directory] [--no-repo]
+  cat <<EOF
+${FILESYNC_CMD_USAGE}
 
 Create .filesync/files.json at the project root (default: current working directory).
 Also ensures the system filesync store exists (default ~/.filesync-root; FILESYNC_HOME overrides) with repos and collections.
@@ -65,14 +66,13 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     -*)
-      echo -e "${RED}Unknown option: $1${NC}" >&2
-      echo "Usage: filesync init [directory] [--no-repo]" >&2
+      filesync_unknown_option_stderr "$1" "$FILESYNC_CMD_USAGE"
       exit 1
       ;;
     *)
       if [[ -n "$TARGET" ]]; then
         echo -e "${RED}Too many arguments${NC}" >&2
-        echo "Usage: filesync init [directory] [--no-repo]" >&2
+        filesync_usage_error_stderr "$FILESYNC_CMD_USAGE"
         exit 1
       fi
       TARGET="$1"

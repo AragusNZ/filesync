@@ -8,9 +8,10 @@ _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FILESYNC_PKG_ROOT="$(cd "${_CMD_ROOT}/.." && pwd)"
 # shellcheck source=/dev/null
 source "${FILESYNC_PKG_ROOT}/lib/cli-help.sh"
+FILESYNC_CMD_USAGE='Usage: filesync update [-y|--yes]'
 if filesync_argv_wants_help "$@"; then
-	cat <<'EOF'
-Usage: filesync update [-y|--yes]
+	cat <<EOF
+${FILESYNC_CMD_USAGE}
 
 Compare this install to the latest GitHub release on GitHub. If a newer release exists and can
 be installed from this layout (git clone or unpacked .deb), you are prompted to apply it
@@ -38,7 +39,7 @@ while [[ $# -gt 0 ]]; do
 	case "$1" in
 		-y | --yes) YES=true; shift ;;
 		*)
-			echo -e "${RED}Unknown option: $1${NC}" >&2
+			filesync_unexpected_arg_stderr "$1" "$FILESYNC_CMD_USAGE"
 			exit 1
 			;;
 	esac

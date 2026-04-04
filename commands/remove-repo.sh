@@ -6,9 +6,10 @@ set -euo pipefail
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/cli-help.sh"
+FILESYNC_CMD_USAGE='Usage: filesync remove repo <repo_name> [-y|--yes] [--force]'
 if filesync_argv_wants_help "$@"; then
-  cat <<'EOF'
-Usage: filesync remove repo <repo_name> [-y|--yes] [--force]
+  cat <<EOF
+${FILESYNC_CMD_USAGE}
 Also: rm -r
 
 Remove a repo from global repos.json. Discovers file mappings like sync: every registered
@@ -50,14 +51,12 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     -*)
-      echo -e "${RED}Unknown option: $1${NC}" >&2
-      echo "Usage: filesync remove repo <repo_name> [-y] [--force]" >&2
+      filesync_unknown_option_stderr "$1" "$FILESYNC_CMD_USAGE"
       exit 1
       ;;
     *)
       if [[ -n "$REPO" ]]; then
-        echo -e "${RED}Unexpected argument: $1${NC}" >&2
-        echo "Usage: filesync remove repo <repo_name> [-y] [--force]" >&2
+        filesync_unexpected_arg_stderr "$1" "$FILESYNC_CMD_USAGE"
         exit 1
       fi
       REPO="$1"
@@ -67,7 +66,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$REPO" ]]; then
-  echo -e "${RED}Usage: filesync remove repo <repo_name> [-y] [--force]${NC}" >&2
+  filesync_usage_error_stderr "$FILESYNC_CMD_USAGE"
   exit 1
 fi
 

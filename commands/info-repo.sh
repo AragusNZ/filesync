@@ -6,9 +6,10 @@ set -euo pipefail
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/cli-help.sh"
+FILESYNC_CMD_USAGE='Usage: filesync info repo <repo-name>'
 if filesync_argv_wants_help "$@"; then
-  cat <<'EOF'
-Usage: filesync info repo <repo-name>
+  cat <<EOF
+${FILESYNC_CMD_USAGE}
        filesync info -r <repo-name>
 
 Also: filesync i repo <repo-name>   or   filesync i -r <repo-name>
@@ -34,7 +35,7 @@ source "$_CMD_ROOT/../lib/cli-banner.sh"
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
 if [[ $# -ne 1 ]]; then
-  echo -e "${RED}Usage: filesync info repo <repo-name>${NC}" >&2
+  filesync_usage_error_stderr "$FILESYNC_CMD_USAGE"
   echo "       filesync info -r <repo-name>   (see: filesync info repo --help)" >&2
   exit 1
 fi

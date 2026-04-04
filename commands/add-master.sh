@@ -6,9 +6,10 @@ set -euo pipefail
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/cli-help.sh"
+FILESYNC_CMD_USAGE='Usage: filesync add master <repo_name> <local_path>[:<path_in_repo>] ... [--also=names]'
 if filesync_argv_wants_help "$@"; then
-  cat <<'EOF'
-Usage: filesync add master <repo_name> <local_path>[:<path_in_repo>] ... [--also=names]
+  cat <<EOF
+${FILESYNC_CMD_USAGE}
 Also: a -m
 
 Promote local files as masters: add mappings with kind=master. If path_in_repo is omitted
@@ -33,7 +34,7 @@ filesync_command_init "${BASH_SOURCE[0]}"
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
 if [[ $# -lt 2 ]]; then
-  echo -e "${RED}Usage: filesync add master <repo_name> <local_path> ... [--also=names]${NC}" >&2
+  filesync_usage_error_stderr "$FILESYNC_CMD_USAGE"
   exit 1
 fi
 
@@ -48,7 +49,7 @@ for arg in "$@"; do
   if [[ "$arg" == --also=* ]]; then
     TARGET_REPOS_RAW="${arg#--also=}"
   elif [[ "$arg" == --* ]]; then
-    echo -e "${RED}Error: Unknown option '$arg'.${NC}" >&2
+    filesync_unknown_option_stderr "$arg" "$FILESYNC_CMD_USAGE"
     exit 1
   else
     POSITIONAL+=("$arg")

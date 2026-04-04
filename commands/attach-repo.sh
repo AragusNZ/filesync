@@ -6,9 +6,10 @@ set -euo pipefail
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/cli-help.sh"
+FILESYNC_CMD_USAGE='Usage: filesync attach files-in-repo <repo_name>'
 if filesync_argv_wants_help "$@"; then
-  cat <<'EOF'
-Usage: filesync attach files-in-repo <repo_name>
+  cat <<EOF
+${FILESYNC_CMD_USAGE}
 Also: da -fir
 
 Attach every files.json row for the given repo_name (same per-file behavior as attach file).
@@ -21,13 +22,13 @@ filesync_command_init "${BASH_SOURCE[0]}"
 trap 'rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
 if [[ $# -ne 1 ]] || [[ -z "${1// }" ]]; then
-  echo -e "${RED}Usage: filesync attach files-in-repo <repo_name>${NC}" >&2
+  filesync_usage_error_stderr "$FILESYNC_CMD_USAGE"
   exit 1
 fi
 
 REPO_NAME="$1"
 if [[ "$REPO_NAME" == -* ]]; then
-  echo -e "${RED}Usage: filesync attach files-in-repo <repo_name>${NC}" >&2
+  filesync_usage_error_stderr "$FILESYNC_CMD_USAGE"
   exit 1
 fi
 

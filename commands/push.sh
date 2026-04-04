@@ -1,20 +1,28 @@
 #!/usr/bin/env bash
 # Push local clone to master path; update row in .filesync/files.json.
+# Optional: push --to-clones copies canonical master into every tracked clone (multi-project).
 
 set -euo pipefail
 
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/cli-help.sh"
+FILESYNC_CMD_USAGE='Usage: filesync push [--all] [<local_path> ...] | filesync push --to-clones <path> [--dry-run]'
 if filesync_argv_wants_help "$@"; then
-  cat <<'EOF'
-Usage: filesync push [--all] [<local_path> ...]
+  cat <<EOF
+${FILESYNC_CMD_USAGE}
 
 Copy local content to linked master paths in the repo checkout and update .filesync/files.json.
 
   --all              Push every clone mapping in the project (otherwise list explicit paths)
 
-Either --all or at least one local_path is required.
+  --to-clones <path>  After editing the canonical master (clone path or file under a repo checkout),
+                      sync that master into every tracked clone row sharing the same master key
+                      across all union project roots (inverse of default push; runs filesync sync per project).
+  --dry-run           With --to-clones: pass through to sync (no clone overwrites; sync still runs -c first)
+
+Either --all or at least one local_path is required for normal push.
+--to-clones requires exactly one path and must not be combined with --all or other local_path arguments.
 EOF
   exit 0
 fi
@@ -22,11 +30,16 @@ fi
 source "$_CMD_ROOT/../lib/runtime.sh"
 filesync_command_init "${BASH_SOURCE[0]}"
 # shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/file-related-mappings.sh"
+# shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/progress.sh"
 
 trap 'filesync_progress_end || true; rm -f "${FILESYNC_STATE_FILE:-}"' EXIT
 
 PUSH_ALL=false
+PUSH_TO_CLONES=false
+TO_CLONES_PATH=""
+TO_CLONES_DRY_RUN=false
 declare -a POSITIONAL_PATHS=()
 
 while [[ $# -gt 0 ]]; do
@@ -35,9 +48,22 @@ while [[ $# -gt 0 ]]; do
       PUSH_ALL=true
       shift
       ;;
+    --to-clones)
+      PUSH_TO_CLONES=true
+      shift
+      if [[ $# -lt 1 ]]; then
+        filesync_usage_error_stderr "Usage: filesync push --to-clones <path> [--dry-run]"
+        exit 1
+      fi
+      TO_CLONES_PATH="$1"
+      shift
+      ;;
+    --dry-run)
+      TO_CLONES_DRY_RUN=true
+      shift
+      ;;
     -*)
-      echo -e "${RED}Unknown option: $1${NC}" >&2
-      echo "Usage: filesync push [--all] [<local_path1> [local_path2 ...]]" >&2
+      filesync_unknown_option_stderr "$1" "$FILESYNC_CMD_USAGE"
       exit 1
       ;;
     *)
@@ -47,8 +73,63 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+if [[ "$PUSH_TO_CLONES" == true ]]; then
+  if [[ "$PUSH_ALL" == true ]] || [[ ${#POSITIONAL_PATHS[@]} -gt 0 ]]; then
+    echo -e "${RED}Cannot combine --to-clones with --all or extra paths.${NC}" >&2
+    filesync_usage_error_stderr "$FILESYNC_CMD_USAGE"
+    exit 1
+  fi
+else
+  if [[ "$TO_CLONES_DRY_RUN" == true ]]; then
+    echo -e "${RED}--dry-run is only valid with push --to-clones.${NC}" >&2
+    filesync_usage_error_stderr "$FILESYNC_CMD_USAGE"
+    exit 1
+  fi
+fi
+
+if [[ "$PUSH_TO_CLONES" == true ]]; then
+  if ! filesync_file_rel_gather_from_path "$TO_CLONES_PATH"; then
+    exit 1
+  fi
+  if [[ ${#FILESYNC_RELATED_LINES[@]} -eq 0 ]]; then
+    echo "filesync push --to-clones: no related clone rows." >&2
+    exit 0
+  fi
+
+  FS_BIN="$FILESYNC_PKG_ROOT/bin/filesync"
+  AGG_RC=0
+
+  for proot in "${!FILESYNC_REL_ROOT_TO_LOCALS[@]}"; do
+    [[ -z "${FILESYNC_REL_ROOT_TO_LOCALS[$proot]:-}" ]] && continue
+    mapfile -t _locs <<<"${FILESYNC_REL_ROOT_TO_LOCALS[$proot]}"
+    # -c/--check refreshes status; --status=all allows rows still marked synced to be diffed and updated.
+    sync_args=(sync -c --repo="$FILESYNC_REL_RNAME" -f --status=all)
+    [[ "$TO_CLONES_DRY_RUN" == true ]] && sync_args+=(--dry-run)
+    _n_el=0
+    for _loc in "${_locs[@]}"; do
+      [[ -z "${_loc// }" ]] && continue
+      sync_args+=(--exact-local="$_loc")
+      _n_el=$((_n_el + 1))
+    done
+    [[ "$_n_el" -eq 0 ]] && continue
+    set +e
+    # Do not inherit project pins from the invoking project (FILESYNC_DIR/CONFIG_FILE/…);
+    # nested sync must discover .filesync from $proot via cwd alone.
+    (cd "$proot" && env -u FILESYNC_DIR -u FILESYNC_PROJECT_ROOT -u CONFIG_FILE -u FILESYNC_STATE_FILE -u PROJECT_ROOT \
+      "$FS_BIN" "${sync_args[@]}")
+    r=$?
+    set -e
+    if [[ "$r" -ne 0 ]]; then
+      AGG_RC="$r"
+    fi
+  done
+
+  filesync_progress_end
+  exit "${AGG_RC:-0}"
+fi
+
 if [[ "$PUSH_ALL" != true ]] && [[ ${#POSITIONAL_PATHS[@]} -eq 0 ]]; then
-  echo -e "${RED}Usage: filesync push [--all] [<local_path1> [local_path2 ...]]${NC}" >&2
+  filesync_usage_error_stderr "$FILESYNC_CMD_USAGE"
   exit 1
 fi
 

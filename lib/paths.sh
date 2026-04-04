@@ -41,3 +41,23 @@ filesync_path_for_repos_json() {
   fi
   printf '%s\n' "$checkout"
 }
+
+# Args: path to an existing file or directory (relative or absolute).
+# Prints one absolute path with directory symlinks resolved (pwd -P); uses realpath(1) when available.
+# Returns 1 if the path does not exist.
+filesync_canonical_existing() {
+  local p="${1:?}"
+  [[ -e "$p" ]] || return 1
+  if command -v realpath >/dev/null 2>&1; then
+    realpath "$p" 2>/dev/null && return 0
+  fi
+  local d bn
+  d="$(dirname -- "$p")"
+  bn="$(basename -- "$p")"
+  if [[ "$d" == "." ]]; then
+    d="$(pwd -P)"
+  else
+    d="$(cd "$d" && pwd -P)" || return 1
+  fi
+  printf '%s/%s\n' "$d" "$bn"
+}

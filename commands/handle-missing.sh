@@ -6,9 +6,10 @@ set -euo pipefail
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/cli-help.sh"
+FILESYNC_CMD_USAGE='Usage: filesync handle-missing <local_path> (--unmap | --delete-local-and-unmap | --recreate-from-master)'
 if filesync_argv_wants_help "$@"; then
-  cat <<'EOF'
-Usage: filesync handle-missing <local_path> (--unmap | --delete-local-and-unmap | --recreate-from-master)
+  cat <<EOF
+${FILESYNC_CMD_USAGE}
 
 Run from a filesync project (walk-up .filesync/). Selects the mapping row by local_path.
 
@@ -53,7 +54,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     -*)
-      echo -e "${RED}Unknown or missing arguments. Try filesync handle-missing --help${NC}" >&2
+      filesync_unknown_option_stderr "$1" "$FILESYNC_CMD_USAGE"
       exit 1
       ;;
     *)
@@ -65,7 +66,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-[[ -n "$LOCAL_PATH" ]] || { echo -e "${RED}<local_path> is required${NC}" >&2; exit 1; }
+[[ -n "$LOCAL_PATH" ]] || {
+  echo -e "${RED}<local_path> is required${NC}" >&2
+  filesync_usage_error_stderr "$FILESYNC_CMD_USAGE"
+  exit 1
+}
 
 acts=0
 $DO_UNMAP && acts=$((acts + 1))

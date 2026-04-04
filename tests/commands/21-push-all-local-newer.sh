@@ -8,7 +8,9 @@ master="${TMP}/push-all-master"
 proj="${TMP}/push-all-proj"
 rm -rf "${master}" "${proj}"
 
-mkdir -p "${master}"
+mkdir -p "${master}" "${proj}"
+master="$(cd "${master}" && pwd -P)"
+proj="$(cd "${proj}" && pwd -P)"
 (
 	cd "${master}"
 	git init -b main
@@ -26,8 +28,6 @@ mkdir -p "${master}"
 	git add tools/a.txt tools/b.txt
 	git commit -q -m init
 )
-
-mkdir -p "${proj}"
 (
 	cd "${proj}"
 	filesync init
@@ -41,7 +41,7 @@ mkdir -p "${proj}"
 	filesync sync
 	filesync check >/dev/null || die "check after sync"
 	# Ensure local mtime is strictly after last_sync_at (second resolution).
-	sleep 1
+	sleep 2
 
 	echo "EDIT_A" >>tools/a.txt
 	filesync check >/dev/null || die "check after local edit"
@@ -66,6 +66,7 @@ grep -q "^B_V1$" "${master}/tools/b.txt" || die "push --all must not change mast
 noop="${TMP}/push-all-noop-proj"
 rm -rf "${noop}"
 mkdir -p "${noop}"
+noop="$(cd "${noop}" && pwd -P)"
 (
 	cd "${noop}"
 	filesync init

@@ -6,7 +6,9 @@ source "${ROOT}/tests/harness-command.sh"
 
 master="${TMP}/dar-master" proj="${TMP}/dar-proj"
 rm -rf "${master}" "${proj}"
-mkdir -p "${master}"
+mkdir -p "${master}" "${proj}"
+master="$(cd "${master}" && pwd -P)"
+proj="$(cd "${proj}" && pwd -P)"
 (
 	cd "${master}"
 	git init -b main

@@ -6,9 +6,10 @@ set -euo pipefail
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/cli-help.sh"
+FILESYNC_CMD_USAGE='Usage: filesync edit repo <repo_name> [options]'
 if filesync_argv_wants_help "$@"; then
-  cat <<'EOF'
-Usage: filesync edit repo <repo_name> [options]
+  cat <<EOF
+${FILESYNC_CMD_USAGE}
 Also: e -r
 
 Update a repo entry in the global store (repos.json). Does not read or modify any project
@@ -121,15 +122,14 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     -*)
-      echo -e "${RED}Unknown option: $1${NC}" >&2
-      echo "Usage: filesync edit repo <repo_name> [--rename=…] [--path=…] [--url=…] [--branch=…] [--check-sync=…] [--mirror-in=…] [--merge-using-git=…] [--enable] [--disable]" >&2
+      filesync_unknown_option_stderr "$1" "$FILESYNC_CMD_USAGE"
       exit 1
       ;;
     *)
       if [[ -z "$REPO_CURRENT" ]]; then
         REPO_CURRENT="$1"
       else
-        echo -e "${RED}Unexpected argument: $1${NC}" >&2
+        filesync_unexpected_arg_stderr "$1" "$FILESYNC_CMD_USAGE"
         exit 1
       fi
       shift
@@ -138,7 +138,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$REPO_CURRENT" ]]; then
-  echo -e "${RED}Usage: filesync edit repo <repo_name> [options]${NC}" >&2
+  filesync_usage_error_stderr "$FILESYNC_CMD_USAGE"
   echo "At least one of --rename, --path, --url, --branch, --check-sync, --mirror-in, --merge-using-git, --enable, or --disable is required." >&2
   exit 1
 fi

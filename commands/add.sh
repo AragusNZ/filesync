@@ -6,9 +6,10 @@ set -euo pipefail
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/cli-help.sh"
+FILESYNC_CMD_USAGE='Usage: filesync add file <repo_name> <path_in_repo>[:<local_path>] ... [--mark-master] [--also=names]'
 if filesync_argv_wants_help "$@"; then
-  cat <<'EOF'
-Usage: filesync add file <repo_name> <path_in_repo>[:<local_path>] ... [options]
+  cat <<EOF
+${FILESYNC_CMD_USAGE}
 Also: a, a -f
 
 Track files from a repo checkout: path_in_repo is relative to the repo root. If local_path
@@ -43,7 +44,7 @@ for arg in "$@"; do
   elif [[ "$arg" == --mark-master ]]; then
     MARK_MASTER=true
   elif [[ "$arg" == --* ]]; then
-    echo -e "${RED}Error: Unknown option '$arg'.${NC}" >&2
+    filesync_unknown_option_stderr "$arg" "$FILESYNC_CMD_USAGE"
     exit 1
   else
     POSITIONAL_RAW+=("$arg")
@@ -51,7 +52,7 @@ for arg in "$@"; do
 done
 
 if [[ ${#POSITIONAL_RAW[@]} -lt 2 ]]; then
-  echo -e "${RED}Usage: filesync add file <repo_name> <path_in_repo> ... [--mark-master] [--also=names]${NC}" >&2
+  filesync_usage_error_stderr "$FILESYNC_CMD_USAGE"
   exit 1
 fi
 

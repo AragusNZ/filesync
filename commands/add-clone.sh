@@ -6,9 +6,10 @@ set -euo pipefail
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/cli-help.sh"
+FILESYNC_CMD_USAGE='Usage: filesync add clone <target_repo> <master_path>[:<local_path>] ... [--also=names]'
 if filesync_argv_wants_help "$@"; then
-  cat <<'EOF'
-Usage: filesync add clone <target_repo> <master_path>[:<local_path>] ... [--also=names]
+  cat <<EOF
+${FILESYNC_CMD_USAGE}
 Also: a -c
 
 Clone mappings from a kind=master file in this project into a sibling repo: creates the
@@ -41,7 +42,7 @@ for arg in "$@"; do
   if [[ "$arg" == --also=* ]]; then
     TARGET_REPOS_RAW="${arg#--also=}"
   elif [[ "$arg" == --* ]]; then
-    echo -e "${RED}Error: Unknown option '$arg'.${NC}" >&2
+    filesync_unknown_option_stderr "$arg" "$FILESYNC_CMD_USAGE"
     exit 1
   else
     POSITIONAL_RAW+=("$arg")
@@ -49,7 +50,7 @@ for arg in "$@"; do
 done
 
 if [[ ${#POSITIONAL_RAW[@]} -lt 2 ]]; then
-  echo -e "${RED}Usage: filesync add clone <target_repo> <master_path>[:<local_path_in_target>] ... [--also=names]${NC}" >&2
+  filesync_usage_error_stderr "$FILESYNC_CMD_USAGE"
   exit 1
 fi
 

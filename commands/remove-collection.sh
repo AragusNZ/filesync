@@ -6,9 +6,10 @@ set -euo pipefail
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/cli-help.sh"
+FILESYNC_CMD_USAGE='Usage: filesync remove collection <name>'
 if filesync_argv_wants_help "$@"; then
-  cat <<'EOF'
-Usage: filesync remove collection <name>
+  cat <<EOF
+${FILESYNC_CMD_USAGE}
 Also: rm -col
 
 Remove a named collection from the global collections.json.
@@ -21,7 +22,7 @@ source "$_CMD_ROOT/../lib/runtime.sh"
 filesync_command_init_system "${BASH_SOURCE[0]}"
 
 if [[ $# -ne 1 ]] || [[ "$1" == -* ]]; then
-  echo -e "${RED}Usage: filesync remove collection <name>${NC}" >&2
+  filesync_usage_error_stderr "$FILESYNC_CMD_USAGE"
   exit 1
 fi
 

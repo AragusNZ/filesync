@@ -6,6 +6,9 @@
 : "${TMP:?TMP must be set}"
 : "${EXPECTED_VERSION:?EXPECTED_VERSION must be set}"
 
+# Avoid ANSI in captured stderr; many tests match plain substrings (e.g. info "Role: clone").
+export NO_COLOR=1
+
 die() {
 	echo "FAIL: $*" >&2
 	exit 1
@@ -25,7 +28,7 @@ filesync_test_seed_global_repos() {
 	}
 	mkdir -p "$FILESYNC_HOME"
 	local abs_root
-	abs_root="$(cd "$path_root" && pwd)"
+	abs_root="$(cd "$path_root" && pwd -P)"
 	export FILESYNC_REPO_PATH_ANCHOR="$abs_root"
 	jq 'map((if (.id // "") == "" then . + {id: ("testid-" + .name)} else . end) | if (.merge_using_git | type) != "boolean" then . + {merge_using_git: false} else . end)' "$repos_file" >"${FILESYNC_HOME}/repos.json"
 	if [[ ! -f "${FILESYNC_HOME}/system.json" ]]; then

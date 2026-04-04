@@ -9,9 +9,10 @@ set -euo pipefail
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/cli-help.sh"
+FILESYNC_CMD_USAGE='Usage: filesync check [--repo=name] [--file=path_fragment | --exact-local=path ...] [--status=a,b,...]'
 if filesync_argv_wants_help "$@"; then
-  cat <<'EOF'
-Usage: filesync check [option] ...
+  cat <<EOF
+${FILESYNC_CMD_USAGE}
 Also: c
 
 Verify mappings against disk and repo checkouts; refresh row status in .filesync/files.json
@@ -60,13 +61,11 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     -*)
-      echo -e "${RED}Unknown option: $1${NC}" >&2
-      echo "Usage: filesync check [--repo=name] [--file=path_fragment | --exact-local=path ...] [--status=a,b,...]" >&2
+      filesync_unknown_option_stderr "$1" "$FILESYNC_CMD_USAGE"
       exit 1
       ;;
     *)
-      echo -e "${RED}Unexpected argument: $1${NC}" >&2
-      echo "Usage: filesync check [--repo=name] [--file=path_fragment | --exact-local=path ...] [--status=a,b,...]" >&2
+      filesync_unexpected_arg_stderr "$1" "$FILESYNC_CMD_USAGE"
       exit 1
       ;;
   esac

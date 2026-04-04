@@ -11,6 +11,7 @@ mkdir -p "${proj}"
 (
 	cd "${proj}"
 	filesync init --no-repo
+	# shellcheck disable=SC2030,SC2031
 	export FILESYNC_HOME="${TMP}/mrid-home"
 	mkdir -p "${FILESYNC_HOME}"
 	jq -n '{version: 2}' >"${FILESYNC_HOME}/system.json"
@@ -19,7 +20,8 @@ mkdir -p "${proj}"
 	jq -n \
 		'[{"name":"upstream","path":"../noop","url":null,"branch":"main","id":"uuid-upstream-1"}]' \
 		>"${FILESYNC_HOME}/repos.json"
-	export FILESYNC_REPO_PATH_ANCHOR="$(pwd)"
+	FILESYNC_REPO_PATH_ANCHOR="$(pwd)"
+	export FILESYNC_REPO_PATH_ANCHOR
 	jq -n \
 		'[{
 			repo_name: "upstream",

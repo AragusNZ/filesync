@@ -6,8 +6,9 @@ set -euo pipefail
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/cli-help.sh"
+FILESYNC_CMD_USAGE='Usage: filesync config show | doctor | set progress <hidden|bar|percent>'
 if filesync_argv_wants_help "$@"; then
-  cat <<'EOF'
+  cat <<EOF
 Usage:
   filesync config show
   filesync config doctor
@@ -38,7 +39,7 @@ repos="$FILESYNC_REPOS_FILE"
 prefs="${FILESYNC_SYSTEM_HOME}/${FILESYNC_PREFERENCES_NAME}"
 
 if [[ $# -lt 1 ]]; then
-  echo -e "${RED}Usage: filesync config show | doctor | set ...${NC}" >&2
+  filesync_usage_error_stderr "$FILESYNC_CMD_USAGE"
   exit 1
 fi
 
@@ -90,7 +91,10 @@ case "$cmd" in
     fi
     ;;
   set)
-    [[ $# -ge 2 ]] || { echo -e "${RED}Usage: filesync config set progress ...${NC}" >&2; exit 1; }
+    [[ $# -ge 2 ]] || {
+      filesync_usage_error_stderr 'Usage: filesync config set progress <hidden|bar|percent>'
+      exit 1
+    }
     what="$1"
     shift
     case "$what" in
@@ -128,6 +132,7 @@ case "$cmd" in
     ;;
   *)
     echo -e "${RED}Unknown config subcommand: $cmd${NC}" >&2
+    filesync_usage_error_stderr "$FILESYNC_CMD_USAGE"
     exit 1
     ;;
 esac

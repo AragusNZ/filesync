@@ -61,6 +61,11 @@ filesync_print_no_file_rows_for_fragment() {
   echo -e "${YELLOW}No file rows matched --file=$1${NC} (and repo filter if any)." >&2
 }
 
+# Args: space-separated list of local_path values passed to --exact-local=
+filesync_print_no_file_rows_for_exact_locals() {
+  echo -e "${YELLOW}No file rows matched --exact-local=${*}${NC} (and repo filter if any)." >&2
+}
+
 filesync_print_no_file_rows_for_status() {
   echo -e "${YELLOW}No file rows matched --status=$1${NC} (and other filters if any)." >&2
 }

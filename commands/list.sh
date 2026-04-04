@@ -7,12 +7,20 @@ _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/cli-help.sh"
 
+FILESYNC_LIST_REPOS_LINE='filesync list repos [--repo=name]'
+FILESYNC_LIST_FILES_LINE='filesync list files [options]'
+FILESYNC_LIST_COLLECTIONS_LINE='filesync list collections'
+FILESYNC_LIST_REPOS_USAGE="Usage: ${FILESYNC_LIST_REPOS_LINE}"
+FILESYNC_LIST_FILES_USAGE="Usage: ${FILESYNC_LIST_FILES_LINE}"
+FILESYNC_LIST_COLLECTIONS_USAGE="Usage: ${FILESYNC_LIST_COLLECTIONS_LINE}"
+FILESYNC_CMD_USAGE="Usage: ${FILESYNC_LIST_REPOS_LINE} | filesync list files [--repo=name] [--file=path_fragment] [--status=a,b,...] [--include-detached] | ${FILESYNC_LIST_COLLECTIONS_LINE}"
+
 sub="${1:-}"
 if filesync_argv_wants_help "$@"; then
   case "$sub" in
     repos)
-      cat <<'EOF'
-Usage: filesync list repos [--repo=name]
+      cat <<EOF
+${FILESYNC_LIST_REPOS_USAGE}
 Also: l -r
 
 List configured repos from the global store. With --repo=, show only that repo (errors if missing).
@@ -20,8 +28,8 @@ Does not require a project .filesync directory.
 EOF
       ;;
     files)
-      cat <<'EOF'
-Usage: filesync list files [options]
+      cat <<EOF
+${FILESYNC_LIST_FILES_USAGE}
 Also: l, l -f
 
 List file mappings and status. Requires a filesync project (walk-up .filesync/ for files.json).
@@ -30,8 +38,8 @@ List file mappings and status. Requires a filesync project (walk-up .filesync/ f
 EOF
       ;;
     collections)
-      cat <<'EOF'
-Usage: filesync list collections
+      cat <<EOF
+${FILESYNC_LIST_COLLECTIONS_USAGE}
 Also: l -col
 
 List named repo collections from the global store (for use with --also=).
@@ -39,11 +47,11 @@ Does not require a project .filesync directory.
 EOF
       ;;
     *)
-      cat <<'EOF'
+      cat <<EOF
 Usage:
-  filesync list repos [--repo=name]
-  filesync list files [options]
-  filesync list collections
+  ${FILESYNC_LIST_REPOS_LINE}
+  ${FILESYNC_LIST_FILES_LINE}
+  ${FILESYNC_LIST_COLLECTIONS_LINE}
 
 Shorthand: l -r | l | l -f | l -col
 
@@ -57,10 +65,8 @@ fi
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/runtime.sh"
 
-_list_usage_triple='filesync list repos [--repo=name] | filesync list files [--repo=name] [--file=path_fragment] [--status=a,b,...] [--include-detached] | filesync list collections'
-
 if [[ -z "$sub" ]]; then
-  echo -e "${RED}Usage: ${_list_usage_triple}${NC}" >&2
+  filesync_usage_error_stderr "$FILESYNC_CMD_USAGE"
   exit 1
 fi
 shift
@@ -88,13 +94,11 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     -*)
-      echo -e "${RED}Unknown option: $1${NC}" >&2
-      echo "Usage: ${_list_usage_triple}" >&2
+      filesync_unknown_option_stderr "$1" "$FILESYNC_CMD_USAGE"
       exit 1
       ;;
     *)
-      echo -e "${RED}Unexpected argument: $1${NC}" >&2
-      echo "Usage: ${_list_usage_triple}" >&2
+      filesync_unexpected_arg_stderr "$1" "$FILESYNC_CMD_USAGE"
       exit 1
       ;;
   esac
@@ -105,48 +109,48 @@ case "$sub" in
   files) ;;
   collections) ;;
   *)
-    echo -e "${RED}Usage: ${_list_usage_triple}${NC}" >&2
+    filesync_usage_error_stderr "$FILESYNC_CMD_USAGE"
     exit 1
     ;;
 esac
 
 if [[ "$sub" == repos ]] && [[ -n "$FILE_FRAGMENT" ]]; then
   echo -e "${RED}filesync list repos does not accept --file${NC}" >&2
-  echo "Usage: filesync list repos [--repo=name]" >&2
+  filesync_usage_error_stderr "$FILESYNC_LIST_REPOS_USAGE"
   exit 1
 fi
 
 if [[ "$sub" == repos ]] && [[ -n "$STATUS_CSV" ]]; then
   echo -e "${RED}filesync list repos does not accept --status${NC}" >&2
-  echo "Usage: filesync list repos [--repo=name]" >&2
+  filesync_usage_error_stderr "$FILESYNC_LIST_REPOS_USAGE"
   exit 1
 fi
 
 if [[ "$sub" == repos ]] && [[ "$INCLUDE_DETACHED" == true ]]; then
   echo -e "${RED}filesync list repos does not accept --include-detached${NC}" >&2
-  echo "Usage: filesync list repos [--repo=name]" >&2
+  filesync_usage_error_stderr "$FILESYNC_LIST_REPOS_USAGE"
   exit 1
 fi
 
 if [[ "$sub" == collections ]]; then
   if [[ -n "$REPO_FILTER" ]]; then
     echo -e "${RED}filesync list collections does not accept --repo${NC}" >&2
-    echo "Usage: filesync list collections" >&2
+    filesync_usage_error_stderr "$FILESYNC_LIST_COLLECTIONS_USAGE"
     exit 1
   fi
   if [[ -n "$FILE_FRAGMENT" ]]; then
     echo -e "${RED}filesync list collections does not accept --file${NC}" >&2
-    echo "Usage: filesync list collections" >&2
+    filesync_usage_error_stderr "$FILESYNC_LIST_COLLECTIONS_USAGE"
     exit 1
   fi
   if [[ -n "$STATUS_CSV" ]]; then
     echo -e "${RED}filesync list collections does not accept --status${NC}" >&2
-    echo "Usage: filesync list collections" >&2
+    filesync_usage_error_stderr "$FILESYNC_LIST_COLLECTIONS_USAGE"
     exit 1
   fi
   if [[ "$INCLUDE_DETACHED" == true ]]; then
     echo -e "${RED}filesync list collections does not accept --include-detached${NC}" >&2
-    echo "Usage: filesync list collections" >&2
+    filesync_usage_error_stderr "$FILESYNC_LIST_COLLECTIONS_USAGE"
     exit 1
   fi
 fi

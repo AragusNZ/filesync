@@ -1,19 +1,8 @@
 #!/usr/bin/env bash
 # Sourced by bin/filesync after ROOT is set. Each filesync_route_* uses exec and does not return.
 
-# Print help for both info file and info repo (stdout). Requires ROOT and lib/colors.sh.
-filesync_print_info_combined_help() {
-  # shellcheck disable=SC2154
-  echo -e "${BOLD}${WHITE}filesync info: file and repo${NC}"
-  echo ""
-  echo -e "${BOLD}--- info file (local path) ---${NC}"
-  echo ""
-  bash "$ROOT/commands/info-file.sh" --help
-  echo ""
-  echo -e "${BOLD}--- info repo ---${NC}"
-  echo ""
-  bash "$ROOT/commands/info-repo.sh" --help
-}
+# shellcheck source=/dev/null
+source "$ROOT/lib/cli-help.sh"
 
 filesync_route_list() {
   case "${1-}" in
@@ -112,27 +101,16 @@ filesync_route_remove() {
   esac
 }
 
-filesync_print_new_combined_help() {
-  # shellcheck disable=SC2154
-  echo -e "${BOLD}${WHITE}filesync new: repo and collection${NC}"
-  echo ""
-  echo -e "${BOLD}--- new repo ---${NC}"
-  echo ""
-  bash "$ROOT/commands/add-repo.sh" --help
-  echo ""
-  echo -e "${BOLD}--- new collection ---${NC}"
-  echo ""
-  bash "$ROOT/commands/add-collection.sh" --help
-}
-
 filesync_route_new() {
   case "${1-}" in
     -h | --help)
       if [[ $# -eq 1 ]]; then
-        filesync_print_new_combined_help
+        filesync_print_compound_help_stdout "$ROOT" "filesync new: repo and collection" \
+          "new repo" "add-repo.sh" \
+          "new collection" "add-collection.sh"
         exit 0
       fi
-      echo -e "${RED}Usage: filesync new [--help] | new repo ... | new collection ...${NC}" >&2
+      filesync_usage_error_stderr "Usage: filesync new [--help] | new repo ... | new collection ..."
       exit 1
       ;;
     repo | -r)
@@ -144,33 +122,22 @@ filesync_route_new() {
       exec "$ROOT/commands/add-collection.sh" "$@"
       ;;
     *)
-      echo -e "${RED}Usage: filesync new repo|collection ...${NC}" >&2
+      filesync_usage_error_stderr "Usage: filesync new repo|collection ..."
       exit 1
       ;;
   esac
-}
-
-filesync_print_edit_combined_help() {
-  # shellcheck disable=SC2154
-  echo -e "${BOLD}${WHITE}filesync edit: repo and collection${NC}"
-  echo ""
-  echo -e "${BOLD}--- edit repo ---${NC}"
-  echo ""
-  bash "$ROOT/commands/edit-repo.sh" --help
-  echo ""
-  echo -e "${BOLD}--- edit collection ---${NC}"
-  echo ""
-  bash "$ROOT/commands/edit-collection.sh" --help
 }
 
 filesync_route_edit() {
   case "${1-}" in
     -h | --help)
       if [[ $# -eq 1 ]]; then
-        filesync_print_edit_combined_help
+        filesync_print_compound_help_stdout "$ROOT" "filesync edit: repo and collection" \
+          "edit repo" "edit-repo.sh" \
+          "edit collection" "edit-collection.sh"
         exit 0
       fi
-      echo -e "${RED}Usage: filesync edit [--help] | edit repo ... | edit collection ...${NC}" >&2
+      filesync_usage_error_stderr "Usage: filesync edit [--help] | edit repo ... | edit collection ..."
       exit 1
       ;;
     repo | -r)
@@ -182,7 +149,7 @@ filesync_route_edit() {
       exec "$ROOT/commands/edit-collection.sh" "$@"
       ;;
     *)
-      echo -e "${RED}Usage: filesync edit repo|collection ...${NC}" >&2
+      filesync_usage_error_stderr "Usage: filesync edit repo|collection ..."
       exit 1
       ;;
   esac
@@ -190,7 +157,7 @@ filesync_route_edit() {
 
 filesync_route_info() {
   if [[ $# -eq 0 ]]; then
-    echo -e "${RED}Usage: filesync info [file | -f] <local-path> [--fix-marker]${NC}" >&2
+    filesync_usage_error_stderr "Usage: filesync info [file | -f] <local-path> [--fix-marker]"
     echo "       filesync info repo | -r <repo-name>" >&2
     echo "       filesync i <local-path>   (same as info file; optional word: file or -f)" >&2
     echo "See: filesync info --help  or  info file … / info repo …" >&2
@@ -199,7 +166,9 @@ filesync_route_info() {
   case "$1" in
     -h | --help)
       if [[ $# -eq 1 ]]; then
-        filesync_print_info_combined_help
+        filesync_print_compound_help_stdout "$ROOT" "filesync info: file and repo" \
+          "info file (local path)" "info-file.sh" \
+          "info repo" "info-repo.sh"
         exit 0
       fi
       shift

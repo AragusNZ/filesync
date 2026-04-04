@@ -6,9 +6,10 @@ set -euo pipefail
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/cli-help.sh"
+FILESYNC_CMD_USAGE='Usage: filesync remove file [--all-missing] [<local_path> ...]'
 if filesync_argv_wants_help "$@"; then
-  cat <<'EOF'
-Usage: filesync remove file [--all-missing] [<local_path> ...]
+  cat <<EOF
+${FILESYNC_CMD_USAGE}
 Also: rm, rm -f
 
 Drop the row from .filesync/files.json; strip clone/detached markers from the local file;
@@ -38,8 +39,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     -*)
-      echo -e "${RED}Unknown option: $1${NC}" >&2
-      echo "Usage: filesync remove file [--all-missing] [<local_path1> [local_path2 ...]]" >&2
+      filesync_unknown_option_stderr "$1" "$FILESYNC_CMD_USAGE"
       exit 1
       ;;
     *)
@@ -74,7 +74,7 @@ if [[ ${#LOCAL_PATHS[@]} -eq 0 ]]; then
     echo "filesync remove file: no error_missing_master rows to remove." >&2
     exit 0
   fi
-  echo -e "${RED}Usage: filesync remove file [--all-missing] [<local_path1> [local_path2 ...]]${NC}" >&2
+  filesync_usage_error_stderr "$FILESYNC_CMD_USAGE"
   exit 1
 fi
 

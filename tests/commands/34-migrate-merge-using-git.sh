@@ -21,6 +21,7 @@ mkdir -p "${proj}"
 (
 	cd "${proj}"
 	filesync init --no-repo
+	# shellcheck disable=SC2030,SC2031
 	export FILESYNC_HOME="${TMP}/mug-filesync-home"
 	mkdir -p "${FILESYNC_HOME}"
 	jq -n '{version: 2}' >"${FILESYNC_HOME}/system.json"
@@ -31,7 +32,8 @@ mkdir -p "${proj}"
 		--arg p "$rel" \
 		'[{"name":"origin","path":$p,"url":null,"branch":"main","id":"test-origin-id"}]' >"${FILESYNC_HOME}/repos.json"
 	jq -e 'all(.[]; has("merge_using_git") | not)' "${FILESYNC_HOME}/repos.json" >/dev/null || die "fixture should omit merge_using_git"
-	export FILESYNC_REPO_PATH_ANCHOR="$(pwd)"
+	FILESYNC_REPO_PATH_ANCHOR="$(pwd)"
+	export FILESYNC_REPO_PATH_ANCHOR
 	printf '%s\n' '[]' >".filesync/files.json"
 	filesync migrate >/dev/null || die "migrate should succeed"
 	jq -e '.[] | select(.name == "origin") | (.merge_using_git | type) == "boolean"' "${FILESYNC_HOME}/repos.json" >/dev/null || die "migrate should set merge_using_git"
@@ -45,6 +47,7 @@ mkdir -p "${plain}" "${TMP}/mug-proj-plain"
 (
 	cd "${TMP}/mug-proj-plain"
 	filesync init --no-repo
+	# shellcheck disable=SC2030,SC2031
 	export FILESYNC_HOME="${TMP}/mug-filesync-home-plain"
 	mkdir -p "${FILESYNC_HOME}"
 	jq -n '{version: 2}' >"${FILESYNC_HOME}/system.json"
@@ -53,7 +56,8 @@ mkdir -p "${plain}" "${TMP}/mug-proj-plain"
 	jq -n \
 		--arg p "../$(basename "${plain}")" \
 		'[{"name":"plain","path":$p,"url":null,"branch":"main","id":"id-plain"}]' >"${FILESYNC_HOME}/repos.json"
-	export FILESYNC_REPO_PATH_ANCHOR="$(pwd)"
+	FILESYNC_REPO_PATH_ANCHOR="$(pwd)"
+	export FILESYNC_REPO_PATH_ANCHOR
 	printf '%s\n' '[]' >".filesync/files.json"
 	filesync migrate >/dev/null || die "migrate plain should succeed"
 	jq -e '.[] | select(.name == "plain") | .merge_using_git == false' "${FILESYNC_HOME}/repos.json" >/dev/null \

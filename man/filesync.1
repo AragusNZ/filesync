@@ -1,4 +1,4 @@
-.TH FILESYNC 1 "March 2026" "" "User Commands"
+.TH FILESYNC 1 "April 2026" "" "User Commands"
 .SH NAME
 filesync \- map and sync files across git checkouts
 .SH SYNOPSIS
@@ -265,7 +265,8 @@ Resolve
 .I path
 to a tracked clone in the current project's
 .I files.json
-or to a file under a registered repo checkout (master-at-checkout).
+or to the canonical master file under a registered repo checkout
+.RI ( master-at-checkout ).
 Lists every
 .I files.json
 row in the union of this project and other registered checkouts that share the same master
@@ -276,7 +277,13 @@ runs
 with
 .B \-\-exact\-local=
 for those rows in each affected project,
-then prints a summary on standard error.
+then prints a summary on standard error with
+.BR "Role: master"
+or
+.BR "Role: clone" ,
+the canonical master key, and related
+.I files.json
+rows.
 If the canonical master file's
 .B kind=master
 marker does not match whether any clones are tracked, prompts on a terminal to add or strip the marker; with standard input not a terminal, prints a hint unless
@@ -315,7 +322,7 @@ is not in global
 Also
 .BR s .
 .RI [ \-\-repo= name ]
-.RI [ \-\-file= fragment ]
+.RI [ \-\-file= fragment " | " \-\-exact\-local= path " ..." ]
 .RI [ \-c " | " \-\-check ]
 .RI [ \-\-dry\-run ]
 .RI [ \-f " | " \-\-force ]
@@ -326,16 +333,25 @@ Copy from master repos into the project and update
 .IR files.json .
 Filters
 .BI \-\-repo=
-and
+and either
 .BI \-\-file=
+or repeatable
+.BI \-\-exact\-local=
 match
-.BR check .
+.BR check
+(do not combine
+.B \-\-file=
+with
+.BR \-\-exact\-local= ).
 .BR \-c ", " \-\-check
 runs
 .B check
 first using matching
 .BI \-\-repo= ,
-.BI \-\-file= ,
+either
+.BI \-\-file=
+or
+.BI \-\-exact\-local= ,
 and
 .BI \-\-status=
 filters; if that preflight fails, sync exits without copying.
@@ -549,7 +565,9 @@ mirrors the same operation into additional sibling projects (same rules as
 .B push
 .RI [\-\-all]
 .I local_path \fR[\fIlocal_path ...\fR]
-Push local content to the master path in the linked repo.
+.RI [ \-\-to\-clones path " [" \-\-dry\-run ]]
+Push local clone content to the master path in the linked repo (reverse of default
+.BR sync ).
 With
 .BR \-\-all ,
 also pushes every mapping whose
@@ -571,6 +589,36 @@ If
 is given, no paths are listed, and there are no
 .B local_newer
 rows, the command exits successfully after a short notice.
+.PP
+.B \-\-to\-clones
+.I path
+propagates the canonical master (resolved like
+.BR "info file" )
+into every tracked clone row that shares the same master across the union of project roots: for each affected project it runs
+.B sync
+with
+.BR \-c ", " \-\-check
+(so row status is refreshed before selection),
+.BR \-\-repo= ","
+repeatable
+.BR \-\-exact\-local= ","
+.BR \-f ","
+and
+.BI \-\-status= all
+.RI ( plus
+.B \-\-dry\-run
+when given).
+Do not combine
+.B \-\-to\-clones
+with
+.B \-\-all
+or other
+.I local_path
+arguments;
+.B \-\-dry\-run
+is only valid with
+.BR \-\-to\-clones .
+If no related clone rows exist, exits successfully after a short notice.
 .TP
 .BI detach " file"
 Also

@@ -17,7 +17,9 @@ mkdir -p "${p}"
 # --force includes local_newer so master can overwrite local edits (without --status=).
 master="${TMP}/sync-force-master" proj="${TMP}/sync-force-proj"
 rm -rf "${master}" "${proj}"
-mkdir -p "${master}"
+mkdir -p "${master}" "${proj}"
+master="$(cd "${master}" && pwd -P)"
+proj="$(cd "${proj}" && pwd -P)"
 (
 	cd "${master}"
 	git init -b main
@@ -31,7 +33,6 @@ mkdir -p "${master}"
 	git add tools/x.txt
 	git commit -q -m init
 )
-mkdir -p "${proj}"
 (
 	cd "${proj}"
 	filesync init
@@ -41,6 +42,7 @@ mkdir -p "${proj}"
 	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-07.json"
 	filesync add origin tools/x.txt
 	filesync sync
+	filesync check >/dev/null || die "check after sync"
 	# Ensure last_sync_at is strictly before the next local mtime (second resolution).
 	sleep 1
 	echo "LOCAL_LINE" >>tools/x.txt
