@@ -26,7 +26,7 @@ Options:
   --no-commit            Write files in place this run (skip git branch/merge even if enabled for the repo)
   --dry-run              Show what would happen without writing files
   -f, --force            Include 'local newer' and 'conflict' rows (normally skipped)
-  --showall              Print one line per file
+  --showall              Print quiet rows: [Already in sync] and gray skips for status=synced
   --status=a,b,...       Only rows in these states (OR). Tokens: filesync -h or man filesync
   --include-detached     Include detached rows (normally skipped)
   --move, --mv           If status is master_file_moved, move the local file to the new path first
@@ -109,6 +109,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ "$NO_COMMIT" == true ]]; then
+  # Read by filesync_sync_git_use_merge_path (lib/sync-git-merge.sh); not referenced in this file.
+  # shellcheck disable=SC2034
   FILESYNC_SYNC_NO_COMMIT=1
 fi
 
@@ -237,7 +239,6 @@ FILE_PATH_MATCHES=0
 
 filesync_print_sync_banner
 filesync_print_filter_context "$REPO_FILTER" "$FILE_FILTER_LABEL" "$REPO_FILE_FILTER_LABEL" "$ALL_FILES_FILTER_LABEL" "$STATUS_CSV" "$INCLUDE_DETACHED" 1 "$FORCE"
-filesync_print_sync_showall_banner "$SHOWALL"
 echo "" >&2
 
 SYNC_ROWS_TSV=$(mktemp)
@@ -289,7 +290,9 @@ while IFS=$'\t' read -r i REPO_ID REPO_NAME LOCAL_PATH REPO_FILE_PATH ROW_STATUS
   fi
 
   if ! sync_entry_allowed "$ROW_STATUS"; then
-    file_sync_print_sync_skip_line "⊘" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH" "not selected; status=${ROW_STATUS:-unset}"
+    if [[ "$SHOWALL" == true ]] || [[ "${ROW_STATUS:-}" != "synced" ]]; then
+      file_sync_print_sync_skip_line "⊘" "$REPO_NAME" "$REPO_FILE_PATH" "$LOCAL_PATH" "not selected; status=${ROW_STATUS:-unset}"
+    fi
     # Rows previously checked as synced are still "already in sync" even if
     # excluded by the current status selection.
     if [[ "${ROW_STATUS:-}" == "synced" ]]; then

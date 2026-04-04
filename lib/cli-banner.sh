@@ -49,12 +49,6 @@ filesync_print_filter_context() {
   fi
 }
 
-filesync_print_sync_showall_banner() {
-  if [[ "${1:-false}" == true ]]; then
-    filesync_print_filter_note "Also: --showall (per-file already-in-sync lines)"
-  fi
-}
-
 filesync_print_section_title() {
   echo -e "${BOLD}${WHITE}$1...${NC}" >&2
 }

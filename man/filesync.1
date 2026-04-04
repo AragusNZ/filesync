@@ -502,7 +502,7 @@ and
 .I conflict
 rows so master replaces the local copy.
 .B \-\-showall
-prints a per-file line for rows that are already in sync with master; by default those lines are omitted (counts in the summary still include them).
+prints per-file lines that quiet mode omits, including \fB[Already in sync]\fR when the clone already matches master, and gray skip lines for rows excluded only because cached status is \fIsynced\fR under the default status filter; summary counts still include those rows.
 Coupled sync requires a master marker on the repo file.
 When a repo's
 .B merge_using_git
@@ -525,7 +525,11 @@ layout as
 .BI list " files" ,
 and end with a bracketed outcome
 .RI ( e.g. "\fB[Synced]\fR", "\fB[Already in sync]\fR", "\fB[Dry-run]\fR" ).
-Rows skipped by status filter or marker rules are printed in gray.
+Other rows skipped by status filter or marker rules are printed in gray; with the default status set, skips solely for
+.I synced
+stay quiet unless
+.B \-\-showall
+is given.
 Like
 .BR check ,
 a TTY progress indicator on standard error may appear when scanning many rows; per-file sync lines go to standard output, so output may not stay fixed on one line.

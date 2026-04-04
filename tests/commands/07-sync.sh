@@ -71,7 +71,10 @@ proj="$(cd "${proj}" && pwd -P)"
 	git -C "${master}" add tools/x.txt
 	git -C "${master}" commit -q -m v2
 	_out_stale="$(filesync sync --file=x.txt 2>&1)" || true
-	[[ "${_out_stale}" == *"not selected; status=synced"* ]] || die "without --check, stale synced status should skip"
+	[[ "${_out_stale}" != *"not selected; status=synced"* ]] || die "stale synced skip should be quiet without --showall"
+	[[ "${_out_stale}" == *"status_skipped=1"* ]] || die "stale synced row should count as status_skipped"
+	_out_stale_verbose="$(filesync sync --showall --file=x.txt 2>&1)" || true
+	[[ "${_out_stale_verbose}" == *"not selected; status=synced"* ]] || die "without --check, stale synced status should skip (visible with --showall)"
 	_out_checked="$(filesync sync -c --file=x.txt 2>&1)" || die "sync -c should run check then sync"
 	[[ "${_out_checked}" == *"Check"* ]] || die "sync -c should run check output first"
 	grep -q '^v2$' tools/x.txt || die "sync -c should pull updated master content"
