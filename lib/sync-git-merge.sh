@@ -140,7 +140,7 @@ filesync_sync_git_repo_rel_files_json() {
 filesync_sync_git_commit_files_json_after_sync() {
   local proot="${1:?}"
   local repo_name="${2:?}"
-  local rel parent_count
+  local rel parent_count _fsc_msg
 
   git -C "$proot" rev-parse --is-inside-work-tree &>/dev/null || return 0
   rel="$(filesync_sync_git_repo_rel_files_json "$proot")" || return 0
@@ -158,7 +158,11 @@ filesync_sync_git_commit_files_json_after_sync() {
       echo "filesync: warning: could not amend merge commit to include files.json (commit manually)" >&2
     fi
   else
-    if ! git -C "$proot" commit -q -m "filesync: update files.json after sync from ${repo_name}"; then
+    _fsc_msg="filesync: update files.json after sync from ${repo_name}"
+    if [[ -n "${FILESYNC_SYNC_COMMIT_OPTIONS_DESC:-}" ]]; then
+      _fsc_msg+=" (${FILESYNC_SYNC_COMMIT_OPTIONS_DESC})"
+    fi
+    if ! git -C "$proot" commit -q -m "$_fsc_msg"; then
       echo "filesync: warning: could not commit files.json (${repo_name}); commit manually" >&2
     fi
   fi
@@ -211,7 +215,7 @@ filesync_sync_git_finalize_merge_batch() {
   local files_json="${2:?}"
   local cfg="${3:?}"
   local repo_name="${4:?}"
-  local attempt br orig lp fm rid rp fp st rel conflict_line
+  local attempt br orig lp fm rid rp fp st rel conflict_line _fsc_msg
   declare -a work_lp work_fm work_rid
   declare -a conflict_paths
 
@@ -269,7 +273,12 @@ filesync_sync_git_finalize_merge_batch() {
       git -C "$proot" add -- "$proot/$lp"
     done
 
-    if ! git -C "$proot" commit -q -m "filesync: sync from ${repo_name} (attempt ${attempt})"; then
+    _fsc_msg="filesync: sync from ${repo_name} (#${attempt}"
+    if [[ -n "${FILESYNC_SYNC_COMMIT_OPTIONS_DESC:-}" ]]; then
+      _fsc_msg+="; ${FILESYNC_SYNC_COMMIT_OPTIONS_DESC}"
+    fi
+    _fsc_msg+=")"
+    if ! git -C "$proot" commit -q -m "$_fsc_msg"; then
       echo "filesync: git commit failed during sync merge batch" >&2
       filesync_sync_git_abort_open_batch "$proot"
       return 1

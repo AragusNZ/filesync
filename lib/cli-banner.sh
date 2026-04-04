@@ -20,15 +20,21 @@ filesync_print_filter_note() {
   echo -e "${GRAY}---- $1 ----${NC}" >&2
 }
 
-# Args: repo_filter file_fragment status_csv include_detached [is_sync] [force]
+# Args: repo_filter local_label repo_file_label all_files_label status_csv include_detached [is_sync] [force]
 # When is_sync is 1 and status_csv is empty, prints sync default status mode line.
 filesync_print_filter_context() {
-  local repo="${1:-}" frag="${2:-}" status_csv="${3:-}" inc_det="${4:-false}" is_sync="${5:-0}" force="${6:-false}"
+  local repo="${1:-}" loc="${2:-}" rfp="${3:-}" allf="${4:-}" status_csv="${5:-}" inc_det="${6:-false}" is_sync="${7:-0}" force="${8:-false}"
   if [[ -n "$repo" ]]; then
     filesync_print_filter_note "Filter: --repo=$repo"
   fi
-  if [[ -n "$frag" ]]; then
-    filesync_print_filter_note "Filter: --file= substring on local_path or repo_file_path: ${frag}"
+  if [[ -n "$loc" ]]; then
+    filesync_print_filter_note "Filter: --file= substring on local_path: ${loc}"
+  fi
+  if [[ -n "$rfp" ]]; then
+    filesync_print_filter_note "Filter: --repo-file= substring on repo_file_path: ${rfp}"
+  fi
+  if [[ -n "$allf" ]]; then
+    filesync_print_filter_note "Filter: --all-files= substring on local_path or repo_file_path: ${allf}"
   fi
   if [[ -n "$status_csv" ]]; then
     filesync_print_filter_note "Filter: --status=${status_csv}"
@@ -82,9 +88,17 @@ filesync_print_no_file_rows_for_fragment() {
   echo -e "${YELLOW}No file rows matched --file=$1${NC} (and repo filter if any)." >&2
 }
 
-# Args: space-separated list of local_path values passed to --exact-local=
-filesync_print_no_file_rows_for_exact_locals() {
-  echo -e "${YELLOW}No file rows matched --exact-local=${*}${NC} (and repo filter if any)." >&2
+# Args: optional local_path fragment label, repo_file_path fragment label, --all-files label (empty skips).
+filesync_print_no_file_rows_path_filters() {
+  local loc="${1:-}" rfp="${2:-}" allf="${3:-}"
+  local parts=()
+  [[ -n "$loc" ]] && parts+=("--file=: ${loc}")
+  [[ -n "$rfp" ]] && parts+=("--repo-file=: ${rfp}")
+  [[ -n "$allf" ]] && parts+=("--all-files=: ${allf}")
+  [[ ${#parts[@]} -eq 0 ]] && return 0
+  local joined
+  joined=$(IFS='; '; echo "${parts[*]}")
+  echo -e "${YELLOW}No file rows matched path filter(s): ${joined}${NC} (and repo filter if any)." >&2
 }
 
 filesync_print_no_file_rows_for_status() {

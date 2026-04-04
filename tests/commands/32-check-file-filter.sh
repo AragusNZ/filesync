@@ -4,7 +4,7 @@ set -euo pipefail
 # shellcheck source=/dev/null
 source "${ROOT}/tests/harness-command.sh"
 
-master="${TMP}/chk-exact-master" proj="${TMP}/chk-exact-proj"
+master="${TMP}/chk-ff-master" proj="${TMP}/chk-ff-proj"
 rm -rf "${master}" "${proj}"
 mkdir -p "${master}/tools" "${proj}/tools"
 
@@ -31,17 +31,17 @@ mkdir -p "${master}/tools" "${proj}/tools"
 	filesync init
 	jq -n \
 		--arg p "${master}" \
-		'[{"name":"origin","path":$p,"url":"","branch":"main"}]' >"${TMP}/seed-32.json"
-	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-32.json"
+		'[{"name":"origin","path":$p,"url":"","branch":"main"}]' >"${TMP}/seed-32-ff.json"
+	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-32-ff.json"
 	jq -n \
 		'[
 			{"repo_id":"testid-origin","repo_file_path":"tools/a.txt","local_path":"tools/a.txt","sync_status":"synced","last_check_at":null},
 			{"repo_id":"testid-origin","repo_file_path":"tools/b.txt","local_path":"tools/b.txt","sync_status":"synced","last_check_at":null}
 		]' >".filesync/files.json"
 
-	filesync check --exact-local=tools/a.txt >/dev/null 2>&1 || die "check --exact-local should succeed"
+	filesync check --file=tools/a.txt >/dev/null 2>&1 || die "check --file should succeed"
 	jq -e '.[] | select(.local_path=="tools/a.txt") | .last_check_at != null' ".filesync/files.json" >/dev/null \
 		|| die "a.txt should be rechecked"
 	jq -e '.[] | select(.local_path=="tools/b.txt") | .last_check_at == null' ".filesync/files.json" >/dev/null \
-		|| die "b.txt should not be selected by --exact-local=tools/a.txt"
+		|| die "b.txt should not be selected by --file=tools/a.txt"
 )

@@ -167,8 +167,9 @@ Non-interactive repair for rows whose master or local paths are missing (see
 Also
 .BR c .
 .RI [ \-\-repo= name ]
-.RI [ \-\-file= fragment ]
-.RI [ \-\-exact\-local= path ]
+.RI [ \-\-file= fragment " ..." ]
+.RI [ \-\-repo\-file= fragment " ..." ]
+.RI [ \-\-all\-files= fragment " ..." ]
 .RI [ \-\-status= list ]
 Verify mappings, refresh
 .I files.json
@@ -178,18 +179,19 @@ Optional
 .BI \-\-repo=
 filters to one repo by name.
 .BI \-\-file=
-matches rows where
+may be repeated; when at least one fragment is nonempty after trimming, a row must have its project-relative
+.I local_path
+contain one of the fragments (substring).
+.BI \-\-repo\-file=
+may be repeated; when nonempty, the row's
+.I repo_file_path
+must contain one of the fragments.
+.BI \-\-all\-files=
+may be repeated; when nonempty, the row must match at least one fragment against
 .I local_path
 or
-.I repo_file_path
-contains the fragment (substring).
-Do not combine
-.BI \-\-file=
-with
-.BR \-\-exact\-local= ;
-the latter may be repeated and selects rows whose
-.I local_path
-equals the given project-relative path exactly.
+.IR repo_file_path .
+These three dimensions combine with logical AND when more than one is active; omit a flag entirely (or pass only blank values) to leave that dimension unconstrained.
 .BI \-\-status=
 matches rows by cached
 .I sync_status
@@ -275,7 +277,7 @@ and repo identity),
 runs
 .B check
 with
-.B \-\-exact\-local=
+.B \-\-file=
 for those rows in each affected project,
 then prints a summary on standard error with
 .BR "Role: master"
@@ -406,7 +408,9 @@ finds no related rows, a fallback may infer the old path from missing masters; o
 Also
 .BR s .
 .RI [ \-\-repo= name ]
-.RI [ \-\-file= fragment " | " \-\-exact\-local= path " ..." ]
+.RI [ \-\-file= fragment " ..." ]
+.RI [ \-\-repo\-file= fragment " ..." ]
+.RI [ \-\-all\-files= fragment " ..." ]
 .RI [ \-c " | " \-\-check ]
 .RI [ \-\-dry\-run ]
 .RI [ \-f " | " \-\-force ]
@@ -417,29 +421,20 @@ Also
 Copy from master repos into the project and update
 .IR files.json .
 Filters
-.BI \-\-repo=
-and either
-.BI \-\-file=
-or repeatable
-.BI \-\-exact\-local=
-match
-.BR check
-(do not combine
-.B \-\-file=
-with
-.BR \-\-exact\-local= ).
+.BI \-\-repo= ","
+.BI \-\-file= ","
+.BI \-\-repo\-file= ","
+and
+.BI \-\-all\-files=
+(same rules as
+.BR check )
+apply before syncing.
 .BR \-c ", " \-\-check
 runs
 .B check
-first using matching
-.BI \-\-repo= ,
-either
-.BI \-\-file=
-or
-.BI \-\-exact\-local= ,
-and
+first with the same path-filter and
 .BI \-\-status=
-filters; if that preflight fails, sync exits without copying.
+arguments; if that preflight fails, sync exits without copying.
 By default only rows with unset,
 .IR sync_required ", " error_missing_local ", or " master_file_moved
 status are considered; detached rows are skipped unless
@@ -527,14 +522,17 @@ Also
 List configured repos or details for one repo by name.
 Accepts only
 .BR \-\-repo= ;
-it does not accept
-.BR \-\-file= ", " \-\-status= ", or " \-\-include\-detached .
+it does not accept path filters
+.RI ( \-\-file= ", " \-\-repo\-file= ", " \-\-all\-files= ),
+.BR \-\-status= ", or " \-\-include\-detached .
 .TP
 .BI list " files"
 Also
 .BR l ", " "l " \-f .
 .RI [ \-\-repo= name ]
-.RI [ \-\-file= fragment ]
+.RI [ \-\-file= fragment " ..." ]
+.RI [ \-\-repo\-file= fragment " ..." ]
+.RI [ \-\-all\-files= fragment " ..." ]
 .RI [ \-\-status= list ]
 .RI [ \-\-include\-detached ]
 List file mappings and cached status; run
@@ -704,8 +702,11 @@ with
 .BR \-c ", " \-\-check
 (so row status is refreshed before selection),
 .BR \-\-repo= ","
-repeatable
-.BR \-\-exact\-local= ","
+one
+.B \-\-file=
+per affected clone
+.BI local_path
+in that project,
 .BR \-f ","
 and
 .BI \-\-status= all

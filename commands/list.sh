@@ -13,7 +13,7 @@ FILESYNC_LIST_COLLECTIONS_LINE='filesync list collections'
 FILESYNC_LIST_REPOS_USAGE="Usage: ${FILESYNC_LIST_REPOS_LINE}"
 FILESYNC_LIST_FILES_USAGE="Usage: ${FILESYNC_LIST_FILES_LINE}"
 FILESYNC_LIST_COLLECTIONS_USAGE="Usage: ${FILESYNC_LIST_COLLECTIONS_LINE}"
-FILESYNC_CMD_USAGE="Usage: ${FILESYNC_LIST_REPOS_LINE} | filesync list files [--repo=name] [--file=path_fragment] [--status=a,b,...] [--include-detached] | ${FILESYNC_LIST_COLLECTIONS_LINE}"
+FILESYNC_CMD_USAGE="Usage: ${FILESYNC_LIST_REPOS_LINE} | filesync list files [--repo=name] [--file=...] [--repo-file=...] [--all-files=...] [--status=a,b,...] [--include-detached] | ${FILESYNC_LIST_COLLECTIONS_LINE}"
 
 sub="${1:-}"
 if filesync_argv_wants_help "$@"; then
@@ -33,7 +33,7 @@ ${FILESYNC_LIST_FILES_USAGE}
 Also: l, l -f
 
 List file mappings and status. Requires a filesync project (walk-up .filesync/ for files.json).
---file filters by substring on local_path or repo_file_path.
+Path filters match sync/check: --file (local_path), --repo-file (repo_file_path), --all-files (either); repeat for OR within each; dimensions AND.
 --status uses the same token rules as sync/check (see main "filesync -h" or man filesync).
 EOF
       ;;
@@ -72,7 +72,9 @@ fi
 shift
 
 REPO_FILTER=""
-FILE_FRAGMENT=""
+declare -a FILE_FRAGMENTS=()
+declare -a REPO_FILE_FRAGMENTS=()
+declare -a ALL_FILES_FRAGMENTS=()
 STATUS_CSV=""
 INCLUDE_DETACHED=false
 while [[ $# -gt 0 ]]; do
@@ -82,7 +84,15 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --file=*)
-      FILE_FRAGMENT="${1#*=}"
+      FILE_FRAGMENTS+=("${1#*=}")
+      shift
+      ;;
+    --repo-file=*)
+      REPO_FILE_FRAGMENTS+=("${1#*=}")
+      shift
+      ;;
+    --all-files=*)
+      ALL_FILES_FRAGMENTS+=("${1#*=}")
       shift
       ;;
     --include-detached)
@@ -114,8 +124,8 @@ case "$sub" in
     ;;
 esac
 
-if [[ "$sub" == repos ]] && [[ -n "$FILE_FRAGMENT" ]]; then
-  echo -e "${RED}filesync list repos does not accept --file${NC}" >&2
+if [[ "$sub" == repos ]] && { [[ ${#FILE_FRAGMENTS[@]} -gt 0 ]] || [[ ${#REPO_FILE_FRAGMENTS[@]} -gt 0 ]] || [[ ${#ALL_FILES_FRAGMENTS[@]} -gt 0 ]]; }; then
+  echo -e "${RED}filesync list repos does not accept path filters (--file, --repo-file, --all-files)${NC}" >&2
   filesync_usage_error_stderr "$FILESYNC_LIST_REPOS_USAGE"
   exit 1
 fi
@@ -138,8 +148,8 @@ if [[ "$sub" == collections ]]; then
     filesync_usage_error_stderr "$FILESYNC_LIST_COLLECTIONS_USAGE"
     exit 1
   fi
-  if [[ -n "$FILE_FRAGMENT" ]]; then
-    echo -e "${RED}filesync list collections does not accept --file${NC}" >&2
+  if [[ ${#FILE_FRAGMENTS[@]} -gt 0 ]] || [[ ${#REPO_FILE_FRAGMENTS[@]} -gt 0 ]] || [[ ${#ALL_FILES_FRAGMENTS[@]} -gt 0 ]]; then
+    echo -e "${RED}filesync list collections does not accept path filters (--file, --repo-file, --all-files)${NC}" >&2
     filesync_usage_error_stderr "$FILESYNC_LIST_COLLECTIONS_USAGE"
     exit 1
   fi
@@ -193,7 +203,22 @@ case "$sub" in
     ;;
   files)
     filesync_print_list_files_heading
-    filesync_print_filter_context "$REPO_FILTER" "$FILE_FRAGMENT" "$STATUS_CSV" "$INCLUDE_DETACHED" 0
+    FILE_FILTER_LABEL=""
+    if [[ ${#FILE_FRAGMENTS[@]} -gt 0 ]]; then
+      mapfile -t _lf_nf < <(filesync_emit_nonempty_file_fragments FILE_FRAGMENTS)
+      [[ ${#_lf_nf[@]} -gt 0 ]] && FILE_FILTER_LABEL=$(IFS=', '; echo "${_lf_nf[*]}")
+    fi
+    REPO_FILE_FILTER_LABEL=""
+    if [[ ${#REPO_FILE_FRAGMENTS[@]} -gt 0 ]]; then
+      mapfile -t _rf_nf < <(filesync_emit_nonempty_file_fragments REPO_FILE_FRAGMENTS)
+      [[ ${#_rf_nf[@]} -gt 0 ]] && REPO_FILE_FILTER_LABEL=$(IFS=', '; echo "${_rf_nf[*]}")
+    fi
+    ALL_FILES_FILTER_LABEL=""
+    if [[ ${#ALL_FILES_FRAGMENTS[@]} -gt 0 ]]; then
+      mapfile -t _af_nf < <(filesync_emit_nonempty_file_fragments ALL_FILES_FRAGMENTS)
+      [[ ${#_af_nf[@]} -gt 0 ]] && ALL_FILES_FILTER_LABEL=$(IFS=', '; echo "${_af_nf[*]}")
+    fi
+    filesync_print_filter_context "$REPO_FILTER" "$FILE_FILTER_LABEL" "$REPO_FILE_FILTER_LABEL" "$ALL_FILES_FILTER_LABEL" "$STATUS_CSV" "$INCLUDE_DETACHED" 0
     # shellcheck disable=SC2034  # Used via nameref in filesync_counts_inc/render helpers.
     declare -A LIST_STATUS_COUNTS=()
     print_file_line() {
@@ -212,7 +237,7 @@ case "$sub" in
     printed=0
     if [[ -n "$REPO_FILTER" ]]; then
       while IFS=$'\t' read -r rn rp lp st mw; do
-        filesync_file_matches_fragment "$FILE_FRAGMENT" "$lp" "$rp" || continue
+        filesync_row_matches_path_filter_groups "$lp" "$rp" FILE_FRAGMENTS REPO_FILE_FRAGMENTS ALL_FILES_FRAGMENTS || continue
         if [[ -n "$STATUS_CSV" ]] && ! file_sync_status_matches_csv "$st" "$STATUS_CSV" "$INCLUDE_DETACHED"; then
           continue
         fi
@@ -222,7 +247,7 @@ case "$sub" in
       done < <(jq -r --arg n "$REPO_FILTER" '.files[] | select(.repo_name == $n) | "\(.repo_name)\t\(.repo_file_path)\t\(.local_path)\t\(.sync_status // "")\t\(.check_marker_warnings // [] | join(","))"' "$CONFIG_FILE")
     else
       while IFS=$'\t' read -r rn rp lp st mw; do
-        filesync_file_matches_fragment "$FILE_FRAGMENT" "$lp" "$rp" || continue
+        filesync_row_matches_path_filter_groups "$lp" "$rp" FILE_FRAGMENTS REPO_FILE_FRAGMENTS ALL_FILES_FRAGMENTS || continue
         if [[ -n "$STATUS_CSV" ]] && ! file_sync_status_matches_csv "$st" "$STATUS_CSV" "$INCLUDE_DETACHED"; then
           continue
         fi
@@ -231,8 +256,8 @@ case "$sub" in
         filesync_counts_inc LIST_STATUS_COUNTS "${st:-unset}"
       done < <(jq -r '.files[] | "\(.repo_name)\t\(.repo_file_path)\t\(.local_path)\t\(.sync_status // "")\t\(.check_marker_warnings // [] | join(","))"' "$CONFIG_FILE")
     fi
-    if [[ -n "$FILE_FRAGMENT" ]] && [[ "$printed" -eq 0 ]] && [[ "$TOTAL_FOR_LIST" -gt 0 ]]; then
-      filesync_print_no_file_rows_for_fragment "$FILE_FRAGMENT"
+    if [[ "$printed" -eq 0 ]] && [[ "$TOTAL_FOR_LIST" -gt 0 ]] && { [[ -n "$FILE_FILTER_LABEL" ]] || [[ -n "$REPO_FILE_FILTER_LABEL" ]] || [[ -n "$ALL_FILES_FILTER_LABEL" ]]; }; then
+      filesync_print_no_file_rows_path_filters "$FILE_FILTER_LABEL" "$REPO_FILE_FILTER_LABEL" "$ALL_FILES_FILTER_LABEL"
     fi
     if [[ -n "$STATUS_CSV" ]] && [[ "$printed" -eq 0 ]] && [[ "$TOTAL_FOR_LIST" -gt 0 ]]; then
       filesync_print_no_file_rows_for_status "$STATUS_CSV"

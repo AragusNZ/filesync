@@ -46,6 +46,7 @@ proj="$(cd "${proj}" && pwd -P)"
 	# Ensure last_sync_at is strictly before the next local mtime (second resolution).
 	sleep 1
 	echo "LOCAL_LINE" >>tools/x.txt
+	touch tools/x.txt
 	filesync check >/dev/null || die "check after local edit"
 	jq -e '.[] | select(.local_path=="tools/x.txt") | .sync_status == "local_newer"' ".filesync/files.json" >/dev/null \
 		|| die "expected local_newer status"

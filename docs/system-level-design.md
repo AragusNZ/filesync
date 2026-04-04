@@ -41,6 +41,10 @@ Merged preferences, `repo_path_root` (effective anchor path), `repos`, `files` (
 
 `list.sh` uses `filesync_command_init_system` for `repos` / `collections` (internal argv) and full init for `files`.
 
+## Path filters (`check`, `sync`, `list files`)
+
+Optional **`--file=`** (local path), **`--repo-file=`** (repo-side path), and **`--all-files=`** (either); repeat a flag for OR within that dimension; nonempty dimensions are ANDed. See [configuration.md](configuration.md) and **`man filesync`**.
+
 ## Atomic writes
 
 Global JSON is usually replaced with temp file + `mv`. `flock` on `$FILESYNC_SYSTEM_HOME/.lock` (same dir as the store) serializes several mutators (`config` set, `new repo`, `edit repo`, `migrate`, `remove repo`, `init` global repo step); some collection updates use temp + `mv` only.

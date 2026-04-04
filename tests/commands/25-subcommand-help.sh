@@ -17,10 +17,10 @@ assert_help() {
 
 assert_help "sync --help" "--dry-run" sync --help
 assert_help "sync --help" "-c, --check" sync --help
-assert_help "sync --help" "exact-local" sync --help
+assert_help "sync --help" "repo-file" sync --help
 assert_help "sync alias s -h" "master repos" s -h
 assert_help "check --help" "last_check_at" check --help
-assert_help "check --help" "exact-local" check --help
+assert_help "check --help" "repo-file" check --help
 assert_help "check alias c -h" "Verify mappings" c -h
 assert_help "info file --help" "fix-marker" info file --help
 assert_help "info repo --help" "config doctor" info repo --help
@@ -33,6 +33,7 @@ assert_help "init --help" ".filesync/" init --help
 assert_help "init --help" "--no-repo" init --help
 assert_help "list repos --help" "list repos" list repos --help
 assert_help "list files -h" "list files" list files -h
+assert_help "list files -h" "all-files" list files -h
 assert_help "l -r --help" "list repos" l -r --help
 assert_help "update --help" "GitHub" update --help
 assert_help "config --help" "doctor" config --help

@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 # Sync from master repos into project (updates .filesync/files.json rows).
-# Usage: sync.sh [--repo=name] [--file=path_fragment | --exact-local=path ...] [-c|--check] ...
-# Path fragment: substring match on local_path or repo_file_path (after optional --repo filter).
-# --exact-local: exact project-relative local_path (repeatable); mutually exclusive with --file=.
+# Usage: sync.sh [--repo=name] [--file=...] [--repo-file=...] [--all-files=...] [-c|--check] ...
+# Path fragments: same rules as filesync check (AND across --file / --repo-file / --all-files).
 
 set -euo pipefail
 
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/cli-help.sh"
-FILESYNC_CMD_USAGE='Usage: filesync sync [--repo=name] [--file=path_fragment | --exact-local=path ...] [-c|--check] [--dry-run] [-f|--force] [--showall] [--status=a,b,...] [--include-detached] [--move|--mv]'
+FILESYNC_CMD_USAGE='Usage: filesync sync [--repo=name] [--file=path_fragment ...] [--repo-file=path_fragment ...] [--all-files=path_fragment ...] [-c|--check] [--dry-run] [-f|--force] [--showall] [--status=a,b,...] [--include-detached] [--move|--mv]'
 if filesync_argv_wants_help "$@"; then
   cat <<EOF
 ${FILESYNC_CMD_USAGE}
@@ -19,8 +18,9 @@ Copy from master repos into the project and update .filesync/files.json row stat
 
 Options:
   --repo=name            Limit to mappings for this repo
-  --file=fragment        Substring match on local_path or repo_file_path (after --repo)
-  --exact-local=path     Exact match on local_path only (repeatable); do not combine with --file=
+  --file=fragment        Substring on local_path only (repeat for OR; after --repo)
+  --repo-file=fragment   Substring on repo_file_path only (repeat for OR)
+  --all-files=fragment   Substring on local_path OR repo_file_path (repeat for OR)
   -c, --check            Run "filesync check" with matching filters before syncing
   --dry-run              Show actions without copying
   -f, --force            Also sync local_newer and conflict rows (default skips them)
@@ -51,8 +51,9 @@ source "$_CMD_ROOT/../lib/progress.sh"
 source "$_CMD_ROOT/../lib/sync-git-merge.sh"
 
 REPO_FILTER=""
-FILE_FRAGMENT=""
-declare -a EXACT_LOCAL_PATHS=()
+declare -a FILE_FRAGMENTS=()
+declare -a REPO_FILE_FRAGMENTS=()
+declare -a ALL_FILES_FRAGMENTS=()
 DRY_RUN=false
 FORCE=false
 STATUS_CSV=""
@@ -79,11 +80,15 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --file=*)
-      FILE_FRAGMENT="${1#*=}"
+      FILE_FRAGMENTS+=("${1#*=}")
       shift
       ;;
-    --exact-local=*)
-      EXACT_LOCAL_PATHS+=("${1#*=}")
+    --repo-file=*)
+      REPO_FILE_FRAGMENTS+=("${1#*=}")
+      shift
+      ;;
+    --all-files=*)
+      ALL_FILES_FRAGMENTS+=("${1#*=}")
       shift
       ;;
     -*)
@@ -97,26 +102,63 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ ${#EXACT_LOCAL_PATHS[@]} -gt 0 ]] && [[ -n "${FILE_FRAGMENT// }" ]]; then
-  echo -e "${RED}Use either --file= or --exact-local=, not both.${NC}" >&2
-  exit 1
+mapfile -t FILE_FRAGMENTS_nonempty < <(filesync_emit_nonempty_file_fragments FILE_FRAGMENTS)
+if [[ ${#FILE_FRAGMENTS_nonempty[@]} -eq 0 ]]; then
+  FRAGS_JSON='[]'
+  FILE_FILTER_LABEL=""
+else
+  FRAGS_JSON=$(printf '%s\n' "${FILE_FRAGMENTS_nonempty[@]}" | jq -R . | jq -s .)
+  FILE_FILTER_LABEL=$(IFS=', '; echo "${FILE_FRAGMENTS_nonempty[*]}")
 fi
 
-LOCALS_JSON='[]'
-if [[ ${#EXACT_LOCAL_PATHS[@]} -gt 0 ]]; then
-  LOCALS_JSON=$(printf '%s\n' "${EXACT_LOCAL_PATHS[@]}" | jq -R . | jq -s .)
+mapfile -t REPO_FILE_FRAGMENTS_nonempty < <(filesync_emit_nonempty_file_fragments REPO_FILE_FRAGMENTS)
+if [[ ${#REPO_FILE_FRAGMENTS_nonempty[@]} -eq 0 ]]; then
+  REPO_FRAGS_JSON='[]'
+  REPO_FILE_FILTER_LABEL=""
+else
+  REPO_FRAGS_JSON=$(printf '%s\n' "${REPO_FILE_FRAGMENTS_nonempty[@]}" | jq -R . | jq -s .)
+  REPO_FILE_FILTER_LABEL=$(IFS=', '; echo "${REPO_FILE_FRAGMENTS_nonempty[*]}")
 fi
+
+mapfile -t ALL_FILES_FRAGMENTS_nonempty < <(filesync_emit_nonempty_file_fragments ALL_FILES_FRAGMENTS)
+if [[ ${#ALL_FILES_FRAGMENTS_nonempty[@]} -eq 0 ]]; then
+  ALL_FRAGS_JSON='[]'
+  ALL_FILES_FILTER_LABEL=""
+else
+  ALL_FRAGS_JSON=$(printf '%s\n' "${ALL_FILES_FRAGMENTS_nonempty[@]}" | jq -R . | jq -s .)
+  ALL_FILES_FILTER_LABEL=$(IFS=', '; echo "${ALL_FILES_FRAGMENTS_nonempty[*]}")
+fi
+
+# For merge_using_git commit messages (see lib/sync-git-merge.sh).
+FILESYNC_SYNC_COMMIT_OPTIONS_DESC=""
+declare -a FILESYNC_SYNC_COMMIT_OPT_PARTS=()
+[[ "$FORCE" == true ]] && FILESYNC_SYNC_COMMIT_OPT_PARTS+=("force")
+[[ "$RUN_CHECK" == true ]] && FILESYNC_SYNC_COMMIT_OPT_PARTS+=("check")
+[[ "$SYNC_MOVE" == true ]] && FILESYNC_SYNC_COMMIT_OPT_PARTS+=("move")
+[[ "$INCLUDE_DETACHED" == true ]] && FILESYNC_SYNC_COMMIT_OPT_PARTS+=("include-detached")
+[[ -n "$REPO_FILTER" ]] && FILESYNC_SYNC_COMMIT_OPT_PARTS+=("repo=${REPO_FILTER}")
+[[ -n "$STATUS_CSV" ]] && FILESYNC_SYNC_COMMIT_OPT_PARTS+=("status=${STATUS_CSV}")
+[[ -n "$FILE_FILTER_LABEL" ]] && FILESYNC_SYNC_COMMIT_OPT_PARTS+=("file=${FILE_FILTER_LABEL}")
+[[ -n "$REPO_FILE_FILTER_LABEL" ]] && FILESYNC_SYNC_COMMIT_OPT_PARTS+=("repo-file=${REPO_FILE_FILTER_LABEL}")
+[[ -n "$ALL_FILES_FILTER_LABEL" ]] && FILESYNC_SYNC_COMMIT_OPT_PARTS+=("all-files=${ALL_FILES_FILTER_LABEL}")
+if [[ ${#FILESYNC_SYNC_COMMIT_OPT_PARTS[@]} -gt 0 ]]; then
+  FILESYNC_SYNC_COMMIT_OPTIONS_DESC=$(IFS=', '; echo "${FILESYNC_SYNC_COMMIT_OPT_PARTS[*]}")
+  FILESYNC_SYNC_COMMIT_OPTIONS_DESC="${FILESYNC_SYNC_COMMIT_OPTIONS_DESC//\"/}"
+fi
+unset FILESYNC_SYNC_COMMIT_OPT_PARTS
 
 if [[ "$RUN_CHECK" == true ]]; then
   CHECK_ARGS=()
   [[ -n "$REPO_FILTER" ]] && CHECK_ARGS+=("--repo=$REPO_FILTER")
-  if [[ ${#EXACT_LOCAL_PATHS[@]} -gt 0 ]]; then
-    for _el in "${EXACT_LOCAL_PATHS[@]}"; do
-      CHECK_ARGS+=("--exact-local=$_el")
-    done
-  else
-    [[ -n "$FILE_FRAGMENT" ]] && CHECK_ARGS+=("--file=$FILE_FRAGMENT")
-  fi
+  for _ff in "${FILE_FRAGMENTS[@]}"; do
+    CHECK_ARGS+=(--file="$_ff")
+  done
+  for _ff in "${REPO_FILE_FRAGMENTS[@]}"; do
+    CHECK_ARGS+=(--repo-file="$_ff")
+  done
+  for _ff in "${ALL_FILES_FRAGMENTS[@]}"; do
+    CHECK_ARGS+=(--all-files="$_ff")
+  done
   [[ -n "$STATUS_CSV" ]] && CHECK_ARGS+=("--status=$STATUS_CSV")
   if ! "$_CMD_ROOT/check.sh" "${CHECK_ARGS[@]}"; then
     filesync_error "--check failed; not running sync."
@@ -183,36 +225,20 @@ STATUS_SKIPPED=0
 FILE_PATH_MATCHES=0
 
 filesync_print_sync_banner
-if [[ ${#EXACT_LOCAL_PATHS[@]} -gt 0 ]]; then
-  filesync_print_filter_context "$REPO_FILTER" "" "$STATUS_CSV" "$INCLUDE_DETACHED" 1 "$FORCE"
-  filesync_print_filter_note "Filter: --exact-local= (exact project-relative local_path)"
-else
-  filesync_print_filter_context "$REPO_FILTER" "$FILE_FRAGMENT" "$STATUS_CSV" "$INCLUDE_DETACHED" 1 "$FORCE"
-fi
+filesync_print_filter_context "$REPO_FILTER" "$FILE_FILTER_LABEL" "$REPO_FILE_FILTER_LABEL" "$ALL_FILES_FILTER_LABEL" "$STATUS_CSV" "$INCLUDE_DETACHED" 1 "$FORCE"
 filesync_print_sync_showall_banner "$SHOWALL"
 echo "" >&2
 
 SYNC_ROWS_TSV=$(mktemp)
 SYNC_ROWS_SORTED=$(mktemp)
-if [[ ${#EXACT_LOCAL_PATHS[@]} -gt 0 ]]; then
-  filesync_config_file_rows_tsv_to_exact_locals "$SYNC_ROWS_TSV" "$CONFIG_FILE" "$REPO_FILTER" "$LOCALS_JSON"
-else
-  filesync_config_file_rows_tsv_to "$SYNC_ROWS_TSV" "$CONFIG_FILE" "$REPO_FILTER" "$FILE_FRAGMENT"
-fi
+filesync_config_file_rows_tsv_to "$SYNC_ROWS_TSV" "$CONFIG_FILE" "$REPO_FILTER" "$FRAGS_JSON" "$REPO_FRAGS_JSON" "$ALL_FRAGS_JSON"
 LC_ALL=C sort -t $'\t' -k3,3 -s "$SYNC_ROWS_TSV" >"$SYNC_ROWS_SORTED"
 FILES_WORK_COUNT=$(wc -l < "$SYNC_ROWS_SORTED")
 FILES_WORK_COUNT="${FILES_WORK_COUNT//[[:space:]]/}"
 
-if [[ ${#EXACT_LOCAL_PATHS[@]} -gt 0 ]]; then
-  if [[ "$FILES_WORK_COUNT" -eq 0 ]] && filesync_files_only_blocked_by_check_sync_exact_locals "$CONFIG_FILE" "$REPO_FILTER" "$LOCALS_JSON"; then
-    filesync_print_disabled_hint
-    exit 0
-  fi
-else
-  if [[ "$FILES_WORK_COUNT" -eq 0 ]] && filesync_files_only_blocked_by_check_sync "$CONFIG_FILE" "$REPO_FILTER" "$FILE_FRAGMENT"; then
-    filesync_print_disabled_hint
-    exit 0
-  fi
+if [[ "$FILES_WORK_COUNT" -eq 0 ]] && filesync_files_only_blocked_by_check_sync "$CONFIG_FILE" "$REPO_FILTER" "$FRAGS_JSON" "$REPO_FRAGS_JSON" "$ALL_FRAGS_JSON"; then
+  filesync_print_disabled_hint
+  exit 0
 fi
 
 if filesync_progress_want "$FILES_WORK_COUNT"; then
@@ -419,10 +445,8 @@ filesync_progress_end
 
 if [[ "$FILE_PATH_MATCHES" -eq 0 ]]; then
   echo "" >&2
-  if [[ ${#EXACT_LOCAL_PATHS[@]} -gt 0 ]]; then
-    filesync_print_no_file_rows_for_exact_locals "${EXACT_LOCAL_PATHS[@]}"
-  elif [[ -n "$FILE_FRAGMENT" ]]; then
-    filesync_print_no_file_rows_for_fragment "$FILE_FRAGMENT"
+  if [[ -n "$FILE_FILTER_LABEL" ]] || [[ -n "$REPO_FILE_FILTER_LABEL" ]] || [[ -n "$ALL_FILES_FILTER_LABEL" ]]; then
+    filesync_print_no_file_rows_path_filters "$FILE_FILTER_LABEL" "$REPO_FILE_FILTER_LABEL" "$ALL_FILES_FILTER_LABEL"
   fi
 fi
 

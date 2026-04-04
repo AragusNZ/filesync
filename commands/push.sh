@@ -108,7 +108,7 @@ if [[ "$PUSH_TO_CLONES" == true ]]; then
     _n_el=0
     for _loc in "${_locs[@]}"; do
       [[ -z "${_loc// }" ]] && continue
-      sync_args+=(--exact-local="$_loc")
+      sync_args+=(--file="$_loc")
       _n_el=$((_n_el + 1))
     done
     [[ "$_n_el" -eq 0 ]] && continue

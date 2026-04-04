@@ -16,7 +16,7 @@ ${FILESYNC_CMD_USAGE}
 
 Resolve a path to a tracked clone (row in this project's files.json) or to the canonical
 master file under a registered repo checkout. Lists all mappings sharing the same master
-(repo_file_path + repo identity), refreshes their status via filesync check --exact-local=…,
+(repo_file_path + repo identity), refreshes their status via filesync check --file=…,
 then prints a summary on stderr (Role: clone or Role: master, master key, related rows).
 
 If the canonical master file's marker does not match whether any clones are tracked, you are
@@ -74,7 +74,7 @@ fi
 
 CLONE_COUNT=${#FILESYNC_RELATED_LINES[@]}
 
-# --- Refresh: run check --exact-local per project root ---
+# --- Refresh: run check --file per project root ---
 FS_BIN="$FILESYNC_PKG_ROOT/bin/filesync"
 CHECK_RC=0
 for proot in "${!FILESYNC_REL_ROOT_TO_LOCALS[@]}"; do
@@ -83,7 +83,7 @@ for proot in "${!FILESYNC_REL_ROOT_TO_LOCALS[@]}"; do
   args=()
   for _loc in "${_locs[@]}"; do
     [[ -z "${_loc// }" ]] && continue
-    args+=(--exact-local="$_loc")
+    args+=(--file="$_loc")
   done
   [[ ${#args[@]} -eq 0 ]] && continue
   set +e
@@ -215,7 +215,7 @@ if [[ -n "$MARKER_ACTION" ]]; then
       mv "$tmpm" "$MASTER_ABS"
       echo -e "${GREEN}Removed filesync marker line(s) from master file.${NC}" >&2
     fi
-    echo -e "${GRAY}Consider: filesync check --exact-local=… in affected projects.${NC}" >&2
+    echo -e "${GRAY}Consider: filesync check --file=… in affected projects.${NC}" >&2
   fi
 fi
 
