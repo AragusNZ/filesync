@@ -78,7 +78,7 @@ if ! jq -e --arg c "$REPO" 'any(.name == $c)' "$repos" &>/dev/null; then
   exit 1
 fi
 
-repo_id="$(jq -r --arg c "$REPO" 'first(.[] | select(.name == $c) | .id) // empty' "$repos")"
+repo_id="$(filesync_global_repos_id_for_name "$repos" "$REPO")"
 if [[ -z "$repo_id" ]]; then
   echo -e "${RED}Error: Repo '$REPO' has no id in global repos (run: filesync migrate).${NC}" >&2
   exit 1

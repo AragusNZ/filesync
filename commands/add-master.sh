@@ -161,7 +161,7 @@ append_row() {
   local full_target_master_path="${8:-}"
 
   local rid new_entry
-  rid=$(jq -r --arg n "$TARGET_REPO" 'first(.[] | select(.name == $n) | .id) // empty' "$repos_path")
+  rid="$(filesync_global_repos_id_for_name "$repos_path" "$TARGET_REPO")"
   new_entry=$(jq -n \
     --arg id "$rid" \
     --arg repo_path "$target_repo_file_path" \
@@ -203,7 +203,7 @@ for i in "${!LOCAL_PATHS[@]}"; do
   cp "$TMP_MASTER" "$full_target_master_path"
   echo -e "${GREEN}Promoted to master:${NC} $target_repo_file_path" >&2
 
-  tgt_rid=$(jq -r --arg n "$TARGET_REPO" 'first(.[] | select(.name == $n) | .id) // empty' "$FILESYNC_REPOS_FILE")
+  tgt_rid="$(filesync_global_repos_id_for_name "$FILESYNC_REPOS_FILE" "$TARGET_REPO")"
   if ! render_clone_from_master_file "$TMP_MASTER" "$target_repo_file_path" "$TARGET_REPO" "$TMP_CLONE" "$tgt_rid"; then
     filesync_die "${local_path}: could not render clone preview from promoted master (unexpected; report a bug if this persists)"
   fi

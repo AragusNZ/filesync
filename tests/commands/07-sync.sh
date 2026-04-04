@@ -43,8 +43,9 @@ proj="$(cd "${proj}" && pwd -P)"
 	filesync add origin tools/x.txt
 	filesync sync
 	filesync check >/dev/null || die "check after sync"
-	# Ensure last_sync_at is strictly before the next local mtime (second resolution).
-	sleep 1
+	# Ensure last_sync_at and master mtime are strictly before the next local mtime.
+	# (Coarse FS / WSL: 1s is not always enough; ties become sync_required, not local_newer.)
+	sleep 2
 	echo "LOCAL_LINE" >>tools/x.txt
 	touch tools/x.txt
 	filesync check >/dev/null || die "check after local edit"

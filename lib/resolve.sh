@@ -38,14 +38,22 @@ filesync_try_discover_from_registered_repos() {
   return 0
 }
 
-filesync_resolve_or_exit() {
+# Args: mode — exit | try
+# exit: missing project after walk → stderr + exit 1. try: missing project → return 1 quietly.
+# Broken .filesync / bad FILESYNC_DIR under FILESYNC_PROJECT_ROOT → stderr; exit vs return per mode.
+filesync_resolve_project_core() {
+  local mode="${1:?}"
+
   if [[ -n "${FILESYNC_PROJECT_ROOT:-}" ]]; then
     PROJECT_ROOT="$(cd "$FILESYNC_PROJECT_ROOT" && pwd)"
     FILESYNC_DIR="${FILESYNC_DIR:-$PROJECT_ROOT/.filesync}"
     export PROJECT_ROOT FILESYNC_DIR
     if [[ ! -d "$FILESYNC_DIR" ]]; then
       filesync_error "directory not found: $FILESYNC_DIR (FILESYNC_PROJECT_ROOT=$PROJECT_ROOT)"
-      exit 1
+      if [[ "$mode" == exit ]]; then
+        exit 1
+      fi
+      return 1
     fi
     return 0
   fi
@@ -73,58 +81,30 @@ filesync_resolve_or_exit() {
     if [[ -e "$dir/.filesync" || -L "$dir/.filesync" ]]; then
       filesync_error "not a directory: $dir/.filesync (broken symlink or wrong type?)"
       filesync_error "filesync requires a real .filesync/ directory here (walk started from $(pwd -P))."
-      exit 1
+      if [[ "$mode" == exit ]]; then
+        exit 1
+      fi
+      return 1
     fi
     dir="$(dirname "$dir")"
   done
 
-  filesync_error "no .filesync directory found (walked up from $(pwd -P))"
-  filesync_error "create .filesync/${FILESYNC_FILES_NAME} (see docs/configuration.md in the filesync repository)."
-  exit 1
+  if [[ "$mode" == exit ]]; then
+    filesync_error "no .filesync directory found (walked up from $(pwd -P))"
+    filesync_error "create .filesync/${FILESYNC_FILES_NAME} (see docs/configuration.md in the filesync repository)."
+    exit 1
+  fi
+  return 1
+}
+
+filesync_resolve_or_exit() {
+  filesync_resolve_project_core exit
 }
 
 # Same discovery as filesync_resolve_or_exit, but return 1 instead of exiting.
 # On "not found", returns quietly (no stderr). Broken .filesync still emits errors.
 filesync_try_resolve_project() {
-  if [[ -n "${FILESYNC_PROJECT_ROOT:-}" ]]; then
-    PROJECT_ROOT="$(cd "$FILESYNC_PROJECT_ROOT" && pwd)"
-    FILESYNC_DIR="${FILESYNC_DIR:-$PROJECT_ROOT/.filesync}"
-    export PROJECT_ROOT FILESYNC_DIR
-    if [[ ! -d "$FILESYNC_DIR" ]]; then
-      filesync_error "directory not found: $FILESYNC_DIR (FILESYNC_PROJECT_ROOT=$PROJECT_ROOT)"
-      return 1
-    fi
-    return 0
-  fi
-
-  if [[ -n "${FILESYNC_DIR:-}" ]]; then
-    FILESYNC_DIR="$(cd "$FILESYNC_DIR" && pwd)"
-    PROJECT_ROOT="$(dirname "$FILESYNC_DIR")"
-    export PROJECT_ROOT FILESYNC_DIR
-    return 0
-  fi
-
-  local dir
-  dir="$(pwd -P)"
-  if filesync_try_discover_from_registered_repos "$dir"; then
-    return 0
-  fi
-  while [[ "$dir" != "/" ]]; do
-    if [[ -d "$dir/.filesync" ]]; then
-      PROJECT_ROOT="$dir"
-      FILESYNC_DIR="$dir/.filesync"
-      export PROJECT_ROOT FILESYNC_DIR
-      return 0
-    fi
-    if [[ -e "$dir/.filesync" || -L "$dir/.filesync" ]]; then
-      filesync_error "not a directory: $dir/.filesync (broken symlink or wrong type?)"
-      filesync_error "filesync requires a real .filesync/ directory here (walk started from $(pwd -P))."
-      return 1
-    fi
-    dir="$(dirname "$dir")"
-  done
-
-  return 1
+  filesync_resolve_project_core try
 }
 
 filesync_require_files() {

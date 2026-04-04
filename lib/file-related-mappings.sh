@@ -94,7 +94,7 @@ filesync_file_rel_gather_from_path() {
       echo -e "${RED}Path is not a tracked clone in this project and not under any resolvable repo checkout.${NC}" >&2
       return 1
     fi
-    FILESYNC_REL_RID=$(jq -r --arg n "$FILESYNC_REL_RNAME" 'first(.[] | select(.name == $n) | .id) // ""' "$FILESYNC_REPOS_FILE")
+    FILESYNC_REL_RID="$(filesync_global_repos_id_for_name "$FILESYNC_REPOS_FILE" "$FILESYNC_REL_RNAME")"
   fi
 
   if [[ -z "${FILESYNC_REL_RFP}" || "${FILESYNC_REL_RFP}" == "null" ]]; then

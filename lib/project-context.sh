@@ -10,6 +10,8 @@ _LIB_PC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${_LIB_PC}/data-names.sh"
 # shellcheck source=/dev/null
 source "${_LIB_PC}/paths.sh"
+# shellcheck source=/dev/null
+source "${_LIB_PC}/repos-json.sh"
 
 filesync_project_filesync_dir() {
   local project_root="$1"
@@ -23,7 +25,7 @@ filesync_project_resolve_repo_dir() {
   local repos_json="$2"
   local repo_name="$3"
   local repo_path
-  repo_path=$(jq -r --arg n "$repo_name" '.[] | select(.name == $n) | .path // ""' "$repos_json" | head -1)
+  repo_path="$(filesync_global_repos_path_for_name "$repos_json" "$repo_name")"
   filesync_resolve_repo_checkout_dir "$repo_path_root" "$repo_path"
 }
 
@@ -34,6 +36,6 @@ filesync_resolve_also_project_root() {
   local repos_json="$2"
   local also_repo="$3"
   local also_path
-  also_path=$(jq -r --arg n "$also_repo" '.[] | select(.name == $n) | .path // ""' "$repos_json" | head -1)
+  also_path="$(filesync_global_repos_path_for_name "$repos_json" "$also_repo")"
   filesync_resolve_repo_checkout_dir "$repo_path_root" "$also_path"
 }

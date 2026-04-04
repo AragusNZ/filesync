@@ -54,6 +54,18 @@ filesync_repo_name_from_id() {
   jq -r --arg id "$id" 'first(.[] | select(.id == $id) | .name) // empty' "$f" 2>/dev/null
 }
 
+# Args: repos_json_path repo_name — print global repo .id for that name, or empty if not found.
+filesync_global_repos_id_for_name() {
+  local f="${1:?}" name="${2:?}"
+  jq -r --arg n "$name" 'first(.[] | select(.name == $n) | .id) // empty' "$f" 2>/dev/null
+}
+
+# Args: repos_json_path repo_name — print global repo .path for that name, or empty if not found.
+filesync_global_repos_path_for_name() {
+  local f="${1:?}" name="${2:?}"
+  jq -r --arg n "$name" 'first(.[] | select(.name == $n) | .path) // empty' "$f" 2>/dev/null
+}
+
 # Return 0 if no duplicates; else print errors to stderr and return 1.
 filesync_assert_global_repos_unique_names() {
   local f="${1:?}" d

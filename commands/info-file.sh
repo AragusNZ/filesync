@@ -100,7 +100,7 @@ filesync_file_rel_reload_related_lines
 CLONE_COUNT=${#FILESYNC_RELATED_LINES[@]}
 
 # --- Resolve canonical master path (for marker + warnings) ---
-REPO_JSON_PATH="$(jq -r --arg n "$FILESYNC_REL_RNAME" '.[] | select(.name == $n) | .path // ""' "$FILESYNC_REPOS_FILE" | head -1)"
+REPO_JSON_PATH="$(filesync_global_repos_path_for_name "$FILESYNC_REPOS_FILE" "$FILESYNC_REL_RNAME")"
 MASTER_ABS=""
 if [[ -n "$REPO_JSON_PATH" && "$REPO_JSON_PATH" != "null" ]]; then
   _rd="$(filesync_resolve_repo_checkout_dir "$REPO_PATH_ROOT" "$REPO_JSON_PATH")"

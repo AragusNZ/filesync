@@ -101,8 +101,8 @@ add_one() {
   local label="$8"
 
   local repo_path_from_json repo_dir rmi="" lmi="" rid=""
-  repo_path_from_json=$(jq -r --arg n "$repo_name" '.[] | select(.name == $n) | .path // ""' "$repos_path" | head -1)
-  rid=$(jq -r --arg n "$repo_name" 'first(.[] | select(.name == $n) | .id) // empty' "$repos_path")
+  repo_path_from_json="$(filesync_global_repos_path_for_name "$repos_path" "$repo_name")"
+  rid="$(filesync_global_repos_id_for_name "$repos_path" "$repo_name")"
   repo_dir="$(filesync_resolve_repo_checkout_dir "$repo_path_root" "$repo_path_from_json")"
   if [[ -z "$repo_dir" ]]; then
     echo -e "${RED}Error: Repo '$repo_name' has no resolvable local path (${label}).${NC}" >&2

@@ -54,4 +54,17 @@ else
 	bad "expected missing-checkout line for empty path"
 fi
 
+byname="${td}/repos-by-name.json"
+jq -n '[{name:"alpha",id:"id-a",path:"p/a",url:null,branch:"main",merge_using_git:false}]' >"$byname"
+if [[ "$(filesync_global_repos_id_for_name "$byname" "alpha")" == "id-a" ]] && [[ "$(filesync_global_repos_path_for_name "$byname" "alpha")" == "p/a" ]]; then
+	ok "global repos id and path for name"
+else
+	bad "id/path for name mismatch"
+fi
+if [[ -z "$(filesync_global_repos_id_for_name "$byname" "missing")" ]] && [[ -z "$(filesync_global_repos_path_for_name "$byname" "missing")" ]]; then
+	ok "global repos missing name yields empty id/path"
+else
+	bad "missing name should yield empty"
+fi
+
 if [[ "${fail}" -ne 0 ]]; then exit 1; fi

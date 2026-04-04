@@ -32,7 +32,7 @@ if [[ "$REPO_NAME" == -* ]]; then
   exit 1
 fi
 
-_repo_id="$(jq -r --arg n "$REPO_NAME" 'first(.[] | select(.name == $n) | .id) // empty' "$FILESYNC_REPOS_FILE")"
+_repo_id="$(filesync_global_repos_id_for_name "$FILESYNC_REPOS_FILE" "$REPO_NAME")"
 if [[ -z "$_repo_id" ]]; then
   echo -e "${RED}Error: Repo '$REPO_NAME' not found in global repos.${NC}" >&2
   exit 1

@@ -224,7 +224,7 @@ add_clone_one() {
   local label="$7"
 
   local full_master full_local tmp_clone rmi lmi new_entry rid
-  rid=$(jq -r --arg n "$inferred_repo_name" 'first(.[] | select(.name == $n) | .id) // empty' "$repos_path")
+  rid="$(filesync_global_repos_id_for_name "$repos_path" "$inferred_repo_name")"
   full_master="$PROJECT_ROOT/$master_path"
   full_local="$target_project_root/$local_path"
   mkdir -p "$(dirname "$full_local")"
