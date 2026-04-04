@@ -335,43 +335,23 @@ is not in global
 .BR repos.json .
 .RE
 .TP
-.B retarget
-.IR local-file "|" old-path " " new-repo-file-path
+.BR "retarget " clone " | " retarget " " \-c
+.I local-clone new-repo-file-path
 .RI [ \-\-move " | " \-\-mv ]
-The first argument
-.RI ( \fIlocal-file\fR|\fIold-path\fR )
-must exist on disk; it may be either a
-.B tracked clone
-(file under the current project, listed in this project's
-.IR files.json )
-or the
-.B canonical master
-(file under a registered repo checkout).
-Resolution matches
-.BR "info file" ;
-the command then behaves in one of two
-.B modes
-.RI ( clone " vs. " master ),
-which differ in
-.I scope
-and default
-.IR sync_status .
-.PP
-In both modes,
+Update
 .I repo_file_path
-is set to
-.I new-repo-file-path
-(repo-relative, after
+after
 .B git mv
-in the checkout).
-That path must exist and carry
+on the master in the checkout.
+.I local-clone
+must be a
+.B tracked clone
+in the current project (resolution matches
+.BR "info file" ;
+only that row is updated).
+.I new-repo-file-path
+is repo-relative, must exist, and must carry
 .BR kind=master .
-.RS
-.PP
-.B Clone mode
-.RI ( \fIlocal-file\fR|\fIold-path\fR
-is a tracked clone):
-only the current project's row is updated.
 Without
 .BR \-\-move " / " \-\-mv ,
 the row is marked
@@ -385,39 +365,59 @@ the local file is moved to
 (project-relative) and
 .I local_path
 is updated.
-.PP
-.B Master mode
-.RI ( \fIlocal-file\fR|\fIold-path\fR
-is the master copy under a checkout):
-every sibling mapping for that master is updated
-.RI ( same " " info
-union as
-.BR "remove repo" ).
+For every sibling mapping across projects, use
+.BR "retarget " master
+instead.
+.TP
+.BR "retarget " master " | " retarget " " \-m
+.I local-master "|" old-repo-path " " new-repo-file-path
+.RI [ \-\-move " | " \-\-mv ]
+Update
+.I repo_file_path
+for
+.B every
+mapping that shares this canonical master (same multi-project union as
+.BR "info file " / " remove repo" ).
+.I local-master
+is the master file under a registered checkout when it still exists on disk (resolution matches
+.BR "info file" ).
+If the first path no longer exists after
+.BR git mv ,
+filesync may anchor from
+.I new-repo-file-path
+when it uniquely identifies a
+.B kind=master
+file in a registered checkout (otherwise pass an existing master path).
+.I new-repo-file-path
+must exist in the checkout with
+.BR kind=master .
+If
+.I files.json
+still lists stale paths,
+.B retarget master
+may infer the old
+.I repo_file_path
+from missing master files in the checkout.
 Without
 .BR \-\-move " / " \-\-mv ,
 each row is marked
 .I master_file_moved
 so consumers can run
-.BR "sync \-\-move"
-to relocate locals.
+.BR "sync \-\-move" .
 With
 .BR \-\-move " / " \-\-mv ,
-each affected local file is moved to
-.I new-repo-file-path
-and
+each affected local file is moved and
 .I local_path
 is updated;
 .B \-\-move
 is rejected when more than one mapping for that master exists in the same project
 .RI ( destination " collision).
 .PP
-If
-.I files.json
-still lists the old master path so
-.B info
-finds no related rows, a fallback may infer the old path from missing masters; otherwise use a clone path as
-.IR local-file "|" old-path .
-.RE
+.BR "filesync " retarget
+with no further selector prints compound help for
+.B clone
+and
+.BR master .
 .TP
 .B sync
 Also

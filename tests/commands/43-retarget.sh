@@ -46,9 +46,13 @@ printf '%s\n' '[]' | jq . >"${FILESYNC_HOME}/collections.json"
 
 	cd "${proj}"
 	# Retarget from clone (JSON still points at missing tools/foo.txt)
-	filesync retarget tools/foo.txt tools/bar.txt
+	filesync retarget clone tools/foo.txt tools/bar.txt
 	jq -e '.[] | select(.local_path=="tools/foo.txt") | .repo_file_path == "tools/bar.txt" and .sync_status == "sync_required"' ".filesync/files.json" >/dev/null \
 		|| die "clone retarget should set repo_file_path and sync_required"
+
+	if filesync retarget clone "${master}/tools/bar.txt" tools/bar.txt 2>/dev/null; then
+		die "retarget clone with master path should fail"
+	fi
 
 	filesync sync
 	grep -q '^v1$' tools/foo.txt || die "sync should refresh clone at old local path"
@@ -60,9 +64,14 @@ printf '%s\n' '[]' | jq . >"${FILESYNC_HOME}/collections.json"
 	git commit -q -m mv2
 
 	cd "${proj}"
-	filesync retarget "${master}/lib/w.txt" lib/w.txt
+	# First path absent: anchor from new repo path (master-only fallback)
+	filesync retarget master tools/bar.txt lib/w.txt
 	jq -e '.[] | select(.local_path=="tools/foo.txt") | .repo_file_path == "lib/w.txt" and .sync_status == "master_file_moved"' ".filesync/files.json" >/dev/null \
 		|| die "master retarget without --move should set master_file_moved"
+
+	if filesync retarget master tools/foo.txt lib/w.txt 2>/dev/null; then
+		die "retarget master with clone path should fail"
+	fi
 
 	[[ -f tools/foo.txt ]] || die "local should stay at tools/foo.txt until sync --move"
 	_dry_out="$(filesync sync --dry-run --move 2>&1)" || die "sync --dry-run --move failed"

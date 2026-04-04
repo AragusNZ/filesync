@@ -99,7 +99,7 @@ main() {
       filesync_route_info "$@"
       ;;
     retarget)
-      exec "$ROOT/commands/retarget.sh" "$@"
+      filesync_route_retarget "$@"
       ;;
     help|-h|--help)
       exec "$ROOT/commands/help.sh"

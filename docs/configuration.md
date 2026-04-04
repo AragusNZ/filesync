@@ -133,14 +133,15 @@ Internally, project commands build a **temporary** JSON file with **`repos`**, *
 - The resolved checkout directory for each target must contain **`.filesync/files.json`** (sibling project). Targets whose resolved directory **equals** the current project root are filtered out.
 - For `add master --also` and `add clone --also`, mirrored rows in sibling projects are initialized as **`sync_required`** so each project can run **`check`** / **`sync`** to compute timestamps and verify status in its own context.
 
-## `retarget` (clone vs master)
+## `retarget` (`clone` vs `master`)
 
-**`filesync retarget <local_file|old_path> <new_repo_file_path> [--move|--mv]`** updates **`repo_file_path`** after the master file moved in the repo (**`git mv`**, then the new path must exist with **`kind=master`**). The first argument is resolved like **`info file`** (often the clone still at the pre-move **`local_path`**, or the master path in the checkout); **which kind of path you pass changes scope**:
+Use an explicit subcommand so scope is never ambiguous:
 
-- **Clone** — **`local_file|old_path`** points at a tracked clone in the **current** project. Only **that project's** row is updated. Without **`--move`**, status becomes **`sync_required`** and the file stays at the old **`local_path`**. With **`--move`**, the clone is moved on disk to **`new_repo_file_path`** (project-relative) and **`local_path`** is updated.
-- **Master** — **`local_file|old_path`** points at the master file under a **registered checkout**. **Every** mapping for that master is updated (same multi-project union as **`info file`** / **`remove repo`**). Without **`--move`**, rows get **`master_file_moved`** so you can run **`sync --move`** later to align **`local_path`** with **`repo_file_path`**. With **`--move`**, each local clone is moved and **`local_path`** is updated (not allowed if two rows in the same project share that master — destination collision).
+- **`filesync retarget clone <local_clone> <new_repo_file_path> [--move|--mv]`** (short: **`retarget -c`**) — **`local_clone`** must be a tracked clone in the **current** project (resolved like **`info file`**). Only **that** row’s **`repo_file_path`** is updated after **`git mv`** on the master (**`new_repo_file_path`** must exist in the checkout with **`kind=master`**). Without **`--move`**, status **`sync_required`** and the file stays at **`local_path`**; with **`--move`**, the local file is moved to **`new_repo_file_path`** (project-relative) and **`local_path`** is updated.
 
-If **`files.json`** still points at the old path after **`git mv`**, **`retarget`** may infer the old path from missing master files; if that fails, pass a **clone** path as **`local_file|old_path`**. See **`filesync retarget -h`** and **`man filesync`**.
+- **`filesync retarget master <local_master|old_repo_path> <new_repo_file_path> [--move|--mv]`** (short: **`retarget -m`**) — **`local_master`** is the canonical master under a **registered checkout** (same resolution as **`info file`**), or **`old_repo_path`** may be omitted on disk after **`git mv`**: if the first path does not exist, filesync may anchor from **`new_repo_file_path`** when it uniquely identifies a **`kind=master`** file in a registered checkout. **Every** mapping for that master is updated (same union as **`info file`** / **`remove repo`**). Without **`--move`**, rows get **`master_file_moved`**; with **`--move`**, each local clone is moved (rejected if two rows in the same project share that master). If **`files.json`** still lists stale paths, **`retarget master`** can infer the old **`repo_file_path`** from missing master files in the checkout.
+
+See **`filesync retarget -h`**, **`filesync retarget clone -h`**, **`filesync retarget master -h`**, and **`man filesync`**.
 
 ## `sync` / `list files` status filter (`--status`)
 

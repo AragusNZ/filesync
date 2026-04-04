@@ -183,3 +183,31 @@ filesync_route_info() {
   esac
   exec "$ROOT/commands/info-file.sh" "$@"
 }
+
+filesync_route_retarget() {
+  case "${1-}" in
+    "" | -h | --help)
+      if [[ $# -le 1 ]]; then
+        filesync_print_compound_help_stdout "$ROOT" "filesync retarget: clone and master" \
+          "retarget clone" "retarget-clone.sh" \
+          "retarget master" "retarget-master.sh"
+        exit 0
+      fi
+      filesync_usage_error_stderr "Usage: filesync retarget [--help] | retarget clone ... | retarget master ..."
+      exit 1
+      ;;
+    clone | -c)
+      shift
+      exec "$ROOT/commands/retarget-clone.sh" "$@"
+      ;;
+    master | -m)
+      shift
+      exec "$ROOT/commands/retarget-master.sh" "$@"
+      ;;
+    *)
+      echo -e "${RED}Unknown retarget target: $1 (use clone, master, -c, or -m)${NC}" >&2
+      filesync_usage_error_stderr "Usage: filesync retarget clone|master ..."
+      exec "$ROOT/commands/help.sh" >&2
+      ;;
+  esac
+}

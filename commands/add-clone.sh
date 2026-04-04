@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CLI: filesync add clone — add clone file + mapping in a sibling project from a kind=master file in the current project.
+# CLI: filesync add clone — kind=master in this project; create clone file + row in sibling repo(s).
 
 set -euo pipefail
 
@@ -12,8 +12,9 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: a -c
 
-Clone mappings from a kind=master file in this project into a sibling repo: creates the
-target-side file and row. Fails if the target local file already exists.
+The master file is in this project (kind=master): for each target repo, creates the clone
+on disk there and adds a files.json row in that project pointing back here as master. Fails
+if the target's local path already exists.
 
 The first argument is a repo name or a collection name (expanded like --also=). Multiple
 targets are merged with --also= (deduplicated); the current project checkout is skipped.

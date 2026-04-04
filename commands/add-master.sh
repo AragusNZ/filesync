@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CLI: filesync add master — promote local files to master repo and add mappings (.filesync/files.json).
+# CLI: filesync add master — store the canonical master in another repo's checkout; this project's paths become clones (+ files.json).
 
 set -euo pipefail
 
@@ -12,8 +12,10 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: a -m
 
-Promote local files as masters: add mappings with kind=master. If path_in_repo is omitted
-(no :suffix), it defaults to the same path as local_path.
+The master file lives in the named other repo: this command writes it there, rewrites the
+matching paths here as clones (kind=clone), and adds rows to this project's files.json (and
+optional --also= siblings). If path_in_repo is omitted (no :suffix), it defaults to the same
+path as local_path.
 
 The first argument must resolve to exactly one global repo name (plain repo name, or a
 collection that contains a single repo). If a collection lists multiple repos, specify the
