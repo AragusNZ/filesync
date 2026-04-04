@@ -71,11 +71,16 @@ filesync_assemble_state_to() {
           repos: $R,
           files: ($F | map(
             . as $row
-            | if (($row.repo_id // "") != "" and ($row.repo_id != null)) then
-                $row + {repo_name: (($R[] | select(.id == $row.repo_id) | .name) // $row.repo_name)}
-              elif (($row.repo_name // "") != "" and ($row.repo_name != null)) then
-                $row + {repo_id: (($R[] | select(.name == $row.repo_name) | .id) // "")}
-              else $row end
+            | if (($row.repo_id // "") == "" or ($row.repo_id == null)) then
+                error("files.json row local_path=\($row.local_path // "?"): has no repo_id (run: filesync migrate)")
+              else
+                (first($R[] | select(.id == $row.repo_id) | .name) // null) as $n
+                | if $n == null then
+                    error("files.json row local_path=\($row.local_path // "?"): unknown repo_id \($row.repo_id)")
+                  else
+                    $row + {repo_name: $n}
+                  end
+              end
           )),
           repo_path_root: $rroot
         }' > "$out"; then
@@ -95,11 +100,16 @@ filesync_assemble_state_to() {
           repos: $R,
           files: ($F | map(
             . as $row
-            | if (($row.repo_id // "") != "" and ($row.repo_id != null)) then
-                $row + {repo_name: (($R[] | select(.id == $row.repo_id) | .name) // $row.repo_name)}
-              elif (($row.repo_name // "") != "" and ($row.repo_name != null)) then
-                $row + {repo_id: (($R[] | select(.name == $row.repo_name) | .id) // "")}
-              else $row end
+            | if (($row.repo_id // "") == "" or ($row.repo_id == null)) then
+                error("files.json row local_path=\($row.local_path // "?"): has no repo_id (run: filesync migrate)")
+              else
+                (first($R[] | select(.id == $row.repo_id) | .name) // null) as $n
+                | if $n == null then
+                    error("files.json row local_path=\($row.local_path // "?"): unknown repo_id \($row.repo_id)")
+                  else
+                    $row + {repo_name: $n}
+                  end
+              end
           )),
           repo_path_root: $rroot
         }'; then

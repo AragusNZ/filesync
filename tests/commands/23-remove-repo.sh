@@ -16,7 +16,7 @@ mkdir -p "${p}"
 	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-23a.json"
 	jq -n '[{
 		"local_path":"x.txt",
-		"repo_name":"busy",
+		"repo_id":"testid-busy",
 		"repo_file_path":"x.txt",
 		"sync_status":"synced"
 	}]' >".filesync/files.json"

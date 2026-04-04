@@ -25,12 +25,11 @@ Layout and command bootstrap matrix. User-facing docs: `docs/configuration.md` a
 
 ## File row object
 
-- `repo_id` — references `repos[].id`.
-- `repo_name` — denormalized display; aligned via migrate and commands that touch project files (not `edit repo --rename`, which updates global `repos.json` only).
+- `repo_id` — references `repos[].id` (required on disk after `migrate`; new rows written by commands include only `repo_id`, not a persisted name).
 
 ## Runtime `CONFIG_FILE` (temp merged JSON)
 
-Merged preferences, `repo_path_root` (effective anchor path), `repos`, `files` (rows normalized with `repo_id` / `repo_name`). Does not embed `collections`.
+Merged preferences, `repo_path_root` (effective anchor path), `repos`, `files` (each row from `files.json` plus `repo_name` resolved from `repo_id` for jq consumers). Does not embed `collections`.
 
 ## Command → init mode
 

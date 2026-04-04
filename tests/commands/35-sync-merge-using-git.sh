@@ -160,3 +160,34 @@ mkdir -p "${proj4}"
 	[[ $(git branch 2>/dev/null | grep -c 'filesync/sync' || true) -eq 0 ]] || die "temp sync branch should be removed (D)"
 	grep -q 'MASTER_V2D' tools/x.txt || die "content should match bumped master (D)"
 )
+
+# E: merge_using_git true + check then plain sync (only files.json dirty) — same as D without -c.
+proj5="${TMP}/smug-proj5"
+rm -rf "${proj5}"
+mkdir -p "${proj5}"
+(
+	cd "${proj5}"
+	filesync init --no-repo
+	git init -b main
+	git config user.email ci@test
+	git config user.name ci
+	git add .filesync
+	git commit -q -m base
+	jq -n \
+		--arg url "file://${master}" \
+		'[{"name":"origin","path":"../smug-master","url":$url,"branch":"main","merge_using_git":true}]' >"${TMP}/seed-35e.json"
+	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-35e.json"
+	filesync add origin tools/x.txt
+	git add -A
+	git commit -q -m "track filesync files" || die "commit after add (E)"
+	{
+		echo "MASTER_V2E"
+		echo "# filesync kind=master"
+	} >"${master}/tools/x.txt"
+	git -C "${master}" add tools/x.txt
+	git -C "${master}" commit -q -m v2e
+	filesync check >/dev/null || die "check (E)"
+	filesync sync >/dev/null || die "sync without -c with only files.json dirty should succeed (E)"
+	[[ $(git branch 2>/dev/null | grep -c 'filesync/sync' || true) -eq 0 ]] || die "temp sync branch should be removed (E)"
+	grep -q 'MASTER_V2E' tools/x.txt || die "content should match bumped master (E)"
+)

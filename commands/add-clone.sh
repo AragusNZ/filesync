@@ -242,14 +242,12 @@ add_clone_one() {
 
   new_entry=$(jq -n \
     --arg id "$rid" \
-    --arg repo "$inferred_repo_name" \
     --arg repo_path "$master_path" \
     --arg local "$local_path" \
     --arg rmi "${rmi:-}" \
     --arg lmi "${lmi:-}" \
     '{
       repo_id: $id,
-      repo_name: $repo,
       repo_file_path: $repo_path,
       local_path: $local,
       sync_status: "sync_required",

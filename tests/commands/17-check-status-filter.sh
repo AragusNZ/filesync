@@ -35,8 +35,8 @@ mkdir -p "${master}/tools" "${proj}/tools"
 	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-17.json"
 	jq -n \
 		'[
-			{"repo_name":"origin","repo_file_path":"tools/a.txt","local_path":"tools/a.txt","sync_status":"local_newer","last_check_at":null},
-			{"repo_name":"origin","repo_file_path":"tools/b.txt","local_path":"tools/b.txt","sync_status":"synced","last_check_at":null}
+			{"repo_id":"testid-origin","repo_file_path":"tools/a.txt","local_path":"tools/a.txt","sync_status":"local_newer","last_check_at":null},
+			{"repo_id":"testid-origin","repo_file_path":"tools/b.txt","local_path":"tools/b.txt","sync_status":"synced","last_check_at":null}
 		]' >".filesync/files.json"
 
 	_out="$(filesync check --status=local_newer 2>&1)" && _ec=0 || _ec=$?

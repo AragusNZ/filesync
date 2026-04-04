@@ -72,7 +72,7 @@ if [[ "${mis}" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T ]]; then ok "mtime_iso"; else bad
 PROJECT_ROOT="${td}/stproj"
 mkdir -p "${PROJECT_ROOT}"
 rows_path="${td}/files_row.json"
-printf '%s\n' '[{"local_path":"f.txt","sync_status":"synced","repo_name":"origin"}]' >"${rows_path}"
+printf '%s\n' '[{"local_path":"f.txt","sync_status":"synced","repo_id":"testid-origin"}]' >"${rows_path}"
 touch "${td}/master_f.txt" "${PROJECT_ROOT}/f.txt"
 filesync_write_file_row "${rows_path}" "${PROJECT_ROOT}" "f.txt" "${td}/master_f.txt" "synced"
 if jq -e '.[] | select(.local_path=="f.txt") | .last_sync_at and .repo_file_modified_at and .local_file_modified_at' "${rows_path}" >/dev/null; then

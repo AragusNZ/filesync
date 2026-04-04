@@ -110,7 +110,7 @@ Run `filesync` with no arguments to print a short usage summary (same idea as **
 
 **Per project** (discovered like git: walk up for **`.filesync/`**): **`files.json`** only. If you still have old per-project `repos.json` / `collections.json` / `config.json`, run **`filesync migrate`** once to import them into the global store (legacy repos are merged by **`name`** with the global catalog; an existing name keeps the global row even when path/URL/branch differ).
 
-**`sync` and git:** If a repo’s **`merge_using_git`** is **`true`** and the project is a **clean** git work tree, **`sync`** applies updates on a short-lived branch and merges back so you can resolve conflicts with normal git tools; **`sync -c` / `--check`** may refresh **`files.json`** first, and that file may be the **only** dirty path when the git batch starts. Otherwise it writes files directly. See [docs/configuration.md](docs/configuration.md) (`merge_using_git` and `sync`).
+**`sync` and git:** If a repo’s **`merge_using_git`** is **`true`** and the project is a git work tree with **no dirty paths except possibly** **`.filesync/files.json`** (for example after **`check`** or **`sync -c`** refreshes it), **`sync`** applies updates on a short-lived branch and merges back so you can resolve conflicts with normal git tools. Otherwise it writes files directly. See [docs/configuration.md](docs/configuration.md) (`merge_using_git` and `sync`).
 
 Basenames are defined in `lib/data-names.sh` if you need to change them in a fork.
 

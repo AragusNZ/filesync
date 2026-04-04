@@ -48,6 +48,12 @@ filesync_global_repos_missing_checkout_lines() {
   done < <(jq -c '.[]' "$f")
 }
 
+# Args: repos_json_path repo_id — print global repo .name for that id, or empty if not found.
+filesync_repo_name_from_id() {
+  local f="${1:?}" id="${2:?}"
+  jq -r --arg id "$id" 'first(.[] | select(.id == $id) | .name) // empty' "$f" 2>/dev/null
+}
+
 # Return 0 if no duplicates; else print errors to stderr and return 1.
 filesync_assert_global_repos_unique_names() {
   local f="${1:?}" d

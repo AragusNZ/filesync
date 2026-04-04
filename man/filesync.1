@@ -495,16 +495,11 @@ prints a per-file line for rows that are already in sync with master; by default
 Coupled sync requires a master marker on the repo file.
 When a repo's
 .B merge_using_git
-is true and the project directory is a git work tree with a clean index and working tree
-(or, for
-.B sync
-with
-.B \-c / \-\-check ,
-only
+is true and the project directory is a git work tree, there must be no changes except possibly this project's
 .I files.json
-may be dirty after the embedded
-.B check ;
-any other change still blocks this path),
+(usually
+.BR .filesync/files.json ) ;
+any other dirty path blocks this path.
 .B sync
 records content updates on a short-lived branch and merges into the previous branch (up to three merge attempts may exclude paths that conflict).
 Per-file lines start with a result symbol, use the same
@@ -962,7 +957,8 @@ Per project:
 .TP
 .I .filesync/files.json
 Array of file mapping rows (
-.BR repo_id ", " repo_name ", ..." ).
+.BR repo_id
+and paths/status fields; the current repo name is not stored here).
 .SH ENVIRONMENT
 .TP
 .B FILESYNC_HOME

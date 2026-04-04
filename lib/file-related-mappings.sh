@@ -5,6 +5,8 @@
 _LIB_FRM="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "${_LIB_FRM}/filesync-projects.sh"
+# shellcheck source=/dev/null
+source "${_LIB_FRM}/repos-json.sh"
 
 declare -a FILESYNC_REL_PROJECT_ROOTS=()
 declare -a FILESYNC_RELATED_LINES=()
@@ -57,7 +59,15 @@ filesync_file_rel_gather_from_path() {
     # shellcheck disable=SC2034  # read by callers after return (e.g. info-file.sh)
     FILESYNC_REL_MODE="clone"
     FILESYNC_REL_RID=$(jq -r --arg lp "$match_lp" '.[] | select(.local_path == $lp) | .repo_id // ""' "$FILESYNC_FILES_FILE" | head -1)
-    FILESYNC_REL_RNAME=$(jq -r --arg lp "$match_lp" '.[] | select(.local_path == $lp) | .repo_name // ""' "$FILESYNC_FILES_FILE" | head -1)
+    if [[ -z "$FILESYNC_REL_RID" || "$FILESYNC_REL_RID" == "null" ]]; then
+      echo -e "${RED}files.json row for $match_lp has no repo_id (run: filesync migrate).${NC}" >&2
+      return 1
+    fi
+    FILESYNC_REL_RNAME="$(filesync_repo_name_from_id "$FILESYNC_REPOS_FILE" "$FILESYNC_REL_RID")"
+    if [[ -z "$FILESYNC_REL_RNAME" ]]; then
+      echo -e "${RED}Unknown repo_id '$FILESYNC_REL_RID' in files.json row for $match_lp.${NC}" >&2
+      return 1
+    fi
     FILESYNC_REL_RFP=$(jq -r --arg lp "$match_lp" '.[] | select(.local_path == $lp) | .repo_file_path // ""' "$FILESYNC_FILES_FILE" | head -1)
   else
     # shellcheck disable=SC2034  # read by callers after return (e.g. info-file.sh)
@@ -110,21 +120,10 @@ filesync_file_rel_gather_from_path() {
           FILESYNC_REL_ROOT_TO_LOCALS[$proot]="$lp"
         fi
       fi
-    done < <(jq -c --arg rid "$FILESYNC_REL_RID" --arg rn "$FILESYNC_REL_RNAME" --arg rfp "$FILESYNC_REL_RFP" '
+    done < <(jq -c --arg rid "$FILESYNC_REL_RID" --arg rfp "$FILESYNC_REL_RFP" '
     .[]
     | select(.repo_file_path == $rfp)
-    | select(
-        (($rid != "") and ($rid != "null") and (.repo_id == $rid))
-        or (
-          (($rid == "") or ($rid == "null"))
-          and (.repo_name == $rn)
-        )
-        or (
-          ($rid != "") and ($rid != "null")
-          and ((.repo_id == null) or (.repo_id == ""))
-          and (.repo_name == $rn)
-        )
-      )
+    | select(($rid != "") and ($rid != "null") and (.repo_id == $rid))
   ' "$fj" 2>/dev/null) || true
   done
 }
@@ -140,21 +139,10 @@ filesync_file_rel_reload_related_lines() {
     while IFS= read -r line || [[ -n "${line:-}" ]]; do
       [[ -z "$line" ]] && continue
       FILESYNC_RELATED_LINES+=("$proot	$line")
-    done < <(jq -c --arg rid "$FILESYNC_REL_RID" --arg rn "$FILESYNC_REL_RNAME" --arg rfp "$FILESYNC_REL_RFP" '
+    done < <(jq -c --arg rid "$FILESYNC_REL_RID" --arg rfp "$FILESYNC_REL_RFP" '
     .[]
     | select(.repo_file_path == $rfp)
-    | select(
-        (($rid != "") and ($rid != "null") and (.repo_id == $rid))
-        or (
-          (($rid == "") or ($rid == "null"))
-          and (.repo_name == $rn)
-        )
-        or (
-          ($rid != "") and ($rid != "null")
-          and ((.repo_id == null) or (.repo_id == ""))
-          and (.repo_name == $rn)
-        )
-      )
+    | select(($rid != "") and ($rid != "null") and (.repo_id == $rid))
   ' "$fj" 2>/dev/null) || true
   done
 }

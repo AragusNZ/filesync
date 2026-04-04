@@ -18,7 +18,8 @@ Repos are matched to the global catalog by name only: if a name already exists g
 row is kept (path/url/branch from the legacy file are ignored) and a notice is printed when
 they differ.
 
-Always ensures every global repo has a stable id and every known files.json row has repo_id.
+Always ensures every global repo has a stable id and every known files.json row has a
+non-empty repo_id with no persisted repo_name (fails if a row cannot be resolved).
 
 Also sets boolean merge_using_git on every global repo row (git work tree probe at checkout path)
 when missing.
@@ -195,20 +196,21 @@ _migrate_files_json() {
   if ! jq --slurpfile r "$G_REPOS" '
     ($r[0]) as $R
     | map(
-        if (.repo_id // "") != "" and .repo_id != null then .
-        else
-          . as $row
-          | . + {
-              repo_id: (
-                $R
-                | map(select(.name == $row.repo_name))
-                | (.[0].id // "")
-              )
-            }
-        end
+        . as $row
+        | (
+            if (($row.repo_id // "") != "" and ($row.repo_id != null)) then $row.repo_id
+            else
+              ($R | map(select(.name == $row.repo_name)) | (.[0].id // ""))
+            end
+          ) as $id
+        | if ($id == "") or ($id == null) then
+            error("row local_path=\($row.local_path // "?"): missing repo_id and could not resolve from repo_name (fix global repos.json or remove the row)")
+          else
+            ($row | del(.repo_name)) + {repo_id: $id}
+          end
       )' "$fp" >"$tmpf"; then
     rm -f "$tmpf"
-    echo "filesync: could not upgrade $(basename "$fp")" >&2
+    echo "filesync: could not upgrade $(basename "$fp") (see errors above)" >&2
     return 1
   fi
   mv "$tmpf" "$fp"

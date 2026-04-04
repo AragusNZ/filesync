@@ -135,11 +135,10 @@ filesync_sync_git_repo_rel_files_json() {
   printf '%s\n' "$rel"
 }
 
-# True if proot has no porcelain changes, or embedded check ran and only files.json differs from HEAD / is untracked.
+# True if proot has no porcelain changes, or the only paths differing from HEAD are this project's files.json (tracked/staged/untracked).
 filesync_sync_git_worktree_ok_for_merge_batch() {
   local proot="${1:?}"
   [[ -z "$(git -C "$proot" status --porcelain)" ]] && return 0
-  [[ "${FILESYNC_SYNC_EMBEDDED_CHECK:-}" == 1 ]] || return 1
   local allowed p
   allowed="$(filesync_sync_git_repo_rel_files_json "$proot")" || return 1
   while IFS= read -r p; do

@@ -68,11 +68,15 @@ attach_one() {
 
   local repo_file_path repo_name repo_id
   repo_file_path="$(jq -r --arg local "$local_path" '.[] | select(.local_path == $local) | .repo_file_path // ""' "$FILESYNC_FILES_FILE")"
-  repo_name="$(jq -r --arg local "$local_path" '.[] | select(.local_path == $local) | .repo_name // ""' "$FILESYNC_FILES_FILE")"
   repo_id="$(jq -r --arg local "$local_path" '.[] | select(.local_path == $local) | .repo_id // ""' "$FILESYNC_FILES_FILE")"
 
-  if [[ -z "$repo_name" || "$repo_name" == "null" ]]; then
-    echo -e "${RED}Error: Missing repo_name for $local_path${NC}" >&2
+  if [[ -z "$repo_id" || "$repo_id" == "null" ]]; then
+    echo -e "${RED}Error: Missing repo_id for $local_path (run: filesync migrate)${NC}" >&2
+    return 1
+  fi
+  repo_name="$(filesync_repo_name_from_id "$FILESYNC_REPOS_FILE" "$repo_id")"
+  if [[ -z "$repo_name" ]]; then
+    echo -e "${RED}Error: Unknown repo_id '$repo_id' for $local_path${NC}" >&2
     return 1
   fi
 

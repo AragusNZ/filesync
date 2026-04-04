@@ -130,24 +130,16 @@ retarget_apply_jq_clone() {
 retarget_apply_jq_master_union() {
   local fj="$1"
   if [[ "$DO_MOVE" == true ]]; then
-    jq --arg oldrfp "$OLD_RFP" --arg nrp "$NEW_RFP" --arg rid "$FILESYNC_REL_RID" --arg rn "$FILESYNC_REL_RNAME" --arg now "$NOW_ISO" \
+    jq --arg oldrfp "$OLD_RFP" --arg nrp "$NEW_RFP" --arg rid "$FILESYNC_REL_RID" --arg now "$NOW_ISO" \
       'map(
-        if (.repo_file_path == $oldrfp) and (
-            (($rid != "") and ($rid != "null") and (.repo_id == $rid))
-            or ((($rid == "") or ($rid == "null")) and (.repo_name == $rn))
-            or (($rid != "") and ($rid != "null") and ((.repo_id == null) or (.repo_id == "")) and (.repo_name == $rn))
-          )
+        if (.repo_file_path == $oldrfp) and (($rid != "") and ($rid != "null") and (.repo_id == $rid))
         then . + {repo_file_path: $nrp, local_path: $nrp, sync_status: "sync_required", last_check_at: $now}
         else . end
       )' "$fj" >"${fj}.tmp"
   else
-    jq --arg oldrfp "$OLD_RFP" --arg nrp "$NEW_RFP" --arg rid "$FILESYNC_REL_RID" --arg rn "$FILESYNC_REL_RNAME" --arg now "$NOW_ISO" \
+    jq --arg oldrfp "$OLD_RFP" --arg nrp "$NEW_RFP" --arg rid "$FILESYNC_REL_RID" --arg now "$NOW_ISO" \
       'map(
-        if (.repo_file_path == $oldrfp) and (
-            (($rid != "") and ($rid != "null") and (.repo_id == $rid))
-            or ((($rid == "") or ($rid == "null")) and (.repo_name == $rn))
-            or (($rid != "") and ($rid != "null") and ((.repo_id == null) or (.repo_id == "")) and (.repo_name == $rn))
-          )
+        if (.repo_file_path == $oldrfp) and (($rid != "") and ($rid != "null") and (.repo_id == $rid))
         then . + {repo_file_path: $nrp, sync_status: "master_file_moved", last_check_at: $now}
         else . end
       )' "$fj" >"${fj}.tmp"
@@ -205,12 +197,9 @@ if [[ ${#FILESYNC_RELATED_LINES[@]} -eq 0 ]]; then
       rfp="$(printf '%s' "$row" | jq -r '.repo_file_path // ""')"
       [[ -n "$rfp" && "$rfp" != "$NEW_RFP" ]] || continue
       rid="$(printf '%s' "$row" | jq -r '.repo_id // ""')"
-      rname="$(printf '%s' "$row" | jq -r '.repo_name // ""')"
       repo_ok=false
-      if [[ -n "$FILESYNC_REL_RID" && "$FILESYNC_REL_RID" != "null" ]]; then
-        [[ "$rid" == "$FILESYNC_REL_RID" ]] && repo_ok=true
-      elif [[ -n "$rname" ]]; then
-        [[ "$rname" == "$FILESYNC_REL_RNAME" ]] && repo_ok=true
+      if [[ -n "$FILESYNC_REL_RID" && "$FILESYNC_REL_RID" != "null" && "$rid" == "$FILESYNC_REL_RID" ]]; then
+        repo_ok=true
       fi
       [[ "$repo_ok" == true ]] || continue
       [[ ! -f "$REPO_ROOT/$rfp" ]] || continue
@@ -272,12 +261,9 @@ for line in "${FILESYNC_RELATED_LINES[@]}"; do
   [[ -f "$fj" ]] || continue
 
   if [[ "$DO_MOVE" == true ]]; then
-    lp_row="$(jq -r --arg oldrfp "$OLD_RFP" --arg rid "$FILESYNC_REL_RID" --arg rn "$FILESYNC_REL_RNAME" '
-      [.[] | select(.repo_file_path == $oldrfp) | select(
-        (($rid != "") and ($rid != "null") and (.repo_id == $rid))
-        or ((($rid == "") or ($rid == "null")) and (.repo_name == $rn))
-        or (($rid != "") and ($rid != "null") and ((.repo_id == null) or (.repo_id == "")) and (.repo_name == $rn))
-      )] | .[0].local_path // empty
+    lp_row="$(jq -r --arg oldrfp "$OLD_RFP" --arg rid "$FILESYNC_REL_RID" '
+      [.[] | select(.repo_file_path == $oldrfp) | select(($rid != "") and ($rid != "null") and (.repo_id == $rid))]
+      | .[0].local_path // empty
     ' "$fj")"
     [[ -n "$lp_row" ]] || continue
     if [[ "$lp_row" != "$NEW_RFP" ]]; then

@@ -22,7 +22,7 @@ mkdir -p "${proj}/tools"
 		'[{"name":"origin","path":$p,"url":"","branch":"main"}]' >"${TMP}/seed-13a.json"
 	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-13a.json"
 	jq -n \
-		'[{"repo_name":"origin","repo_file_path":"tools/plain.txt","local_path":"tools/plain.txt","sync_status":"synced"}]' \
+		'[{"repo_id":"testid-origin","repo_file_path":"tools/plain.txt","local_path":"tools/plain.txt","sync_status":"synced"}]' \
 		>".filesync/files.json"
 	_out="$(filesync check 2>&1)" && _ec=0 || _ec=$?
 	[[ "${_ec}" -eq 0 ]] || die "check should exit 0 (marker issues are warnings, not fatal), got ${_ec}"
@@ -53,7 +53,7 @@ printf '%s\n' '[]' | jq . >"${FILESYNC_HOME}/repos.json"
 	filesync init
 	jq -n --arg p "${m2}" '[{"name":"origin","path":$p,"url":"","branch":"main"}]' >"${TMP}/seed-13b.json"
 	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-13b.json"
-	jq -n '[{"repo_name":"origin","repo_file_path":"tools/wrong.txt","local_path":"tools/wrong.txt","sync_status":"synced"}]' \
+	jq -n '[{"repo_id":"testid-origin","repo_file_path":"tools/wrong.txt","local_path":"tools/wrong.txt","sync_status":"synced"}]' \
 		>".filesync/files.json"
 	filesync check >/dev/null 2>&1 || die "check should succeed"
 	jq -e '.[] | select(.local_path=="tools/wrong.txt") | .check_marker_warnings | index("master_kind_clone") != null' ".filesync/files.json" >/dev/null \

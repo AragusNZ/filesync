@@ -149,14 +149,12 @@ add_one() {
   local new_entry
   new_entry=$(jq -n \
     --arg id "$rid" \
-    --arg repo "$repo_name" \
     --arg repo_path "$repo_file_path" \
     --arg local "$local_path" \
     --arg rmi "${rmi:-}" \
     --arg lmi "${lmi:-}" \
     '{
       repo_id: $id,
-      repo_name: $repo,
       repo_file_path: $repo_path,
       local_path: $local,
       sync_status: "sync_required",

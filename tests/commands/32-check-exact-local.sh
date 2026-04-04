@@ -35,8 +35,8 @@ mkdir -p "${master}/tools" "${proj}/tools"
 	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-32.json"
 	jq -n \
 		'[
-			{"repo_name":"origin","repo_file_path":"tools/a.txt","local_path":"tools/a.txt","sync_status":"synced","last_check_at":null},
-			{"repo_name":"origin","repo_file_path":"tools/b.txt","local_path":"tools/b.txt","sync_status":"synced","last_check_at":null}
+			{"repo_id":"testid-origin","repo_file_path":"tools/a.txt","local_path":"tools/a.txt","sync_status":"synced","last_check_at":null},
+			{"repo_id":"testid-origin","repo_file_path":"tools/b.txt","local_path":"tools/b.txt","sync_status":"synced","last_check_at":null}
 		]' >".filesync/files.json"
 
 	filesync check --exact-local=tools/a.txt >/dev/null 2>&1 || die "check --exact-local should succeed"

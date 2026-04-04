@@ -32,11 +32,17 @@ if [[ "$REPO_NAME" == -* ]]; then
   exit 1
 fi
 
+_repo_id="$(jq -r --arg n "$REPO_NAME" 'first(.[] | select(.name == $n) | .id) // empty' "$FILESYNC_REPOS_FILE")"
+if [[ -z "$_repo_id" ]]; then
+  echo -e "${RED}Error: Repo '$REPO_NAME' not found in global repos.${NC}" >&2
+  exit 1
+fi
+
 declare -a LOCAL_PATHS=()
 while IFS= read -r _lp; do
   [[ -z "$_lp" || "$_lp" == "null" ]] && continue
   LOCAL_PATHS+=("$_lp")
-done < <(jq -r --arg r "$REPO_NAME" '.[] | select(.repo_name == $r) | .local_path' "$FILESYNC_FILES_FILE")
+done < <(jq -r --arg id "$_repo_id" '.[] | select(.repo_id == $id) | .local_path' "$FILESYNC_FILES_FILE")
 
 if [[ ${#LOCAL_PATHS[@]} -eq 0 ]]; then
   echo -e "${RED}Error: No file mappings for repo_name='$REPO_NAME'.${NC}" >&2

@@ -79,6 +79,10 @@ if ! jq -e --arg c "$REPO" 'any(.name == $c)' "$repos" &>/dev/null; then
 fi
 
 repo_id="$(jq -r --arg c "$REPO" 'first(.[] | select(.name == $c) | .id) // empty' "$repos")"
+if [[ -z "$repo_id" ]]; then
+  echo -e "${RED}Error: Repo '$REPO' has no id in global repos (run: filesync migrate).${NC}" >&2
+  exit 1
+fi
 rroot="$(filesync_read_repo_path_root "$FILESYNC_SYSTEM_HOME")"
 
 declare -A _fp_seen=()
@@ -98,14 +102,7 @@ _collect_tasks_for_files() {
     _TASK_ROOT+=("$proot")
     _TASK_FILES+=("$fp")
     _TASK_LP+=("$lp")
-  done < <(jq -r --arg id "$repo_id" --arg n "$REPO" '
-    .[] | select(
-      ($id != "" and $id != "null" and .repo_id == $id)
-      or (
-        $n != "" and .repo_name == $n
-        and (($id == "" or $id == "null") or .repo_id == null or .repo_id == "")
-      )
-    ) | .local_path' "$fp")
+  done < <(jq -r --arg id "$repo_id" '.[] | select(.repo_id == $id) | .local_path' "$fp")
 }
 
 while IFS= read -r proot || [[ -n "${proot:-}" ]]; do

@@ -35,22 +35,14 @@ filesync_repo_name_for_checkout_dir() {
   return 1
 }
 
-# Args: files_json_path repo_id repo_name (current name)
-# Print count of rows referencing the repo (id match or legacy name match).
+# Args: files_json_path repo_id — print count of rows with .repo_id == repo_id.
 filesync_count_files_json_rows_for_repo() {
-  local fp="$1" rid="$2" rname="${3:?}"
+  local fp="$1" rid="$2"
   [[ -f "$fp" ]] || {
     printf '0\n'
     return 0
   }
-  jq --arg id "$rid" --arg n "$rname" '
-    [.[] | select(
-      ($id != "" and $id != "null" and .repo_id == $id)
-      or (
-        $n != "" and .repo_name == $n
-        and (($id == "" or $id == "null") or .repo_id == null or .repo_id == "")
-      )
-    )] | length' "$fp"
+  jq --arg id "$rid" '[.[] | select(.repo_id == $id)] | length' "$fp"
 }
 
 # Args: system_home repo_path_root repos_json_path
@@ -128,20 +120,3 @@ filesync_projects_counting_repo_id() {
   done < <(filesync_list_project_roots_from_global_store "$system_home" "$rroot" "$repos_json")
 }
 
-# Args: repo_name system_home repo_path_root repos_json_path
-# Same as filesync_projects_counting_repo_id but for legacy rows with only repo_name (no repo_id).
-filesync_projects_counting_repo_name() {
-  local rname="${1:?}"
-  local system_home="${2:?}"
-  local rroot="${3:?}"
-  local repos_json="${4:?}"
-  local root fjson n
-  while IFS= read -r root || [[ -n "${root:-}" ]]; do
-    [[ -z "$root" ]] && continue
-    fjson="$root/.filesync/${FILESYNC_FILES_NAME}"
-    n=$(jq --arg n "$rname" '[.[] | select((.repo_id // "") == "" and .repo_name == $n)] | length' "$fjson" 2>/dev/null) || n=0
-    if [[ "${n:-0}" -gt 0 ]]; then
-      printf '%s\t%s\n' "$fjson" "$n"
-    fi
-  done < <(filesync_list_project_roots_from_global_store "$system_home" "$rroot" "$repos_json")
-}

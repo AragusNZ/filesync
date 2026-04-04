@@ -54,13 +54,15 @@ mkdir -p "${proj_a}"
 	filesync edit repo greenlit-api --mirror-in=false
 	filesync edit repo emissions --rename=em2
 	jq -e 'any(.name == "em2")' "${FILESYNC_HOME}/repos.json" >/dev/null || die "global repos should list em2"
-	jq -e '.[] | select(.local_path=="tools/x.txt") | .repo_name == "emissions"' ".filesync/files.json" >/dev/null || die "project files.json keeps old repo_name"
+	jq -e '.[] | select(.local_path=="tools/x.txt") | .repo_id == "testid-emissions" and (has("repo_name") | not)' ".filesync/files.json" >/dev/null \
+		|| die "project files.json keeps stable repo_id, no persisted repo_name"
 	grep -qF 'repo=emissions' "tools/x.txt" || die "marker unchanged"
 )
 
 (
 	cd "${proj_b}"
-	jq -e '.[] | select(.local_path=="tools/x.txt") | .repo_name == "emissions"' ".filesync/files.json" >/dev/null || die "proj_b files.json unchanged"
+	jq -e '.[] | select(.local_path=="tools/x.txt") | .repo_id == "testid-emissions" and (has("repo_name") | not)' ".filesync/files.json" >/dev/null \
+		|| die "proj_b files.json unchanged (repo_id stable)"
 	grep -qF 'repo=emissions' "tools/x.txt" || die "proj_b marker unchanged"
 )
 

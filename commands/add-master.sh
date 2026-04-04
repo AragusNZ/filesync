@@ -164,13 +164,11 @@ append_row() {
   rid=$(jq -r --arg n "$TARGET_REPO" 'first(.[] | select(.name == $n) | .id) // empty' "$repos_path")
   new_entry=$(jq -n \
     --arg id "$rid" \
-    --arg repo "$TARGET_REPO" \
     --arg repo_path "$target_repo_file_path" \
     --arg local "$local_path" \
     --arg st "$sync_status_val" \
     '{
       repo_id: $id,
-      repo_name: $repo,
       repo_file_path: $repo_path,
       local_path: $local,
       sync_status: $st,

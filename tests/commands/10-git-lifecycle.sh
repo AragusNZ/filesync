@@ -84,7 +84,8 @@ mkdir -p "${proj}"
 	filesync rm tools/extra.txt
 	[[ "$(jq '. | length' .filesync/files.json)" -eq 1 ]] || die "rm should leave one row"
 	filesync edit repo origin --rename=upstream
-	jq -e '.[] | select(.local_path=="tools/demo.txt") | .repo_name == "origin"' ".filesync/files.json" >/dev/null || die "edit-repo rename leaves project files.json repo_name"
+	jq -e '.[] | select(.local_path=="tools/demo.txt") | .repo_id == "testid-origin" and (has("repo_name") | not)' ".filesync/files.json" >/dev/null \
+		|| die "edit-repo rename: files.json keeps stable repo_id, no persisted repo_name"
 	grep -qF 'repo=origin' tools/demo.txt || die "edit-repo does not rewrite clone marker"
 	_ru="$(filesync list repos --repo=upstream 2>&1)" || die "list-repos upstream"
 	[[ "${_ru}" == *upstream* ]] || die "list-repos filter upstream"

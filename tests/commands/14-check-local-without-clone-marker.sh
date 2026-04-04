@@ -25,7 +25,7 @@ cp "${master}/tools/plain.txt" "${proj}/tools/plain.txt"
 		'[{"name":"origin","path":$p,"url":"","branch":"main"}]' >"${TMP}/seed-14.json"
 	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-14.json"
 	jq -n \
-		'[{"repo_name":"origin","repo_file_path":"tools/plain.txt","local_path":"tools/plain.txt","sync_status":"synced"}]' \
+		'[{"repo_id":"testid-origin","repo_file_path":"tools/plain.txt","local_path":"tools/plain.txt","sync_status":"synced"}]' \
 		>".filesync/files.json"
 	_out="$(filesync check 2>&1)" && _ec=0 || _ec=$?
 	[[ "${_ec}" -eq 0 ]] || die "check should exit 0 (sync_required is non-blocking), got ${_ec}: ${_out}"

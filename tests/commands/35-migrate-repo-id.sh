@@ -32,4 +32,6 @@ mkdir -p "${proj}"
 	filesync migrate >/dev/null || die "migrate should succeed"
 	jq -e '.[] | select(.local_path=="tools/x.txt") | .repo_id == "uuid-upstream-1"' \
 		".filesync/files.json" >/dev/null || die "migrate should set repo_id from repo_name"
+	jq -e '.[] | select(.local_path=="tools/x.txt") | has("repo_name") | not' \
+		".filesync/files.json" >/dev/null || die "migrate should strip repo_name from files.json"
 )

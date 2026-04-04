@@ -38,7 +38,7 @@ filesync_test_append_global_repos "${TMP}/seed-22b.json"
 	grep -qE 'filesync kind=clone' "${proj_b}/tools/x.txt" || die "clone marker"
 	grep -qE 'path=tools/x\.txt' "${proj_b}/tools/x.txt" || die "clone path="
 	grep -qE 'repo=source' "${proj_b}/tools/x.txt" || die "clone repo= inferred"
-	jq -e '.[] | select(.local_path=="tools/x.txt") | .repo_name == "source" and .repo_file_path == "tools/x.txt"' "${proj_b}/.filesync/files.json" >/dev/null \
+	jq -e '.[] | select(.local_path=="tools/x.txt") | .repo_id == "testid-source" and .repo_file_path == "tools/x.txt"' "${proj_b}/.filesync/files.json" >/dev/null \
 		|| die "files.json row"
 )
 

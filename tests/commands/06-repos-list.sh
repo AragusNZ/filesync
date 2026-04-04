@@ -23,7 +23,9 @@ mkdir -p "${p}"
 	if filesync list repos --status=synced 2>/dev/null; then
 		die "list-repos --status should fail"
 	fi
-	printf '%s\n' '[{"repo_name":"r1","repo_file_path":"a.txt","local_path":"a.txt","sync_status":"synced"},{"repo_name":"r1","repo_file_path":"b.txt","local_path":"b.txt","sync_status":"sync_required"}]' \
+	jq -n '[{"name":"r1","path":"../noop","url":"","branch":"main"}]' >"${TMP}/seed-06.json"
+	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-06.json"
+	printf '%s\n' '[{"repo_id":"testid-r1","repo_file_path":"a.txt","local_path":"a.txt","sync_status":"synced"},{"repo_id":"testid-r1","repo_file_path":"b.txt","local_path":"b.txt","sync_status":"sync_required"}]' \
 		| jq . >".filesync/files.json"
 	_out="$(filesync list files --status=synced 2>&1)" || die "list-files --status=synced"
 	[[ "${_out}" == *a.txt* ]] || die "list-files --status=synced should list a.txt"

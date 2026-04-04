@@ -16,7 +16,7 @@ source "${ROOT}/lib/rm-mapping.sh"
 
 td="${LIB_TEST_TMP}"
 mkdir -p "${td}/sub"
-printf '%s\n' '[{"local_path":"sub/a.txt","repo_name":"r1","repo_file_path":"a.txt","sync_status":"synced"}]' >"${td}/files_rm.json"
+printf '%s\n' '[{"local_path":"sub/a.txt","repo_id":"testid-r1","repo_file_path":"a.txt","sync_status":"synced"}]' >"${td}/files_rm.json"
 if filesync_remove_file_mapping_row "${td}" "${td}/files_rm.json" "sub/a.txt" && [[ "$(jq 'length' "${td}/files_rm.json")" -eq 0 ]]; then
 	ok "rm_mapping removes row"
 else
