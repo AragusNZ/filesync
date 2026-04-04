@@ -131,11 +131,20 @@ Internally, project commands build a **temporary** JSON file with **`repos`**, *
 - The resolved checkout directory for each target must contain **`.filesync/files.json`** (sibling project). Targets whose resolved directory **equals** the current project root are filtered out.
 - For `add master --also` and `add clone --also`, mirrored rows in sibling projects are initialized as **`sync_required`** so each project can run **`check`** / **`sync`** to compute timestamps and verify status in its own context.
 
+## `retarget` (clone vs master)
+
+**`filesync retarget <local_file|old_path> <new_repo_file_path> [--move|--mv]`** updates **`repo_file_path`** after the master file moved in the repo (**`git mv`**, then the new path must exist with **`kind=master`**). The first argument is resolved like **`info file`** (often the clone still at the pre-move **`local_path`**, or the master path in the checkout); **which kind of path you pass changes scope**:
+
+- **Clone** — **`local_file|old_path`** points at a tracked clone in the **current** project. Only **that project's** row is updated. Without **`--move`**, status becomes **`sync_required`** and the file stays at the old **`local_path`**. With **`--move`**, the clone is moved on disk to **`new_repo_file_path`** (project-relative) and **`local_path`** is updated.
+- **Master** — **`local_file|old_path`** points at the master file under a **registered checkout**. **Every** mapping for that master is updated (same multi-project union as **`info file`** / **`remove repo`**). Without **`--move`**, rows get **`master_file_moved`** so you can run **`sync --move`** later to align **`local_path`** with **`repo_file_path`**. With **`--move`**, each local clone is moved and **`local_path`** is updated (not allowed if two rows in the same project share that master — destination collision).
+
+If **`files.json`** still points at the old path after **`git mv`**, **`retarget`** may infer the old path from missing master files; if that fails, pass a **clone** path as **`local_file|old_path`**. See **`filesync retarget -h`** and **`man filesync`**.
+
 ## `sync` / `list files` status filter (`--status`)
 
 **`list files`**: optional **`--status=a,b,...`** and optional **`--include-detached`** (with **`--status`** only). Omit **`--status`** to list every row (after **`--repo`** / **`--file`** filters).
 
-**`sync`**: by default only rows whose **`sync_status`** is **unset**, **`sync_required`**, or **`error_missing_local`** are processed (so missing local files are recreated from master); **`detached`** rows are skipped unless **`--include-detached`** is set. Pass **`--status=`** to replace that default with other tokens.
+**`sync`**: by default only rows whose **`sync_status`** is **unset**, **`sync_required`**, **`error_missing_local`**, or **`master_file_moved`** are processed (so missing local files are recreated from master, and retargeted masters can still be pulled to the old **`local_path`** until you run **`sync --move`**); **`detached`** rows are skipped unless **`--include-detached`** is set. Pass **`--status=`** to replace that default with other tokens. **`sync --move`** (or **`--mv`**) relocates locals whose status is **`master_file_moved`** so **`local_path`** matches **`repo_file_path`**, then syncs as usual.
 
 Comma-separated tokens (whitespace around tokens is stripped). A row matches if **any** token matches (OR):
 

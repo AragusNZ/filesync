@@ -38,7 +38,7 @@ Merged preferences, `repo_path_root` (effective anchor path), `repos`, `files` (
 |---------|------|
 | `new repo`, `new collection`, `edit collection`, `remove collection`, `list repos`, `list collections`, `config`, `edit repo` | system |
 | `init` | Custom bootstrap: writes target **`.filesync/files.json`**, ensures system store, optional global **`repos.json`** append under **`flock`** (does not call `filesync_command_init`). |
-| `remove repo`, `migrate`, `list files`, `handle-missing`, `check`, `sync`, `info`, `add file`, … | `filesync_command_init` (project resolution + assembled state) |
+| `remove repo`, `migrate`, `list files`, `handle-missing`, `check`, `sync`, `info`, `retarget`, `add file`, … | `filesync_command_init` (project resolution + assembled state) |
 
 `list.sh` uses `filesync_command_init_system` for `repos` / `collections` (internal argv) and full init for `files`.
 

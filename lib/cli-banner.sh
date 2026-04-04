@@ -33,7 +33,7 @@ filesync_print_filter_context() {
   if [[ -n "$status_csv" ]]; then
     filesync_print_filter_note "Filter: --status=${status_csv}"
   elif [[ "$is_sync" == 1 ]]; then
-    filesync_print_filter_note "Mode: unset or sync_required only (use --status=a,b,... to include other statuses)"
+    filesync_print_filter_note "Mode: unset, sync_required, error_missing_local, master_file_moved (use --status=a,b,... to include other statuses)"
     if [[ "$force" == true ]]; then
       filesync_print_filter_note "Also: -f/--force additionally selects local_newer and conflict (overwrite from master)"
     fi

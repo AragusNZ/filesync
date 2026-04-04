@@ -377,6 +377,10 @@ while IFS=$'\t' read -r i REPO_ID REPO_NAME LOCAL_PATH REPO_FILE_PATH PRIOR_STAT
 
   STATUS=$(file_sync_compute_status "$DIFF_OK" "$REPO_E" "$LOCAL_E" "$LAST_SYNC_E" "$NOW_E")
 
+  if [[ "$PRIOR_STATUS" == "master_file_moved" ]] && [[ "$LOCAL_PATH" != "$REPO_FILE_PATH" ]] && [[ ! "$STATUS" =~ ^error_ ]] && [[ "$STATUS" != "conflict" ]]; then
+    STATUS="master_file_moved"
+  fi
+
   CHECKED=$((CHECKED + 1))
 
   _cw_json="$(check_marker_warn_codes_json)"

@@ -318,6 +318,90 @@ is not in global
 .BR repos.json .
 .RE
 .TP
+.B retarget
+.IR local-file "|" old-path " " new-repo-file-path
+.RI [ \-\-move " | " \-\-mv ]
+The first argument
+.RI ( \fIlocal-file\fR|\fIold-path\fR )
+must exist on disk; it may be either a
+.B tracked clone
+(file under the current project, listed in this project's
+.IR files.json )
+or the
+.B canonical master
+(file under a registered repo checkout).
+Resolution matches
+.BR "info file" ;
+the command then behaves in one of two
+.B modes
+.RI ( clone " vs. " master ),
+which differ in
+.I scope
+and default
+.IR sync_status .
+.PP
+In both modes,
+.I repo_file_path
+is set to
+.I new-repo-file-path
+(repo-relative, after
+.B git mv
+in the checkout).
+That path must exist and carry
+.BR kind=master .
+.RS
+.PP
+.B Clone mode
+.RI ( \fIlocal-file\fR|\fIold-path\fR
+is a tracked clone):
+only the current project's row is updated.
+Without
+.BR \-\-move " / " \-\-mv ,
+the row is marked
+.IR sync_required
+and the local file remains at
+.IR local_path .
+With
+.BR \-\-move " / " \-\-mv ,
+the local file is moved to
+.I new-repo-file-path
+(project-relative) and
+.I local_path
+is updated.
+.PP
+.B Master mode
+.RI ( \fIlocal-file\fR|\fIold-path\fR
+is the master copy under a checkout):
+every sibling mapping for that master is updated
+.RI ( same " " info
+union as
+.BR "remove repo" ).
+Without
+.BR \-\-move " / " \-\-mv ,
+each row is marked
+.I master_file_moved
+so consumers can run
+.BR "sync \-\-move"
+to relocate locals.
+With
+.BR \-\-move " / " \-\-mv ,
+each affected local file is moved to
+.I new-repo-file-path
+and
+.I local_path
+is updated;
+.B \-\-move
+is rejected when more than one mapping for that master exists in the same project
+.RI ( destination " collision).
+.PP
+If
+.I files.json
+still lists the old master path so
+.B info
+finds no related rows, a fallback may infer the old path from missing masters; otherwise use a clone path as
+.IR local-file "|" old-path .
+.RE
+.TP
 .B sync
 Also
 .BR s .
@@ -329,6 +413,7 @@ Also
 .RI [ \-\-showall ]
 .RI [ \-\-status= list ]
 .RI [ \-\-include\-detached ]
+.RI [ \-\-move " | " \-\-mv ]
 Copy from master repos into the project and update
 .IR files.json .
 Filters
@@ -356,11 +441,24 @@ and
 .BI \-\-status=
 filters; if that preflight fails, sync exits without copying.
 By default only rows with unset,
-.I sync_required
-or
-.I error_missing_local
+.IR sync_required ", " error_missing_local ", or " master_file_moved
 status are considered; detached rows are skipped unless
 .BR \-\-include\-detached .
+.BR \-\-move ", " \-\-mv
+runs first for selected rows whose status is
+.IR master_file_moved :
+when
+.I local_path
+differs from
+.IR repo_file_path ,
+the local file is moved into place, the row's
+.I local_path
+is updated, and status becomes
+.I sync_required
+before the usual copy-from-master step.
+With
+.BR \-\-dry\-run ,
+a planned move is reported and that row is not processed further in the same run.
 .BI \-\-status=
 overrides with a comma-separated list of
 .I sync_status

@@ -143,6 +143,7 @@ file_sync_status_color() {
   case "$st" in
     synced) printf '%s' "${GREEN}" ;;
     sync_required) printf '%s' "${YELLOW}" ;;
+    master_file_moved) printf '%s' "${YELLOW}" ;;
     local_newer) printf '%s' "${CYAN}" ;;
     conflict) printf '%s' "${RED}" ;;
     detached) printf '%s' "${MAGENTA}" ;;
