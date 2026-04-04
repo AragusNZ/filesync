@@ -55,6 +55,12 @@ mkdir -p "${proj}"
 	[[ $(git branch 2>/dev/null | grep -c 'filesync/sync' || true) -eq 0 ]] || die "temp sync branch should be removed"
 	_gitlog="$(git log --oneline -8 2>/dev/null)"
 	[[ "${_gitlog}" == *Merge* || "${_gitlog}" == *filesync:* ]] || die "expected merge or filesync commit in log, got: ${_gitlog}"
+	_sync_names="$(git log -1 --name-only --pretty=format: HEAD)"
+	[[ "${_sync_names}" == *".filesync/files.json"* ]] || die "expected files.json in tip commit (A), got: ${_sync_names}"
+	[[ "${_sync_names}" == *"tools/x.txt"* ]] || die "expected tools/x.txt in tip commit (A), got: ${_sync_names}"
+	if git log -15 --format=%s | grep -q 'filesync: update files.json after sync'; then
+		die "unexpected separate files.json-only commit after sync (A)"
+	fi
 	grep -q 'MASTER_V2' tools/x.txt || die "content should match bumped master"
 )
 

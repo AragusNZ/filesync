@@ -135,36 +135,28 @@ filesync_sync_git_repo_rel_files_json() {
   printf '%s\n' "$rel"
 }
 
-# After metadata writes, stage this project's files.json and commit (amend merge commit when HEAD is a merge).
+# After metadata writes on main: stage this project's files.json and commit (deferred-only batch; no content merge).
 # Args: project_root repo_name
 filesync_sync_git_commit_files_json_after_sync() {
   local proot="${1:?}"
   local repo_name="${2:?}"
-  local rel parent_count _fsc_msg
+  local fj_rel _fsc_msg
 
   git -C "$proot" rev-parse --is-inside-work-tree &>/dev/null || return 0
-  rel="$(filesync_sync_git_repo_rel_files_json "$proot")" || return 0
-  [[ -f "$proot/$rel" ]] || return 0
+  fj_rel="$(filesync_sync_git_repo_rel_files_json "$proot")" || return 0
+  [[ -f "$proot/$fj_rel" ]] || return 0
 
-  git -C "$proot" add -- "$rel"
+  git -C "$proot" add -- "$fj_rel"
   if git -C "$proot" diff --cached --quiet HEAD; then
     return 0
   fi
 
-  parent_count=$(git -C "$proot" rev-parse HEAD^@ 2>/dev/null | wc -l)
-  parent_count=${parent_count//[[:space:]]/}
-  if [[ "${parent_count:-0}" -ge 2 ]]; then
-    if ! git -C "$proot" commit -q --amend --no-edit; then
-      echo "filesync: warning: could not amend merge commit to include files.json (commit manually)" >&2
-    fi
-  else
-    _fsc_msg="filesync: update files.json after sync from ${repo_name}"
-    if [[ -n "${FILESYNC_SYNC_COMMIT_OPTIONS_DESC:-}" ]]; then
-      _fsc_msg+=" (${FILESYNC_SYNC_COMMIT_OPTIONS_DESC})"
-    fi
-    if ! git -C "$proot" commit -q -m "$_fsc_msg"; then
-      echo "filesync: warning: could not commit files.json (${repo_name}); commit manually" >&2
-    fi
+  _fsc_msg="filesync: update files.json after sync from ${repo_name}"
+  if [[ -n "${FILESYNC_SYNC_COMMIT_OPTIONS_DESC:-}" ]]; then
+    _fsc_msg+=" (${FILESYNC_SYNC_COMMIT_OPTIONS_DESC})"
+  fi
+  if ! git -C "$proot" commit -q -m "$_fsc_msg"; then
+    echo "filesync: warning: could not commit files.json (${repo_name}); commit manually" >&2
   fi
   return 0
 }
@@ -215,7 +207,7 @@ filesync_sync_git_finalize_merge_batch() {
   local files_json="${2:?}"
   local cfg="${3:?}"
   local repo_name="${4:?}"
-  local attempt br orig lp fm rid rp fp st rel conflict_line _fsc_msg
+  local attempt br orig lp fm rid rp fp st rel conflict_line _fsc_msg fj_rel idx
   declare -a work_lp work_fm work_rid
   declare -a conflict_paths
 
@@ -273,6 +265,27 @@ filesync_sync_git_finalize_merge_batch() {
       git -C "$proot" add -- "$proot/$lp"
     done
 
+    filesync_sync_git_flush_deferred_meta "$proot" "$files_json"
+    for idx in "${!work_lp[@]}"; do
+      filesync_write_file_row "$files_json" "$proot" "${work_lp[idx]}" "${work_fm[idx]}" "synced"
+    done
+    fj_rel="$(filesync_sync_git_repo_rel_files_json "$proot")" || {
+      echo "filesync: could not resolve files.json path under project root" >&2
+      filesync_sync_git_abort_open_batch "$proot"
+      return 1
+    }
+    [[ -f "$proot/$fj_rel" ]] || {
+      echo "filesync: missing ${fj_rel} under project root" >&2
+      filesync_sync_git_abort_open_batch "$proot"
+      return 1
+    }
+    git -C "$proot" add -- "$fj_rel"
+    if git -C "$proot" diff --cached --quiet; then
+      echo "filesync: git commit failed during sync merge batch (nothing to commit)" >&2
+      filesync_sync_git_abort_open_batch "$proot"
+      return 1
+    fi
+
     _fsc_msg="filesync: sync from ${repo_name} (#${attempt}"
     if [[ -n "${FILESYNC_SYNC_COMMIT_OPTIONS_DESC:-}" ]]; then
       _fsc_msg+="; ${FILESYNC_SYNC_COMMIT_OPTIONS_DESC}"
@@ -289,17 +302,12 @@ filesync_sync_git_finalize_merge_batch() {
     git -C "$proot" merge --no-edit "$br" || st=$?
     if [[ "$st" -eq 0 ]]; then
       git -C "$proot" branch -d "$br"
-      for idx in "${!work_lp[@]}"; do
-        filesync_write_file_row "$files_json" "$proot" "${work_lp[idx]}" "${work_fm[idx]}" "synced"
-      done
       FILESYNC_SYNC_GIT_BRANCH=""
       FILESYNC_SYNC_GIT_ORIG=""
       FILESYNC_SYNC_GIT_ACTIVE_REPO=""
       FILESYNC_SYNC_GIT_PENDING_LP=()
       FILESYNC_SYNC_GIT_PENDING_FM=()
       FILESYNC_SYNC_GIT_PENDING_RID=()
-      filesync_sync_git_flush_deferred_meta "$proot" "$files_json"
-      filesync_sync_git_commit_files_json_after_sync "$proot" "$repo_name"
       return 0
     fi
 

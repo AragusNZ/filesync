@@ -37,6 +37,7 @@ assert_help "list files -h" "all-files" list files -h
 assert_help "l -r --help" "list repos" l -r --help
 assert_help "update --help" "GitHub" update --help
 assert_help "config --help" "doctor" config --help
+assert_help "config --help" "summary" config --help
 assert_help "config --help" "set progress" config --help
 assert_help "add file --help" "path_in_repo" add file --help
 assert_help "add master -h" "add master" add master -h

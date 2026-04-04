@@ -105,3 +105,67 @@ filesync_command_init() {
     echo "filesync: using FILESYNC_HOME=${FILESYNC_SYSTEM_HOME} (metadata directory override)" >&2
   fi
 }
+
+# Same as filesync_command_init but returns 1 when state cannot be assembled (e.g. invalid files.json
+# repo_id). Cleans up temp state file on failure. Used by config doctor after lightweight JSON checks.
+filesync_try_command_init() {
+  local script_path="${1:?}"
+  FILESYNC_PKG_ROOT="$(cd "$(dirname "$script_path")/.." && pwd)"
+  export FILESYNC_PKG_ROOT
+
+  # shellcheck source=/dev/null
+  source "$FILESYNC_PKG_ROOT/lib/colors.sh"
+  # shellcheck source=/dev/null
+  source "$FILESYNC_PKG_ROOT/lib/log.sh"
+  # shellcheck source=/dev/null
+  source "$FILESYNC_PKG_ROOT/lib/deps.sh"
+  # shellcheck source=/dev/null
+  source "$FILESYNC_PKG_ROOT/lib/resolve.sh"
+  # shellcheck source=/dev/null
+  source "$FILESYNC_PKG_ROOT/lib/paths.sh"
+  # shellcheck source=/dev/null
+  source "$FILESYNC_PKG_ROOT/lib/project-context.sh"
+  # shellcheck source=/dev/null
+  source "$FILESYNC_PKG_ROOT/lib/file-filter.sh"
+  # shellcheck source=/dev/null
+  source "$FILESYNC_PKG_ROOT/lib/json-state.sh"
+  # shellcheck source=/dev/null
+  source "$FILESYNC_PKG_ROOT/lib/markers.sh"
+  # shellcheck source=/dev/null
+  source "$FILESYNC_PKG_ROOT/lib/status.sh"
+  # shellcheck source=/dev/null
+  source "$FILESYNC_PKG_ROOT/lib/report.sh"
+  # shellcheck source=/dev/null
+  source "$FILESYNC_PKG_ROOT/lib/repo-resolve.sh"
+
+  filesync_resolve_or_exit
+  [[ -f "${FILESYNC_DIR}/${FILESYNC_FILES_NAME}" ]] || return 1
+
+  FILESYNC_SYSTEM_HOME="$(filesync_ensure_system_store)" || filesync_die "could not initialize system filesync store"
+  export FILESYNC_SYSTEM_HOME
+
+  filesync_export_data_paths
+
+  filesync_require_jq
+  filesync_require_git
+  filesync_log_enable_debug
+
+  FILESYNC_STATE_FILE=$(mktemp)
+  if ! filesync_assemble_state_to "$FILESYNC_STATE_FILE"; then
+    rm -f "$FILESYNC_STATE_FILE"
+    unset FILESYNC_STATE_FILE
+    return 1
+  fi
+
+  CONFIG_FILE="$FILESYNC_STATE_FILE"
+  export CONFIG_FILE FILESYNC_STATE_FILE PROJECT_ROOT FILESYNC_DIR \
+    FILESYNC_FILES_FILE FILESYNC_REPOS_FILE FILESYNC_COLLECTIONS_FILE FILESYNC_SYSTEM_HOME
+
+  REPO_PATH_ROOT=$(jq -r '.repo_path_root' "$CONFIG_FILE")
+  export REPO_PATH_ROOT
+
+  if [[ -n "${FILESYNC_VERBOSE:-}" && -n "${FILESYNC_HOME:-}" ]]; then
+    echo "filesync: using FILESYNC_HOME=${FILESYNC_SYSTEM_HOME} (metadata directory override)" >&2
+  fi
+  return 0
+}

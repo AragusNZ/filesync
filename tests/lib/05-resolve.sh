@@ -27,6 +27,18 @@ if (
 	filesync_resolve_or_exit 2>/dev/null
 ); then bad "resolve_or_exit should fail without .filesync"; else ok "resolve_or_exit fails without .filesync"; fi
 
+if (
+	cd "${proj}"
+	unset FILESYNC_PROJECT_ROOT FILESYNC_DIR
+	filesync_try_resolve_project && [[ "${PROJECT_ROOT}" == "${proj}" ]]
+); then ok "try_resolve_project finds walk-up .filesync"; else bad "try_resolve_project walk-up"; fi
+
+if (
+	cd "$(mktemp -d)"
+	unset FILESYNC_PROJECT_ROOT FILESYNC_DIR
+	filesync_try_resolve_project 2>/dev/null
+); then bad "try_resolve_project should return 1 without .filesync"; else ok "try_resolve_project fails without .filesync"; fi
+
 bl="${td}/broken-dotfilesync"
 mkdir -p "${bl}"
 ln -s /nonexistent/filesync-target "${bl}/.filesync"

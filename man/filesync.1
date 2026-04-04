@@ -105,7 +105,22 @@ entries in global
 .BR repos.json ,
 and checks that each
 .B path
-field resolves to an existing directory (relative paths use the repo path anchor);
+field resolves to an existing directory (relative paths use the repo path anchor).
+When the current working directory is inside a filesync project, it also validates
+.BR files.json
+(duplicate
+.BR local_path ,
+unknown
+.BR repo_id ),
+compares coupled
+.B kind=clone
+marker tokens
+.RI ( path= ", " repo= ", " repo_id=)
+to each row and the global catalog, reports clone markers with no mapping row, and scans for
+.B kind=master
+files whose canonical master has no tracked clone rows (see
+.BR "filesync info file" ).
+Output is grouped into sections with a short summary of warnings and notes;
 .B set progress
 .RI ( hidden | bar | percent ;
 TTY progress style in
@@ -496,9 +511,9 @@ is true and the project directory is a git work tree, there must be no changes e
 .BR .filesync/files.json ) ;
 any other dirty path blocks this path.
 .B sync
-records content updates on a short-lived branch and merges into the previous branch (up to three merge attempts may exclude paths that conflict), then records refreshed
+records content updates and refreshed
 .I files.json
-in git (amending the merge commit when applicable) so the work tree is clean after a successful batch.
+on a short-lived branch, commits them together, and merges into the previous branch (up to three merge attempts may exclude paths that conflict), so the work tree is clean after a successful batch.
 Per-file lines start with a result symbol, use the same
 .IR repo " | " repo_file_path
 layout as

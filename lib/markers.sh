@@ -175,6 +175,33 @@ has_detached_clone_file_sync_marker() {
   grep -q "filesync kind=" "$f" && grep -q 'detached=true' "$f" && grep -qE 'kind=clone([[:space:]]|$)' "$f"
 }
 
+# Reads the first line containing a filesync marker. If payload is kind=clone, sets
+# FILESYNC_CLONE_M_PATH, FILESYNC_CLONE_M_REPO, FILESYNC_CLONE_M_REPO_ID (empty if absent) and returns 0.
+# Otherwise returns 1. Requires a regular file.
+# shellcheck disable=SC2034  # *_PATH/REPO/REPO_ID are outputs for callers
+filesync_marker_read_clone_tokens_from_file() {
+  FILESYNC_CLONE_M_PATH=""
+  FILESYNC_CLONE_M_REPO=""
+  FILESYNC_CLONE_M_REPO_ID=""
+  [[ -f "${1:-}" ]] || return 1
+  local line
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ "$line" == *"filesync kind="* ]] || continue
+    filesync_marker_parse_line "$line" || continue
+    grep -qE 'kind=clone([[:space:]]|$)' <<<"$FILESYNC_M_INNER" || return 1
+    local tok
+    for tok in $FILESYNC_M_INNER; do
+      case "$tok" in
+        path=*) FILESYNC_CLONE_M_PATH="${tok#path=}" ;;
+        repo=*) FILESYNC_CLONE_M_REPO="${tok#repo=}" ;;
+        repo_id=*) FILESYNC_CLONE_M_REPO_ID="${tok#repo_id=}" ;;
+      esac
+    done
+    return 0
+  done <"$1"
+  return 1
+}
+
 # Optional 3rd arg: marker_style row override (when inner has no comment wrapper).
 render_master_marker_file() {
   local input_file="$1"

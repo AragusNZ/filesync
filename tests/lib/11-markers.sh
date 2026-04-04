@@ -242,4 +242,24 @@ else
 	bad "prepend_master_marker_to_file css charset placement"
 fi
 
+tokf="${td}/tok_clone.txt"
+{
+	echo "# filesync kind=clone path=tools/a.txt repo=myrepo repo_id=rid99"
+	echo "body"
+} >"${tokf}"
+if filesync_marker_read_clone_tokens_from_file "${tokf}" \
+	&& [[ "${FILESYNC_CLONE_M_PATH}" == tools/a.txt ]] \
+	&& [[ "${FILESYNC_CLONE_M_REPO}" == myrepo ]] \
+	&& [[ "${FILESYNC_CLONE_M_REPO_ID}" == rid99 ]]; then
+	ok "marker_read_clone_tokens_from_file"
+else
+	bad "marker_read_clone_tokens_from_file"
+fi
+echo "# filesync kind=master" >"${tokf}"
+if filesync_marker_read_clone_tokens_from_file "${tokf}"; then
+	bad "marker_read_clone_tokens must fail on master"
+else
+	ok "marker_read_clone_tokens rejects master"
+fi
+
 if [[ "${fail}" -ne 0 ]]; then exit 1; fi

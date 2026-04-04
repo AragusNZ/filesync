@@ -26,7 +26,7 @@ echo 'Map and sync files across multiple projects and/or git checkouts (project 
 echo ''
 echo 'Project setup:'
 _hcd 'init' 'Create .filesync/files.json; ensures system store; interactive global repo if TTY' '[directory] [--no-repo]'
-_hcd 'config' 'Show/doctor/set preferences; repo path anchor is home (repo flags: edit repo)' 'show | doctor | set progress <hidden|bar|percent>'
+_hcd 'config' 'Show/doctor/set preferences; doctor validates repos, files.json, clone/master markers; summary line' 'show | doctor | set progress <hidden|bar|percent>'
 _hcd 'migrate' 'Import per-project repos/collections/config into global store (one-shot)' 'From a project with legacy .filesync/repos.json; see filesync migrate -h'
 _hcd 'handle-missing' 'Repair rows when master or local paths are missing (non-interactive flags)' 'Project cwd; <local_path> + one action; see filesync handle-missing -h'
 echo ''

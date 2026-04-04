@@ -30,3 +30,4 @@ filesync_test_seed_global_repos "$anchor" "$fixture" || die "seed ok repos"
 
 out_ok="$(filesync config doctor 2>&1)" || die "config doctor ok"
 echo "$out_ok" | grep -qF 'Global repos.json: all checkout directories exist.' || die "doctor should report all paths ok"
+echo "$out_ok" | grep -qF 'Summary:' || die "doctor should print summary"
