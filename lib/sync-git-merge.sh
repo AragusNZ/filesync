@@ -49,7 +49,7 @@ filesync_sync_git_emergency_cleanup() {
 }
 
 # Args: config_file repo_name — true if merge_using_git and consumer should use git batch path.
-# When FILESYNC_SYNC_NO_COMMIT is non-empty (e.g. filesync sync --no-commit), behave as merge_using_git false.
+# When FILESYNC_SYNC_NO_COMMIT is non-empty (e.g. filesync sync --no-commit|--dirty), behave as merge_using_git false.
 filesync_sync_git_use_merge_path() {
   local cfg="${1:?}" rn="${2:?}"
   [[ -z "${FILESYNC_SYNC_NO_COMMIT:-}" ]] || return 1

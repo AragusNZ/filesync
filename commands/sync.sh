@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Sync from master repos into project (updates .filesync/files.json rows).
-# Usage: sync.sh [--repo=name] [--file=...] [--repo-file=...] [--all-files=...] [-c|--check] [--no-commit] ...
+# Usage: sync.sh [--repo=name] [--file=...] [--repo-file=...] [--all-files=...] [-c|--check] [--no-commit|--dirty] ...
 # Path fragments: same rules as filesync check (AND across --file / --repo-file / --all-files).
 
 set -euo pipefail
@@ -8,7 +8,7 @@ set -euo pipefail
 _CMD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/cli-help.sh"
-FILESYNC_CMD_USAGE='Usage: filesync sync [--repo=name] [--file=path_fragment ...] [--repo-file=path_fragment ...] [--all-files=path_fragment ...] [-c|--check] [--no-commit] [--dry-run] [-f|--force] [--showall] [--status=a,b,...] [--include-detached] [--move|--mv]'
+FILESYNC_CMD_USAGE='Usage: filesync sync [--repo=name] [--file=path_fragment ...] [--repo-file=path_fragment ...] [--all-files=path_fragment ...] [-c|--check] [--no-commit|--dirty] [--dry-run] [-f|--force] [--showall] [--status=a,b,...] [--include-detached] [--move|--mv]'
 if filesync_argv_wants_help "$@"; then
   cat <<EOF
 ${FILESYNC_CMD_USAGE}
@@ -29,7 +29,7 @@ Filters (same rules as check; repeat a flag for OR within a dimension; combine w
 Run mode:
 
   -c, --check              Run check with the same filters before copying
-  --no-commit              Write files directly this run (skip git branch/merge even if enabled)
+  --no-commit, --dirty     Write files directly this run (skip git branch/merge even if enabled)
   --dry-run                Show planned work without writing files
   -f, --force              Include local_newer and conflict when no explicit --status= (and allow
                            overwriting clones without a marker)
@@ -44,7 +44,7 @@ Default when --status= is omitted:
 Git-style sync (merge_using_git):
   When enabled for a repo and this project is a clean git worktree (except possibly
   .filesync/files.json), sync may use a short branch and merge. Otherwise it copies into your paths
-  directly. --no-commit always forces the direct path for this run (see filesync(1)).
+  directly. --no-commit|--dirty always forces the direct path for this run (see filesync(1)).
 EOF
   exit 0
 fi
@@ -73,7 +73,7 @@ NO_COMMIT=false
 
 while [[ $# -gt 0 ]]; do
   case $1 in
-    --no-commit) NO_COMMIT=true; shift ;;
+    --no-commit|--dirty) NO_COMMIT=true; shift ;;
     --dry-run) DRY_RUN=true; shift ;;
     --move|--mv)
       # shellcheck disable=SC2034
