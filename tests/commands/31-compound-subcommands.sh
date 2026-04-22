@@ -54,7 +54,7 @@ _out="$(filesync info --help 2>&1)" || die "info --help"
 [[ "${_out}" == *"--- info repo"* ]] || die "info --help should include repo section"
 
 _out="$(filesync info repo --help 2>&1)" || die "info repo --help"
-[[ "${_out}" == *"config doctor"* ]] || die "info repo help should mention doctor path check"
+[[ "${_out}" == *"doctor inspect"* ]] || die "info repo help should mention doctor path check"
 
 if filesync info 2>/dev/null; then
 	die "info with no args should fail"

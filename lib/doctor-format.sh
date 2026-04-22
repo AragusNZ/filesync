@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# stderr formatting for filesync config doctor (sourced; no set -e at top level).
+# stderr formatting for filesync doctor inspect (sourced; no set -e at top level).
 # Requires: lib/colors.sh
 
 filesync_doctor_summary_reset() {
@@ -8,7 +8,7 @@ filesync_doctor_summary_reset() {
 }
 
 filesync_doctor_title() {
-  echo -e "${BOLD}${WHITE}filesync config doctor${NC}" >&2
+  echo -e "${BOLD}${WHITE}filesync doctor inspect${NC}" >&2
   echo "" >&2
 }
 

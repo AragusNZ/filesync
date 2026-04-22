@@ -104,6 +104,8 @@ echo "# filesync kind=master" >"${mf}"
 if has_any_file_sync_marker "${mf}" && has_master_file_sync_marker "${mf}" && ! has_clone_file_sync_marker "${mf}"; then ok "has_any / has_master / not clone"; else bad "has_any/has_master"; fi
 echo "# filesync kind=clone detached=true" >"${mf}"
 if has_detached_clone_file_sync_marker "${mf}" && has_clone_file_sync_marker "${mf}"; then ok "has_detached_clone"; else bad "has_detached_clone"; fi
+echo "# filesync kind=detached path=x repo=origin" >"${mf}"
+if has_detached_file_sync_marker "${mf}" && ! has_clone_file_sync_marker "${mf}"; then ok "has_detached_marker"; else bad "has_detached_marker"; fi
 
 echo "# filesync kind=clone path=p repo=old" >"${mf}"
 if filesync_marker_rename_repo_in_file "${mf}" "old" "new" && grep -qF 'repo=new' "${mf}" && ! grep -qF 'repo=old' "${mf}"; then

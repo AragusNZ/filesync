@@ -170,6 +170,11 @@ has_clone_file_sync_marker() {
   grep -q "filesync kind=" "$f" && grep -qE 'kind=clone([[:space:]]|$)' "$f"
 }
 
+has_detached_file_sync_marker() {
+  local f="$1"
+  grep -q "filesync kind=" "$f" && grep -qE 'kind=detached([[:space:]]|$)' "$f"
+}
+
 has_detached_clone_file_sync_marker() {
   local f="$1"
   grep -q "filesync kind=" "$f" && grep -q 'detached=true' "$f" && grep -qE 'kind=clone([[:space:]]|$)' "$f"

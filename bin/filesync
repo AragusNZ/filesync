@@ -92,6 +92,9 @@ main() {
     handle-missing)
       exec "$ROOT/commands/handle-missing.sh" "$@"
       ;;
+    doctor)
+      exec "$ROOT/commands/doctor.sh" "$@"
+      ;;
     update)
       exec "$ROOT/commands/update.sh" "$@"
       ;;

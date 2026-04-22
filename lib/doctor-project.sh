@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-# Project-scoped checks for filesync config doctor (sourced; no set -e at top level).
-# Requires: filesync_command_init, lib/config-doctor-format.sh sourced by caller (colors).
+# Project-scoped checks for filesync doctor inspect (sourced; no set -e at top level).
+# Requires: filesync_command_init, lib/doctor-format.sh sourced by caller (colors).
 
-_LIB_CDP="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+_LIB_DP="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
-source "${_LIB_CDP}/file-related-mappings.sh"
+source "${_LIB_DP}/file-related-mappings.sh"
 
-filesync_config_doctor_find_print0() {
+filesync_doctor_project_find_print0() {
   [[ -n "${PROJECT_ROOT:-}" ]] || return 1
   find "$PROJECT_ROOT" \( -name .git -o -name node_modules \) -prune -o -type f -print0 2>/dev/null
 }
 
 # files.json: duplicate local_path and unknown repo_id (global catalog).
-filesync_config_doctor_files_json_sanity() {
+filesync_doctor_project_files_json_sanity() {
   local row lp rid rname dups dup_lp
   [[ -f "$FILESYNC_FILES_FILE" ]] || return 0
 
@@ -45,7 +45,7 @@ filesync_config_doctor_files_json_sanity() {
 }
 
 # For each non-detached row with a coupled clone marker, path=/repo=/repo_id= must match files.json + catalog.
-filesync_config_doctor_clone_markers_vs_rows() {
+filesync_doctor_project_clone_markers_vs_rows() {
   local row lp rfp rid rname full sync_st
   [[ -f "$FILESYNC_FILES_FILE" ]] || return 0
 
@@ -83,16 +83,25 @@ filesync_config_doctor_clone_markers_vs_rows() {
 }
 
 # Coupled clone marker on disk but no files.json row for that local_path.
-filesync_config_doctor_orphan_clone_markers() {
-  local f canon rel_lp
+filesync_doctor_project_orphan_clone_markers() {
+  local f canon rel_lp marker_kind
   declare -A seen_orphan=()
 
-  filesync_doctor_subsection "Orphan clone markers"
+  filesync_doctor_subsection "Orphan clone/detached markers"
 
   while IFS= read -r -d '' f; do
     [[ -f "$f" ]] || continue
-    has_clone_file_sync_marker "$f" 2>/dev/null || continue
-    has_detached_clone_file_sync_marker "$f" 2>/dev/null && continue
+    marker_kind=""
+    if has_detached_file_sync_marker "$f" 2>/dev/null; then
+      marker_kind="detached"
+    elif has_clone_file_sync_marker "$f" 2>/dev/null; then
+      if has_detached_clone_file_sync_marker "$f" 2>/dev/null; then
+        marker_kind="detached"
+      else
+        marker_kind="clone"
+      fi
+    fi
+    [[ -n "$marker_kind" ]] || continue
     canon="$(filesync_canonical_existing "$f" 2>/dev/null)" || continue
     case "$canon" in
       "$PROJECT_ROOT" | "$PROJECT_ROOT"/*) ;;
@@ -104,12 +113,12 @@ filesync_config_doctor_orphan_clone_markers() {
       continue
     fi
     seen_orphan[$rel_lp]=1
-    filesync_doctor_warn_msg "Warning: kind=clone marker but no files.json row for local_path: $rel_lp"
+    filesync_doctor_warn_msg "Warning: kind=${marker_kind} marker but no files.json row for local_path: $rel_lp"
     filesync_doctor_detail "Run filesync info file or remove the marker if the file is not tracked."
-  done < <(filesync_config_doctor_find_print0)
+  done < <(filesync_doctor_project_find_print0)
 }
 
-filesync_config_doctor_scan_master_markers() {
+filesync_doctor_project_scan_master_markers() {
   local f canon rel_hint key_master maybe
   declare -A seen_path=()
   declare -A seen_noclone_key=()
@@ -141,6 +150,5 @@ filesync_config_doctor_scan_master_markers() {
       filesync_doctor_detail "Master: $canon"
       filesync_doctor_detail "Run filesync info file when the marker should be removed (no copies are tracked)."
     fi
-  done < <(filesync_config_doctor_find_print0)
+  done < <(filesync_doctor_project_find_print0)
 }
-

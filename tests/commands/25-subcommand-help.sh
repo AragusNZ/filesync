@@ -22,8 +22,10 @@ assert_help "sync alias s -h" "master repos" s -h
 assert_help "check --help" "last_check_at" check --help
 assert_help "check --help" "repo-file" check --help
 assert_help "check alias c -h" "Verify mappings" c -h
+assert_help "doctor --help" "inspect" doctor --help
+assert_help "doctor clean --help" "ghost filesync markers" doctor clean --help
 assert_help "info file --help" "fix-marker" info file --help
-assert_help "info repo --help" "config doctor" info repo --help
+assert_help "info repo --help" "doctor inspect" info repo --help
 assert_help "info --help" "fix-marker" info --help
 assert_help "info --help" "info repo" info --help
 assert_help "info --help" "--- info file" info --help
@@ -36,8 +38,7 @@ assert_help "list files -h" "list files" list files -h
 assert_help "list files -h" "all-files" list files -h
 assert_help "l -r --help" "list repos" l -r --help
 assert_help "update --help" "GitHub" update --help
-assert_help "config --help" "doctor" config --help
-assert_help "config --help" "summary" config --help
+assert_help "config --help" "show" config --help
 assert_help "config --help" "set progress" config --help
 assert_help "add file --help" "path_in_repo" add file --help
 assert_help "add master -h" "add master" add master -h

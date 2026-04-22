@@ -98,29 +98,6 @@ to suppress the notice).
 Inspect or change system metadata:
 .B show
 prints effective system home, repo path anchor, and global JSON paths;
-.B doctor
-summarizes environment overrides, reports duplicate
-.B name
-entries in global
-.BR repos.json ,
-and checks that each
-.B path
-field resolves to an existing directory (relative paths use the repo path anchor).
-When the current working directory is inside a filesync project, it also validates
-.BR files.json
-(duplicate
-.BR local_path ,
-unknown
-.BR repo_id ),
-compares coupled
-.B kind=clone
-marker tokens
-.RI ( path= ", " repo= ", " repo_id=)
-to each row and the global catalog, reports clone markers with no mapping row, and scans for
-.B kind=master
-files whose canonical master has no tracked clone rows (see
-.BR "filesync info file" ).
-Output is grouped into sections with a short summary of warnings and notes;
 .B set progress
 .RI ( hidden | bar | percent ;
 TTY progress style in
@@ -176,6 +153,30 @@ and every global repo row has boolean
 .B handle-missing
 Non-interactive repair for rows whose master or local paths are missing (see
 .B "filesync handle-missing --help" ).
+.TP
+.B doctor
+.RI [ inspect " | " clean ]
+Health and integrity tools.
+With no target,
+.B doctor
+runs
+.BR inspect .
+.B inspect
+summarizes environment overrides, reports duplicate
+.B name
+entries in global
+.BR repos.json ,
+checks each checkout
+.B path
+directory, and from inside a project also validates
+.BR files.json ,
+compares coupled
+.B kind=clone
+marker tokens to rows and catalog, reports orphan clone markers, and scans for
+.B kind=master
+files with no tracked clone rows.
+.B clean
+removes ghost non-master marker lines from files under the current project root.
 .SS "Inspect and sync"
 .TP
 .B check
@@ -319,7 +320,7 @@ reported blocking issues (after printing).
 prints global catalog fields for
 .IR repo-name ,
 verifies the checkout directory exists (same path resolution as
-.BR "config doctor" ),
+.BR "doctor inspect" ),
 reports how many
 .I files.json
 rows in the current project reference that repo, and summarizes their

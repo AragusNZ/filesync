@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# config doctor: clone markers vs files.json, orphans, json sanity.
+# doctor inspect: clone markers vs files.json, orphans, json sanity.
 set -euo pipefail
 : "${ROOT:?}" "${TMP:?}" "${EXPECTED_VERSION:?}"
 # shellcheck source=/dev/null
@@ -32,7 +32,7 @@ jq -n \
 
 (
 	cd "$repo"
-	out="$(filesync config doctor 2>&1)" || die "doctor"
+	out="$(filesync doctor 2>&1)" || die "doctor"
 	echo "$out" | grep -qF 'clone marker repo= does not match' || die "doctor should warn on repo= mismatch"
 	echo "$out" | grep -qF 'Summary:' || die "summary"
 )
@@ -45,7 +45,7 @@ jq -n \
 
 (
 	cd "$repo"
-	out="$(filesync config doctor 2>&1)" || die "doctor"
+	out="$(filesync doctor inspect 2>&1)" || die "doctor inspect"
 	if echo "$out" | grep -qF 'clone marker repo= does not match'; then
 		die "doctor should not warn when repo= matches catalog"
 	fi
@@ -59,9 +59,22 @@ jq -n \
 
 (
 	cd "$repo"
-	out="$(filesync config doctor 2>&1)" || die "doctor"
+	out="$(filesync doctor 2>&1)" || die "doctor"
 	echo "$out" | grep -qF 'no files.json row for local_path: tools/o.txt' || die "doctor should warn orphan clone"
 )
+
+# Orphan detached marker (no row)
+{
+	printf '%s\n' '# filesync kind=detached path=tools/d.txt repo=myrepo repo_id=idr1'
+	printf '%s\n' 'd'
+} >"${repo}/tools/d.txt"
+
+(
+	cd "$repo"
+	out="$(filesync doctor inspect 2>&1)" || die "doctor inspect"
+	echo "$out" | grep -qF 'kind=detached marker but no files.json row for local_path: tools/d.txt' || die "doctor should warn orphan detached"
+)
+rm -f "${repo}/tools/d.txt"
 
 # Unknown repo_id in files.json
 jq -n \
@@ -72,7 +85,7 @@ rm -f "${repo}/tools/o.txt" "${repo}/tools/w.txt"
 
 (
 	cd "$repo"
-	out="$(filesync config doctor 2>&1)" || die "doctor"
+	out="$(filesync doctor 2>&1)" || die "doctor"
 	echo "$out" | grep -qF 'unknown repo_id' || die "doctor should warn unknown repo_id"
 	echo "$out" | grep -qF 'Skipping clone and master file scans' || die "doctor should skip scans when state fails to load"
 )
@@ -87,6 +100,6 @@ jq -n \
 
 (
 	cd "$repo"
-	out="$(filesync config doctor 2>&1)" || die "doctor"
+	out="$(filesync doctor inspect 2>&1)" || die "doctor inspect"
 	echo "$out" | grep -qF 'duplicate local_path' || die "doctor should warn duplicate local_path"
 )

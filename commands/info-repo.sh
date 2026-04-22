@@ -15,7 +15,7 @@ ${FILESYNC_CMD_USAGE}
 Also: filesync i repo <repo-name>   or   filesync i -r <repo-name>
 
 From a project (walk-up .filesync/), show global catalog fields for this repo, verify the checkout
-path the same way config doctor does, count tracked rows in this project, and summarize their cached
+path the same way doctor inspect does, count tracked rows in this project, and summarize their cached
 statuses. Run filesync check --repo=… to refresh statuses first if needed.
 
 Arguments:
@@ -83,7 +83,7 @@ else
     filesync_print_info_kv "Resolved checkout" "$resolved"
     echo -e "  ${GREEN}Checkout directory exists.${NC}" >&2
   else
-    echo -e "  ${YELLOW}Warning: checkout path missing or not a directory (same check as filesync config doctor).${NC}" >&2
+    echo -e "  ${YELLOW}Warning: checkout path missing or not a directory (same check as filesync doctor inspect).${NC}" >&2
   fi
 fi
 

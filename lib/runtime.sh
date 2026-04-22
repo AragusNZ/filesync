@@ -125,7 +125,7 @@ filesync_command_init() {
 }
 
 # Same as filesync_command_init but returns 1 when state cannot be assembled (e.g. invalid files.json
-# repo_id). Cleans up temp state file on failure. Used by config doctor after lightweight JSON checks.
+# repo_id). Cleans up temp state file on failure. Used by doctor inspect after lightweight JSON checks.
 filesync_try_command_init() {
   _filesync_command_init_project_full "${1:?}" optional return
 }

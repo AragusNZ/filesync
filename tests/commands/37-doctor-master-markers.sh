@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# config doctor: project scan for kind=master with no catalog clones.
+# doctor inspect: project scan for kind=master with no catalog clones.
 set -euo pipefail
 : "${ROOT:?}" "${TMP:?}" "${EXPECTED_VERSION:?}"
 # shellcheck source=/dev/null
@@ -28,7 +28,7 @@ filesync_test_seed_global_repos "$anchor" "$fixture" || die "seed global repos"
 
 (
 	cd "$repo"
-	out="$(filesync config doctor 2>&1)" || die "config doctor should exit 0"
+	out="$(filesync doctor 2>&1)" || die "doctor should exit 0"
 	echo "$out" | grep -qF 'kind=master with no tracked clones' || die "doctor should warn when master has no rows"
 	echo "$out" | grep -qF 'Summary:' || die "doctor should print summary"
 )
@@ -40,7 +40,7 @@ jq -n \
 
 (
 	cd "$repo"
-	out="$(filesync config doctor 2>&1)" || die "config doctor should exit 0"
+	out="$(filesync doctor inspect 2>&1)" || die "doctor inspect should exit 0"
 	if echo "$out" | grep -qF 'kind=master with no tracked clones'; then
 		die "doctor should not warn when a clone row exists"
 	fi
@@ -50,7 +50,7 @@ nop="${TMP}/37-doc-mm-noproject"
 mkdir -p "$nop"
 (
 	cd "$nop"
-	out="$(filesync config doctor 2>&1)" || die "config doctor should exit 0"
+	out="$(filesync doctor 2>&1)" || die "doctor should exit 0"
 	echo "$out" | grep -qF 'Skipping project-local scans' || die "doctor should skip scan outside a project"
 	echo "$out" | grep -qF 'Summary:' || die "doctor should print summary line"
 )
