@@ -36,9 +36,11 @@ filesync_test_seed_global_repos "${p}" "${TMP}/seed-11.json"
 (
 	cd "${p}"
 	touch missing.txt
-	if filesync add master origin missing.txt 2>/dev/null; then
-		die "add-master should fail when local file has no marker"
-	fi
+	filesync add master origin missing.txt
+	[[ -f "${master}/missing.txt" ]] || die "add-master should promote unmarked local file"
+	grep -qE 'kind=master' "${master}/missing.txt" || die "promoted unmarked file should gain master marker"
+	grep -qE 'kind=clone' "${p}/missing.txt" || die "local unmarked file should be converted to clone"
+	jq -e '.[] | select(.local_path=="missing.txt")' ".filesync/files.json" >/dev/null || die "files.json should include unmarked-file mapping"
 )
 
 (
