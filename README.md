@@ -97,7 +97,7 @@ Each tracked text file contains one line with **`filesync`**, **`kind=master`** 
 
 If the first argument starts with `-` but is not a known subcommand, it is treated as a **`sync`** option (same as calling `sync` first).
 
-Run `filesync` with no arguments to print a short usage summary (same idea as **`filesync help`**). **`filesync --version`** / **`filesync -V`** print the version; **`man filesync`** is available after install.
+Run `filesync` with no arguments to print a short usage summary (same idea as **`filesync help`**). **`filesync --version`** / **`filesync -v`** print the version; **`man filesync`** is available after install.
 
 ## Layout (source / install tree)
 

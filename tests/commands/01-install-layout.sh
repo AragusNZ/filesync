@@ -25,7 +25,7 @@ prefix_smoke() {
 		[[ "$(PATH="${dest}${prefix}/bin:${PATH}" filesync help 2>&1)" == *filesync* ]] || die "help (${label})"
 		PATH="${dest}${prefix}/bin:${PATH}" filesync check >/dev/null || die "check empty project (${label})"
 		[[ "$(PATH="${dest}${prefix}/bin:${PATH}" filesync --version 2>&1)" == *"filesync ${EXPECTED_VERSION}"* ]] || die "--version (${label})"
-		[[ "$(PATH="${dest}${prefix}/bin:${PATH}" filesync -V 2>&1)" == *"filesync ${EXPECTED_VERSION}"* ]] || die "-V (${label})"
+		[[ "$(PATH="${dest}${prefix}/bin:${PATH}" filesync -v 2>&1)" == *"filesync ${EXPECTED_VERSION}"* ]] || die "-v (${label})"
 	)
 }
 

@@ -17,7 +17,7 @@ _hcd() {
 }
 
 echo 'Usage:'
-echo '   filesync [-V | --version]'
+echo '   filesync [-v | --version]'
 echo '   filesync [help | -h | --help]'
 echo '   filesync <command> [-h | --help]'
 echo '   filesync <command> [arguments]'

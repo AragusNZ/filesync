@@ -39,7 +39,7 @@ source "$ROOT/lib/colors.sh"
 source "$ROOT/lib/compound-dispatch.sh"
 
 main() {
-  if [[ $# -eq 1 && ($1 == '-V' || $1 == '--version') ]]; then
+  if [[ $# -eq 1 && ($1 == '-v' || $1 == '--version') ]]; then
     printf '%s\n' "filesync ${FILESYNC_VERSION}"
     exit 0
   fi
