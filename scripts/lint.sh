@@ -16,6 +16,7 @@ run_shellcheck() {
 		bin/filesync \
 		commands/*.sh \
 		lib/*.sh \
+		scripts/check-install-deps.sh \
 		scripts/ci-test.sh \
 		scripts/build-deb.sh \
 		scripts/lint.sh \

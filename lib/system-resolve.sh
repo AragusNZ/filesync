@@ -3,6 +3,8 @@
 
 # shellcheck source=/dev/null
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/data-names.sh"
+# shellcheck source=/dev/null
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/global-repos-repair.sh"
 
 # Default metadata directory (fixed path under $HOME).
 filesync_system_home_default_dir() {
@@ -53,5 +55,6 @@ filesync_ensure_system_store() {
   if [[ ! -f "$prefs" ]]; then
     printf '%s\n' '{}' | jq . >"$prefs"
   fi
+  filesync_repair_global_repos_json_if_needed "$home" || return 1
   printf '%s' "$home"
 }

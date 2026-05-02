@@ -4,8 +4,10 @@
 
 ## Requirements
 
-- `bash`, `jq`, `git`
-- `curl` or `wget` (for **`filesync update`**)
+- `bash`, `jq`, `git`, and `flock` (on Linux, `flock` is in **util-linux**, usually already installed)
+- `curl` or `wget` (for **`filesync update`** only)
+
+**ShellCheck** is not required to run filesync; it is only for contributors who run [scripts/lint.sh](scripts/lint.sh) or CI.
 
 ## Install (system-wide)
 
@@ -14,6 +16,8 @@ From a clone of this repository:
 ```bash
 sudo make install
 ```
+
+`make install` runs [scripts/check-install-deps.sh](scripts/check-install-deps.sh) first and **fails with install hints** if `bash`, `jq`, `git`, or `flock` is missing. That check is **skipped** when `DESTDIR` is set (packaging / staged trees). To bypass it: `make install SKIP_INSTALL_DEPS_CHECK=1`.
 
 Default prefix is `/usr/local` (`filesync` → `/usr/local/bin/filesync`, package files under `/usr/local/lib/filesync/`). The binary on `PATH` is a **symlink** to `PREFIX/lib/filesync/bin/filesync`; libraries and commands live under `PREFIX/lib/filesync/`. The dispatcher resolves that symlink using **`readlink -f`** (GNU coreutils), **`realpath`**, or a manual symlink chase so `ROOT` points at `PREFIX/lib/filesync`; without a usable `readlink`/`realpath`, a symlink-only install layout may fail to find `lib/`. Override with `PREFIX`:
 

@@ -1,9 +1,16 @@
 PREFIX ?= /usr/local
 DESTDIR ?=
 
-.PHONY: install uninstall
+.PHONY: install uninstall install-deps-check
 
-install:
+# Skip with: make install SKIP_INSTALL_DEPS_CHECK=1
+# Omitted automatically when DESTDIR is set (packaging/staged installs).
+install-deps-check:
+	@if [ -z "$(SKIP_INSTALL_DEPS_CHECK)" ] && [ -z "$(DESTDIR)" ]; then \
+		bash "$(CURDIR)/scripts/check-install-deps.sh"; \
+	fi
+
+install: install-deps-check
 	install -d $(DESTDIR)$(PREFIX)/lib/filesync/bin
 	install -d $(DESTDIR)$(PREFIX)/lib/filesync/commands
 	install -d $(DESTDIR)$(PREFIX)/lib/filesync/lib

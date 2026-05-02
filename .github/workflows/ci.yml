@@ -18,7 +18,7 @@ jobs:
           sudo apt-get install -y shellcheck dpkg-dev lintian jq
 
       - name: Shellcheck
-        run: shellcheck bin/filesync commands/*.sh lib/*.sh scripts/ci-test.sh scripts/build-deb.sh scripts/lint.sh scripts/version-push.sh tests/run-lib-tests.sh tests/run-command-tests.sh tests/harness-lib.sh tests/harness-command.sh tests/lib/*.sh tests/commands/*.sh
+        run: shellcheck bin/filesync commands/*.sh lib/*.sh scripts/check-install-deps.sh scripts/ci-test.sh scripts/build-deb.sh scripts/lint.sh scripts/version-push.sh tests/run-lib-tests.sh tests/run-command-tests.sh tests/harness-lib.sh tests/harness-command.sh tests/lib/*.sh tests/commands/*.sh
 
       - name: Project tests
         run: bash scripts/ci-test.sh
