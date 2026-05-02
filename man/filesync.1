@@ -907,12 +907,29 @@ Also
 .RI [ \-\-check\-sync= true | false ]
 .RI [ \-\-mirror\-in= true | false ]
 .RI [ \-\-merge\-using\-git= true | false ]
+.RI [ \-\-id= id ]
 .RB [ \-\-enable ]
 .RB [ \-\-disable ]
-Edit a repo entry in the global store only; project
+Edit a repo entry in the global store.
+With
+.B \-\-id,
+also rewrite matching
+.I repo_id
+values in every known project
 .I files.json
-rows and local sync markers are not updated.
+(registered checkouts that contain
+.BR .filesync/files.json ,
+plus the current project when cwd is inside one) and replace
+.B repo_id=
+in clone/detached markers when present.
+Otherwise project
+.I files.json
+rows and local sync markers are not updated (including when renaming with
+.BR \-\-rename ).
 The new name must not match another repo or any collection name.
+The new id must be unique across repos and must not contain
+.B =
+or whitespace.
 .B \-\-enable
 sets both
 .B check_sync_enabled

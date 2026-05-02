@@ -53,7 +53,7 @@ _hcd 'remove file (rm | rm -f)' 'Stop tracking paths (removes mapping; does not 
 _hcd 'remove repo (rm -r)' 'Remove a repo from the catalog (--force if files still reference it)' '<repo_name> [--force] [-y|--yes]'
 _hcd 'remove collection (rm -col)' 'Delete a named repo group' '<name>'
 _hcd 'new repo (n -r)' 'Interactively add a repo' ''
-_hcd 'edit repo (e -r)' 'Change checkout path, URL, branch, or flags in the shared catalog only' '<repo_name> [options] (see filesync edit repo -h)'
+_hcd 'edit repo (e -r)' 'Change checkout path, URL, branch, flags, or stable id (--id updates projects/markers)' '<repo_name> [options] (see filesync edit repo -h)'
 _hcd 'new collection (n -col)' 'Create a named group of repos for --also= (optional starting members)' '<name> [--repos=a,b]'
 _hcd 'edit collection (e -col)' 'Rename a collection or add/remove repos in it' '<name> [options] (see filesync edit collection -h)'
 echo ''

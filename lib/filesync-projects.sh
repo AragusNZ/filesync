@@ -9,13 +9,19 @@ source "${_LIB_FP}/paths.sh"
 
 # Args: project_root system_home repo_path_root repos_json_path
 # Union of project_root (normalized) and registered checkouts that have .filesync/files.json (sorted -u).
+# project_root may be empty (omit from the union); used when cwd is not inside a filesync project.
 filesync_list_union_project_roots_for_global_ops() {
-  local project_root="${1:?}"
+  local project_root="${1-}"
   local system_home="${2:?}"
   local rroot="${3:?}"
   local repos_json="${4:?}"
-  project_root="$(cd "$project_root" && pwd -P)"
-  { printf '%s\n' "$project_root"; filesync_list_project_roots_from_global_store "$system_home" "$rroot" "$repos_json"; } | sort -u
+  if [[ -n "$project_root" ]]; then
+    project_root="$(cd "$project_root" && pwd -P)"
+  fi
+  {
+    [[ -n "$project_root" ]] && printf '%s\n' "$project_root"
+    filesync_list_project_roots_from_global_store "$system_home" "$rroot" "$repos_json"
+  } | sort -u
 }
 
 # Args: checkout_abs repo_path_root repos_json_path

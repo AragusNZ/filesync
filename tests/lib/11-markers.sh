@@ -126,6 +126,20 @@ else
 	ok "marker_rename_repo_in_file skips master"
 fi
 
+echo "# filesync kind=clone path=tools/a.txt repo=myrepo repo_id=rid-old" >"${mf}"
+echo body >>"${mf}"
+if filesync_marker_replace_repo_id_in_file "${mf}" "rid-old" "rid-new" && grep -qF 'repo_id=rid-new' "${mf}" && ! grep -qF 'repo_id=rid-old' "${mf}"; then
+	ok "marker_replace_repo_id_in_file clone"
+else
+	bad "marker_replace_repo_id_in_file clone"
+fi
+echo "# filesync kind=master" >"${mf}"
+if filesync_marker_replace_repo_id_in_file "${mf}" "rid-old" "rid-new"; then
+	bad "marker_replace_repo_id_in_file should skip master without repo_id token"
+else
+	ok "marker_replace_repo_id_in_file skips master"
+fi
+
 unset FILESYNC_M_STYLE
 if [[ "$(filesync_marker_effective_style "x.js" "")" == "line_slash" ]]; then ok "marker_effective_style from path"; else bad "effective_style path"; fi
 if filesync_marker_parse_line "# filesync kind=x"; then

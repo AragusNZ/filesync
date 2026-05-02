@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CLI: filesync edit repo — update global repos.json (system store only).
+# CLI: filesync edit repo — update global repos.json (and with --id, project files.json + markers).
 
 set -euo pipefail
 
@@ -12,8 +12,8 @@ if filesync_argv_wants_help "$@"; then
 ${FILESYNC_CMD_USAGE}
 Also: e -r
 
-Update one row in the shared repos.json (checkout path, URL, branch, flags). This does not edit
-project files.json or file markers. Pass at least one option.
+Update one row in the shared repos.json (checkout path, URL, branch, stable id, flags). Unless you
+pass --id, project files.json and file markers are left unchanged. Pass at least one option.
 
 Arguments:
 
@@ -28,8 +28,12 @@ Options:
   --check-sync=true|false        Run check for this repo during sync
   --mirror-in=true|false         Mirror content in during sync
   --merge-using-git=true|false   Use a git branch/merge in clean trees when syncing (advanced)
+  --id=new_id                    Stable repo id (updates repos.json, every files.json row, and markers)
   --enable                       Turn check and mirror-in on
   --disable                      Turn check and mirror-in off
+
+Changing --id rewrites repo_id in all known projects (registered checkouts with .filesync/files.json,
+plus the current project when cwd is inside one). Clone/detached markers get repo_id= when present.
 
 EOF
   exit 0
@@ -40,13 +44,51 @@ source "$_CMD_ROOT/../lib/runtime.sh"
 source "$_CMD_ROOT/../lib/collections.sh"
 # shellcheck source=/dev/null
 source "$_CMD_ROOT/../lib/fs-lock.sh"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/paths.sh"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/filesync-projects.sh"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/markers.sh"
+# shellcheck source=/dev/null
+source "$_CMD_ROOT/../lib/resolve.sh"
 filesync_command_init_system "${BASH_SOURCE[0]}"
+
+# Uses PROJECT_ROOT (optional), FILESYNC_SYSTEM_HOME, FILESYNC_FILES_NAME.
+_filesync_edit_repo_propagate_repo_id_change() {
+  local repos_fp="${1:?}" old_id="${2:?}" new_id="${3:?}"
+  local rroot="${4:?}"
+  local root fp tmp_f lp full
+  PROJECT_ROOT=""
+  filesync_try_resolve_project || true
+  while IFS= read -r root || [[ -n "${root:-}" ]]; do
+    [[ -z "$root" ]] && continue
+    fp="$root/.filesync/${FILESYNC_FILES_NAME}"
+    [[ -f "$fp" ]] || continue
+    local -a lps=()
+    while IFS= read -r lp || [[ -n "${lp:-}" ]]; do
+      [[ -z "$lp" || "$lp" == "null" ]] && continue
+      lps+=("$lp")
+    done < <(jq -r --arg id "$old_id" '.[] | select(.repo_id == $id) | .local_path' "$fp")
+    [[ ${#lps[@]} -eq 0 ]] && continue
+    tmp_f="${fp}.tmp.$$"
+    jq --arg old "$old_id" --arg new "$new_id" 'map(if .repo_id == $old then .repo_id = $new else . end)' "$fp" >"$tmp_f"
+    mv "$tmp_f" "$fp"
+    for lp in "${lps[@]}"; do
+      full="$root/$lp"
+      if [[ -f "$full" ]]; then
+        filesync_marker_replace_repo_id_in_file "$full" "$old_id" "$new_id" || true
+      fi
+    done
+  done < <(filesync_list_union_project_roots_for_global_ops "${PROJECT_ROOT:-}" "$FILESYNC_SYSTEM_HOME" "$rroot" "$repos_fp")
+}
 
 REPO_CURRENT=""
 RENAME=""
 PATH_NEW=""
 URL_NEW=""
 BRANCH_NEW=""
+ID_NEW=""
 CS_SET=0
 CS_VAL=false
 MI_SET=0
@@ -126,6 +168,10 @@ while [[ $# -gt 0 ]]; do
       MI_VAL=false
       shift
       ;;
+    --id=*)
+      ID_NEW="${1#*=}"
+      shift
+      ;;
     -*)
       filesync_unknown_option_stderr "$1" "$FILESYNC_CMD_USAGE"
       exit 1
@@ -144,11 +190,11 @@ done
 
 if [[ -z "$REPO_CURRENT" ]]; then
   filesync_usage_error_stderr "$FILESYNC_CMD_USAGE"
-  echo "At least one of --rename, --path, --url, --branch, --check-sync, --mirror-in, --merge-using-git, --enable, or --disable is required." >&2
+  echo "At least one of --rename, --path, --url, --branch, --id, --check-sync, --mirror-in, --merge-using-git, --enable, or --disable is required." >&2
   exit 1
 fi
 
-if [[ -z "$RENAME" ]] && [[ -z "$PATH_NEW" ]] && [[ -z "$URL_NEW" ]] && [[ -z "$BRANCH_NEW" ]] && [[ "$CS_SET" -eq 0 ]] && [[ "$MI_SET" -eq 0 ]] && [[ "$MUG_SET" -eq 0 ]]; then
+if [[ -z "$RENAME" ]] && [[ -z "$PATH_NEW" ]] && [[ -z "$URL_NEW" ]] && [[ -z "$BRANCH_NEW" ]] && [[ -z "$ID_NEW" ]] && [[ "$CS_SET" -eq 0 ]] && [[ "$MI_SET" -eq 0 ]] && [[ "$MUG_SET" -eq 0 ]]; then
   echo -e "${RED}Error: specify at least one option${NC}" >&2
   exit 1
 fi
@@ -167,6 +213,27 @@ if [[ -n "$RENAME" ]] && [[ "$RENAME" != "$REPO_CURRENT" ]]; then
   fi
   if [[ -f "$FILESYNC_COLLECTIONS_FILE" ]] && filesync_collections_name_taken "$FILESYNC_COLLECTIONS_FILE" "$RENAME"; then
     echo -e "${RED}Error: '$RENAME' is already a collection name.${NC}" >&2
+    exit 1
+  fi
+fi
+
+old_repo_id=""
+if [[ -n "$ID_NEW" ]]; then
+  if [[ "$ID_NEW" == *"="* ]] || [[ "$ID_NEW" =~ [[:space:]] ]]; then
+    echo -e "${RED}Error: --id must not contain '=' or whitespace.${NC}" >&2
+    exit 1
+  fi
+  old_repo_id="$(filesync_global_repos_id_for_name "$repos" "$REPO_CURRENT")"
+  if [[ -z "$old_repo_id" ]]; then
+    echo -e "${RED}Error: Repo '$REPO_CURRENT' has no id in global repos (run: filesync migrate).${NC}" >&2
+    exit 1
+  fi
+  if [[ "$ID_NEW" == "$old_repo_id" ]]; then
+    echo -e "${RED}Error: Repo '$REPO_CURRENT' already has id '$ID_NEW'.${NC}" >&2
+    exit 1
+  fi
+  if jq -e --arg id "$ID_NEW" --arg name "$REPO_CURRENT" 'any(.[]; .name != $name and .id == $id)' "$repos" &>/dev/null; then
+    echo -e "${RED}Error: Another repo already uses id '$ID_NEW'.${NC}" >&2
     exit 1
   fi
 fi
@@ -196,11 +263,24 @@ if [[ -n "$RENAME" ]] && [[ "$RENAME" != "$REPO_CURRENT" ]]; then
   fi
 fi
 
+if [[ -n "$ID_NEW" ]]; then
+  if jq -e --arg id "$ID_NEW" --arg name "$REPO_CURRENT" 'any(.[]; .name != $name and .id == $id)' "$repos" &>/dev/null; then
+    echo -e "${RED}Error: Another repo already uses id '$ID_NEW'.${NC}" >&2
+    exit 1
+  fi
+fi
+
+if [[ -n "$ID_NEW" ]]; then
+  rroot="$(filesync_read_repo_path_root "$FILESYNC_SYSTEM_HOME")"
+  _filesync_edit_repo_propagate_repo_id_change "$repos" "$old_repo_id" "$ID_NEW" "$rroot"
+fi
+
 jq --arg c "$REPO_CURRENT" \
   --arg newname "$RENAME" \
   --arg p "$PATH_NEW" \
   --arg u "$URL_NEW" \
   --arg b "$BRANCH_NEW" \
+  --arg id_new "$ID_NEW" \
   --argjson cs_set "$CS_SET" \
   --argjson cs_val "$CS_VAL" \
   --argjson mi_set "$MI_SET" \
@@ -213,6 +293,7 @@ jq --arg c "$REPO_CURRENT" \
       | .path = (if $p != "" then $p else .path end)
       | .url = (if $u != "" then $u else .url end)
       | .branch = (if $b != "" then $b else .branch end)
+      | .id = (if $id_new != "" then $id_new else .id end)
       | .check_sync_enabled = (if $cs_set == 1 then $cs_val else .check_sync_enabled end)
       | .mirror_in_enabled = (if $mi_set == 1 then $mi_val else .mirror_in_enabled end)
       | .merge_using_git = (if $mug_set == 1 then $mug_val else .merge_using_git end)
@@ -234,4 +315,5 @@ if [[ -n "$BRANCH_NEW" ]]; then echo "  branch: $BRANCH_NEW" >&2; fi
 if [[ "$CS_SET" -eq 1 ]]; then echo "  check_sync_enabled: $CS_VAL" >&2; fi
 if [[ "$MI_SET" -eq 1 ]]; then echo "  mirror_in_enabled: $MI_VAL" >&2; fi
 if [[ "$MUG_SET" -eq 1 ]]; then echo "  merge_using_git: $MUG_VAL" >&2; fi
+if [[ -n "$ID_NEW" ]]; then echo "  id: $ID_NEW (repos.json, files.json rows, markers)" >&2; fi
 exit 0

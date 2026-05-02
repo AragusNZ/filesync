@@ -92,9 +92,12 @@ filesync_assemble_state_to() {
     --slurpfile repos "${FILESYNC_REPOS_FILE}" \
     --slurpfile files "${FILESYNC_DIR}/${FILESYNC_FILES_NAME}" \
     --arg rroot "$rroot" '
-    ($repos[0]) as $R
-    | ($files[0]) as $F
-    | $prefs[0] * {
+    ($repos[0] // []) as $R
+    | ($files[0] // []) as $F
+    | (($prefs[0] // {})
+        | if type != "object" then {} else . end
+        | del(.repos, .files, .repo_path_root)) as $pc
+    | $pc * {
         repos: $R,
         files: ($F | map(
           . as $row
@@ -130,7 +133,10 @@ filesync_assemble_global_catalog_state_to() {
     --slurpfile repos "${FILESYNC_REPOS_FILE}" \
     --argjson files '[]' \
     --arg rroot "$rroot" \
-    '$prefs[0] * {repos: $repos[0], files: $files, repo_path_root: $rroot}' > "$out"; then
+    '(($prefs[0] // {})
+        | if type != "object" then {} else . end
+        | del(.repos, .files, .repo_path_root)) as $pc
+      | $pc * {repos: ($repos[0] // []), files: $files, repo_path_root: $rroot}' > "$out"; then
     rm -rf "$tmpd"
     return 1
   fi

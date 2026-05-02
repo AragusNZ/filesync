@@ -82,7 +82,7 @@ Internally, project commands build a **temporary** JSON file with **`repos`**, *
 
 ## Repo metadata (`edit repo`)
 
-**`filesync edit repo <repo_name>`** (short: **`e -r`**) updates **global** **`repos.json`** only (system store). Pass at least one of **`--rename=`**, **`--path=`**, **`--url=`**, **`--branch=`**, **`--check-sync=true|false`**, **`--mirror-in=true|false`**, **`--merge-using-git=true|false`**, **`--enable`**, or **`--disable`** (the **`=`** options use a single argument, e.g. **`--rename=myrepo`**). It does **not** modify project **`files.json`** or local sync markers; the new name must not match any **collection** name in **global** **`collections.json`**.
+**`filesync edit repo <repo_name>`** (short: **`e -r`**) updates **global** **`repos.json`**. Pass at least one of **`--rename=`**, **`--path=`**, **`--url=`**, **`--branch=`**, **`--id=`**, **`--check-sync=true|false`**, **`--mirror-in=true|false`**, **`--merge-using-git=true|false`**, **`--enable`**, or **`--disable`** (the **`=`** options use a single argument, e.g. **`--rename=myrepo`**). Unless **`--id=`** is set, it does **not** modify project **`files.json`** or local sync markers (including on rename); with **`--id=`**, it rewrites **`repo_id`** on matching rows and updates **`repo_id=`** in clone/detached markers where present, across the same project union as **`remove repo`**. The new name must not match any **collection** name in **global** **`collections.json`**; the new id must be unique and must not contain **`=`** or whitespace.
 
 ## Adding mappings (`add file`, `add master`, `add clone`)
 

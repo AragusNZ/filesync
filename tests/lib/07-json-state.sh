@@ -83,4 +83,21 @@ else
 fi
 printf '%s\n' '{}' | jq . >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_PREFERENCES_NAME}"
 
+printf '%s\n' '{"progress_display":"bar","repos":[{"name":"should-not-appear"}],"files":[{"x":1}],"repo_path_root":"/bad"}' \
+	>"${FILESYNC_SYSTEM_HOME}/${FILESYNC_PREFERENCES_NAME}"
+if filesync_assemble_state_to "${td}/strip-prefs.json" \
+	&& jq -e '.repos == [] and .files == [] and .progress_display == "bar"' "${td}/strip-prefs.json" >/dev/null; then
+	ok "assemble_state strips catalog keys from preferences before merge"
+else
+	bad "assemble_state should ignore repos/files/repo_path_root in preferences.json"
+fi
+printf '%s\n' '{}' | jq . >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_PREFERENCES_NAME}"
+
+if filesync_assemble_global_catalog_state_to "${td}/global.json" \
+	&& jq -e '.repos == [] and .files == [] and .progress_display == "percent"' "${td}/global.json" >/dev/null; then
+	ok "assemble_global_catalog_state_to"
+else
+	bad "assemble_global_catalog_state_to"
+fi
+
 if [[ "${fail}" -ne 0 ]]; then exit 1; fi

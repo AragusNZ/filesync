@@ -19,7 +19,7 @@ filesync_merged_preferences() {
     --slurpfile def "$def" \
     --rawfile ur "$rawpath" \
     '
-    ($def[0]) as $base |
+    ($def[0] // {} | if type != "object" then {} else . end) as $base |
     (try (
         if ($ur | length) == 0 then {}
         else ($ur | fromjson)
