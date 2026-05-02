@@ -20,7 +20,7 @@ mkdir -p "${p}"
 	printf '%s\n' '[]' | jq . >"${TMP}/seed-12.json"
 	filesync_test_seed_global_repos "$(pwd)" "${TMP}/seed-12.json"
 	# Path is derived from cwd vs repo_path_root (seeded above to this directory) → "."
-	printf '%s\n' 'ci-repo-name' 'https://example.com/r.git' 'main' | filesync new repo
+	printf '%s\n' 'ci-repo-name' '' 'https://example.com/r.git' 'main' | filesync new repo
 	jq -e '.[] | select(.name=="ci-repo-name" and .url=="https://example.com/r.git" and .path=="." and .branch=="main")' \
 		"${FILESYNC_HOME}/repos.json" >/dev/null || die "add-repo should append row to global repos.json"
 )

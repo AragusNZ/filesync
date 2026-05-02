@@ -42,6 +42,27 @@ filesync_path_for_repos_json() {
   printf '%s\n' "$checkout"
 }
 
+# Args: repo_path_root, default_checkout_abs_dir, user_line (empty → use default checkout)
+# Prints repos.json path field (relative to repo_path_root when possible). Returns 1 if user_line is
+# non-empty but does not resolve to an existing directory under the usual rules.
+filesync_repos_json_path_from_input() {
+  local rroot="$1" default_abs="$2" raw="${3-}"
+  raw="${raw#"${raw%%[![:space:]]*}"}"
+  raw="${raw%"${raw##*[![:space:]]}"}"
+  local checkout_abs
+  rroot="$(cd "$rroot" && pwd -P)" || return 1
+  default_abs="$(cd "$default_abs" && pwd -P)" || return 1
+  if [[ -z "$raw" ]]; then
+    checkout_abs="$default_abs"
+  elif [[ "$raw" == /* ]]; then
+    checkout_abs="$(cd "$raw" 2>/dev/null && pwd -P)" || return 1
+  else
+    checkout_abs="$(cd "$rroot" && cd -- "$raw" 2>/dev/null && pwd -P)" || return 1
+  fi
+  [[ -d "$checkout_abs" ]] || return 1
+  filesync_path_for_repos_json "$rroot" "$checkout_abs"
+}
+
 # Args: path to an existing file or directory (relative or absolute).
 # Prints one absolute path with directory symlinks resolved (pwd -P); uses realpath(1) when available.
 # Returns 1 if the path does not exist.

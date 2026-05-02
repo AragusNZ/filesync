@@ -76,15 +76,10 @@ fi
 printf '%s\n' '[]' | jq . >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_GLOBAL_REPOS_NAME}"
 
 printf '{ not-valid-json' >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_PREFERENCES_NAME}"
-_asm_err=""
-if _asm_err=$(filesync_assemble_state_to "${td}/bad-merge.json" 2>&1); then
-	bad "assemble_state should reject invalid preferences"
+if filesync_assemble_state_to "${td}/bad-merge.json" && jq -e '.progress_display == "percent"' "${td}/bad-merge.json" >/dev/null; then
+	ok "assemble_state survives invalid preferences.json (uses defaults)"
 else
-	if [[ "${_asm_err}" == *filesync:* ]]; then
-		ok "assemble_state invalid preferences stderr"
-	else
-		bad "assemble_state invalid preferences missing filesync prefix: ${_asm_err}"
-	fi
+	bad "assemble_state should merge defaults when preferences.json is invalid JSON"
 fi
 printf '%s\n' '{}' | jq . >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_PREFERENCES_NAME}"
 

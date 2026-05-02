@@ -26,10 +26,11 @@ Options:
   --no-repo    Skip the interactive first-repo wizard (CI / scripts).
 
 First repo wizard:
-  With a TTY and without --no-repo, init can register the first repo (name, URL, branch). Inside a
-  git checkout you get sensible defaults; otherwise the project directory anchors paths. Without a TTY
-  the wizard is skipped automatically—add a repo later with filesync new repo, run init from a
-  terminal, or use --no-repo.
+  With a TTY and without --no-repo, init can register the first repo (name, checkout path, URL,
+  branch). Inside a git checkout you get sensible defaults; you are prompted for the checkout path
+  (relative to the repo path root or absolute, Enter for the default from cwd/git). Without a TTY the
+  wizard is skipped automatically—add a repo later with filesync new repo, run init from a terminal,
+  or use --no-repo.
 
 Note:
   If .filesync/files.json already exists, init exits with an error.
@@ -49,15 +50,9 @@ source "${FILESYNC_PKG_ROOT}/lib/system-resolve.sh"
 # shellcheck source=/dev/null
 source "${FILESYNC_PKG_ROOT}/lib/collections.sh"
 # shellcheck source=/dev/null
-source "${FILESYNC_PKG_ROOT}/lib/paths.sh"
-# shellcheck source=/dev/null
-source "${FILESYNC_PKG_ROOT}/lib/repo-merge-using-git.sh"
-# shellcheck source=/dev/null
 source "${FILESYNC_PKG_ROOT}/lib/git-repo-hints.sh"
 # shellcheck source=/dev/null
-source "${FILESYNC_PKG_ROOT}/lib/repo-id.sh"
-# shellcheck source=/dev/null
-source "${FILESYNC_PKG_ROOT}/lib/fs-lock.sh"
+source "${FILESYNC_PKG_ROOT}/lib/global-repo-interactive.sh"
 
 filesync_require_jq
 
@@ -131,9 +126,9 @@ fi
 filesync_git_collect_hints "$PROJECT_ROOT"
 def_name="$(basename "${FILESYNC_GIT_HINT_TOP:-$PROJECT_ROOT}")"
 def_checkout="${FILESYNC_GIT_HINT_TOP:-$PROJECT_ROOT}"
-path="$(filesync_path_for_repos_json "$rroot" "$def_checkout")"
-if [[ -z "$path" ]]; then
-  echo -e "${RED}filesync: could not derive checkout path (home=${rroot}, checkout=${def_checkout})${NC}" >&2
+path_default="$(filesync_path_for_repos_json "$rroot" "$def_checkout")"
+if [[ -z "$path_default" ]]; then
+  echo -e "${RED}filesync: could not derive default checkout path (home=${rroot}, checkout=${def_checkout})${NC}" >&2
   exit 1
 fi
 def_url="${FILESYNC_GIT_HINT_URL:-}"
@@ -144,8 +139,7 @@ echo -e "${BOLD}${WHITE}Register this project in global ${FILESYNC_GLOBAL_REPOS_
 if [[ -n "$FILESYNC_GIT_HINT_TOP" ]]; then
   echo -e "${GRAY}(defaults from git work tree: ${FILESYNC_GIT_HINT_TOP})${NC}" >&2
 fi
-echo -e "${GRAY}Checkout path (relative to home when possible): ${path}${NC}" >&2
-echo "" >&2
+filesync_global_repo_print_path_banner "$rroot" "$def_checkout" "$path_default"
 
 read -rp "Repo name [${def_name}]: " name
 name="${name:-$def_name}"
@@ -165,6 +159,11 @@ if [[ -f "$coll" ]] && filesync_collections_name_taken "$coll" "$name"; then
   exit 1
 fi
 
+path="$(filesync_global_repo_prompt_stored_path "$rroot" "$def_checkout" "$path_default")" || {
+  echo -e "${RED}filesync: checkout path must be an existing directory (relative to repo path root or absolute).${NC}" >&2
+  exit 1
+}
+
 if [[ -n "$def_url" ]]; then
   read -rp "Remote URL [${def_url}]: " url
   url="${url:-$def_url}"
@@ -175,27 +174,12 @@ fi
 read -rp "Branch [${def_branch}]: " branch
 branch="${branch:-$def_branch}"
 
-rid="$(filesync_new_repo_id)"
-if filesync_dir_is_git_worktree "$def_checkout"; then
-  mug_json=true
-else
-  mug_json=false
-fi
-NEW_ENTRY=$(jq -n \
-  --arg id "$rid" \
-  --arg name "$name" \
-  --arg url "$url" \
-  --arg path "$path" \
-  --arg branch "$branch" \
-  --argjson merge_using_git "$mug_json" \
-  '{id: $id, name: $name, url: $url, path: $path, branch: $branch, check_sync_enabled: true, mirror_in_enabled: true, merge_using_git: $merge_using_git}')
+NEW_ENTRY="$(filesync_global_repo_row_json "$name" "$url" "$path" "$branch" "$rroot")" || {
+  echo -e "${RED}filesync: could not resolve checkout directory for path=${path}${NC}" >&2
+  exit 1
+}
 
-filesync_global_lock_acquire
-trap 'filesync_global_lock_release' EXIT
-jq --argjson entry "$NEW_ENTRY" '. + [$entry]' "$repos" >"${repos}.tmp"
-mv "${repos}.tmp" "$repos"
-filesync_global_lock_release
-trap - EXIT
+filesync_global_repo_append_row_locked "$repos" "$NEW_ENTRY"
 
 echo "" >&2
 echo -e "${GREEN}Added global repo:${NC} name=$name url=$url path=$path branch=$branch" >&2

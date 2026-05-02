@@ -50,7 +50,7 @@ GitHub Releases publish a **source tarball** (`make install` from the extracted 
 
 ## Usage
 
-Create a new project (writes `./.filesync/` in the current directory — that folder’s parent is the **project root** for this tree). From an interactive terminal, **`filesync init`** can also prompt to add a matching entry to the **global** `repos.json` (name, URL, branch); the checkout **`path`** is derived from **`repo_path_root`** and the project directory (git top when in a work tree). Defaults for name, URL, and branch come from **git** when applicable. Use **`filesync init --no-repo`** (or run without a TTY) to skip that step and use **`filesync new repo`** later.
+Create a new project (writes `./.filesync/` in the current directory — that folder’s parent is the **project root** for this tree). From an interactive terminal, **`filesync init`** can also prompt to add a matching entry to the **global** `repos.json` (name, checkout **path**, URL, branch). The path is relative to **`repo_path_root`** (usually home) or absolute; Enter accepts the default from the project directory / git top. Defaults for name, URL, and branch come from **git** when applicable. Use **`filesync init --no-repo`** (or run without a TTY) to skip that step and use **`filesync new repo`** later (same path prompt).
 
 ```bash
 cd /path/to/your/project

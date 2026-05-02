@@ -32,7 +32,7 @@ mkdir -p "${proj}"
 	jq -e 'all(.[]; has("merge_using_git") | not)' "${FILESYNC_HOME}/repos.json" >/dev/null || die "fixture must omit merge_using_git"
 	FILESYNC_REPO_PATH_ANCHOR="$(pwd)"
 	export FILESYNC_REPO_PATH_ANCHOR
-	printf '%s\n' 'newrepo' 'https://example.com/new.git' 'main' | filesync new repo
+	printf '%s\n' 'newrepo' '' 'https://example.com/new.git' 'main' | filesync new repo
 	jq -e 'all(.[]; (.merge_using_git | type) == "boolean")' "${FILESYNC_HOME}/repos.json" >/dev/null \
 		|| die "all repos must have boolean merge_using_git after new repo"
 	jq -e '.[] | select(.name == "legacy") | .merge_using_git == true' "${FILESYNC_HOME}/repos.json" >/dev/null \

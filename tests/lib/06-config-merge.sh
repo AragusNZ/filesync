@@ -32,4 +32,14 @@ else
 	bad "merged preferences strip: ${merged_strip}"
 fi
 
+export FILESYNC_SYSTEM_HOME="${td}/pref_null"
+mkdir -p "${FILESYNC_SYSTEM_HOME}"
+printf 'null\n' | jq . >"${FILESYNC_SYSTEM_HOME}/${FILESYNC_PREFERENCES_NAME}"
+merged_null="$(filesync_merged_preferences)"
+if echo "${merged_null}" | jq -e '.progress_display == "percent"' >/dev/null; then
+	ok "merged preferences treats top-level null as empty object"
+else
+	bad "merged preferences null: ${merged_null}"
+fi
+
 if [[ "${fail}" -ne 0 ]]; then exit 1; fi

@@ -86,7 +86,7 @@ is not given, prompts to append a repo definition to global
 (name, remote URL, branch, stable id).
 The checkout
 .B path
-is stored relative to your home directory when possible (git work tree top when inside git, otherwise the project root), with defaults for name, URL, and branch taken from git when the project is inside a work tree.
+is stored relative to your home directory when possible. You are prompted for that path (relative to the repo path root or an absolute directory); press Enter to accept the default from the current directory or git work tree top. Defaults for name, URL, and branch are taken from git when the project is inside a work tree.
 If stdin is not a terminal, that step is skipped (use
 .B "new repo"
 .RB ( n " " \-r )
@@ -889,10 +889,10 @@ Also
 .BR "n " \-r .
 Interactively add a repo definition to
 .IR repos.json .
-The checkout
+You are prompted for the checkout
 .B path
-is derived from the current directory (git work tree top when inside git, otherwise the working directory), relative to home when possible.
-Run from that checkout.
+(relative to the repo path root \(usually your home directory\) or an absolute directory); Enter accepts the default derived from the current directory (git work tree top when inside git).
+It is stored relative to home when possible.
 The name must not duplicate an existing repo entry and must not match a collection name in
 .IR collections.json .
 .TP
