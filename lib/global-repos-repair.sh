@@ -76,7 +76,7 @@ filesync_repair_global_repos_json_if_needed() {
   trap - EXIT
 
   if ! filesync_assert_global_repos_have_merge_using_git "$repos"; then
-    echo "filesync: could not satisfy merge_using_git on ${repos} (try: filesync migrate)" >&2
+    echo "filesync: could not satisfy merge_using_git on ${repos} (try: filesync doctor inspect or edit repo --merge-using-git=)" >&2
     return 1
   fi
   return 0

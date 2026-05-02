@@ -108,7 +108,7 @@ fi
 # recreate-from-master
 REPO_ID=$(jq -r --arg l "$LOCAL_PATH" 'first(.[] | select(.local_path == $l) | .repo_id) // empty' "$FILESYNC_FILES_FILE")
 REPO_FILE_PATH=$(jq -r --arg l "$LOCAL_PATH" 'first(.[] | select(.local_path == $l) | .repo_file_path) // empty' "$FILESYNC_FILES_FILE")
-[[ -n "$REPO_ID" && "$REPO_ID" != "null" && -n "$REPO_FILE_PATH" ]] || { echo -e "${RED}Invalid row for local_path (need repo_id; run: filesync migrate)${NC}" >&2; exit 1; }
+[[ -n "$REPO_ID" && "$REPO_ID" != "null" && -n "$REPO_FILE_PATH" ]] || { echo -e "${RED}Invalid row for local_path (need repo_id in files.json)${NC}" >&2; exit 1; }
 REPO_NAME="$(filesync_repo_name_from_id "$FILESYNC_REPOS_FILE" "$REPO_ID")"
 [[ -n "$REPO_NAME" ]] || { echo -e "${RED}Unknown repo_id in row for local_path${NC}" >&2; exit 1; }
 

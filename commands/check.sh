@@ -419,8 +419,12 @@ filesync_progress_end
 
 if [[ -s "$PATCH_LINES_FILE" ]]; then
   jq --slurpfile p <(jq -s '.' "$PATCH_LINES_FILE") '
-    reduce $p[0][] as $patch (.;
-      .[$patch.i] = (.[$patch.i] * ($patch | del(.i)))
+    reduce ($p[0] // [])[] as $patch (.;
+      if .[$patch.i] == null then
+        error("check: patch refers to missing files.json row index \($patch.i)")
+      else
+        .[$patch.i] = (.[$patch.i] * ($patch | del(.i)))
+      end
     )
   ' "$FILESYNC_FILES_FILE" > "${FILESYNC_FILES_FILE}.tmp"
   mv "${FILESYNC_FILES_FILE}.tmp" "$FILESYNC_FILES_FILE"

@@ -16,7 +16,7 @@ If you have an old copy of the global store at **`~/.filesync`** (not the projec
 Files in that directory:
 
 - **`system.json`** — metadata (e.g. **`version`**).
-- **`repos.json`** — array of repo objects: stable **`id`** (UUID), **`name`**, **`url`**, **`path`**, **`branch`**, required boolean **`merge_using_git`**, optional **`check_sync_enabled`** and **`mirror_in_enabled`** (both default true if omitted). New rows from **`init`** / **`new repo`** set **`merge_using_git`** from a git probe at the registered checkout directory; **`migrate`** backfills the field on older catalogs. Each **`name`** must be unique; duplicate names make resolution ambiguous and are rejected when loading project state. Each repo’s **`path`** is resolved with `filesync_resolve_repo_checkout_dir`: **relative** paths are under your **home directory** (or **`FILESYNC_REPO_PATH_ANCHOR`** when set); absolute **`path`** values are used as-is.
+- **`repos.json`** — array of repo objects: stable **`id`** (UUID), **`name`**, **`url`**, **`path`**, **`branch`**, required boolean **`merge_using_git`**, optional **`check_sync_enabled`** and **`mirror_in_enabled`** (both default true if omitted). New rows from **`init`** / **`new repo`** set **`merge_using_git`** from a git probe at the registered checkout directory; use **`edit repo --merge-using-git=`** (or repair tooling) if a row is missing the flag. Each **`name`** must be unique; duplicate names make resolution ambiguous and are rejected when loading project state. Each repo’s **`path`** is resolved with `filesync_resolve_repo_checkout_dir`: **relative** paths are under your **home directory** (or **`FILESYNC_REPO_PATH_ANCHOR`** when set); absolute **`path`** values are used as-is.
 - **`collections.json`** — array of `{ "name", "repos": [ … ] }` for **`--also=`** expansion.
 - **`preferences.json`** — merged over `share/defaults/preferences.default.json`; **`progress_display`** is **`percent`**, **`bar`**, or **`hidden`**. Set it with **`filesync config set progress …`**; inspect the effective value with **`filesync config show`**.
 
@@ -26,13 +26,9 @@ Files in that directory:
 
 ### `files.json`
 
-JSON **array** of file row objects (paths, **`repo_id`**, `sync_status`, marker-related fields, mtimes, **`last_check_at`** per row, etc.). **`repo_id`** ties each row to a global repo row; the current repo **name** is not stored here (it comes from global **`repos.json`** when commands assemble state). Run **`filesync migrate`** once to upgrade older trees: it backfills **`repo_id`**, strips any persisted **`repo_name`**, and fails if a row cannot be resolved.
+JSON **array** of file row objects (paths, **`repo_id`**, `sync_status`, marker-related fields, mtimes, **`last_check_at`** per row, etc.). **`repo_id`** ties each row to a global repo row; the current repo **name** is not stored here (it comes from global **`repos.json`** when commands assemble state). Each row must include a **`repo_id`** that matches some **`repos.json`** **`id`**.
 
 Optional **`marker_style`** per row overrides comment wrapping for that path when the tool must emit a marker line without an existing comment wrapper on the line (rare). Allowed values: **`line_slash`** (`//`), **`line_hash`** (`#`), **`line_dash`** (`--`), **`block_c`** (`/* … */` on one line), **`html`** (`<!-- … -->`). If omitted, style is inferred from the file extension or basename (e.g. `Dockerfile` → hash, `.vue` / `.html` → html, `.css` → block, `.sql` → dash; unknown extension defaults to **`line_hash`**).
-
-### Legacy per-project files
-
-If **`repos.json`**, **`collections.json`**, or **`config.json`** still exist under `.filesync/`, run **`filesync migrate`** once to import them into the global store (backups under **`.filesync/legacy-backup/`**). Legacy **`repos.json`** rows are merged by **`name`**: if that name already exists in the global catalog, the global row is left unchanged (per-project path/URL/branch are not applied), with a stderr notice when they differ; only new names are appended. **`migrate`** also assigns missing **`id`** values on global repos, **`repo_id`** on **`files.json`** rows in every known project, and **`merge_using_git`** on global repo rows when missing. Afterwards the project should keep **`files.json`** only.
 
 ### Sync markers (text files)
 
@@ -46,7 +42,7 @@ The tool rewrites the first marker line when syncing or changing coupling; the *
 
 ### Writes
 
-Commands such as **`check`** and **`info`** (via subprocess **`check`**) update row-level fields in **`.filesync/files.json`** (including per-row **`last_check_at`**). **`info`** may also rewrite the canonical master file’s marker when you confirm the prompt or pass **`--fix-marker`**. Global **`repos.json`**, **`collections.json`**, and **`preferences.json`** are usually written by **`jq`** to a temp file, then replaced with **`mv`**. **`config set`**, **`new repo`**, **`edit repo`**, **`migrate`**, **`remove repo`**, and **`init`** (when appending a global repo) also take **`flock`** on **`.lock`** in the metadata directory so concurrent writers do not read partial state; some collection-only paths use temp + **`mv`** without that global lock.
+Commands such as **`check`** and **`info`** (via subprocess **`check`**) update row-level fields in **`.filesync/files.json`** (including per-row **`last_check_at`**). **`info`** may also rewrite the canonical master file’s marker when you confirm the prompt or pass **`--fix-marker`**. Global **`repos.json`**, **`collections.json`**, and **`preferences.json`** are usually written by **`jq`** to a temp file, then replaced with **`mv`**. **`config set`**, **`new repo`**, **`edit repo`**, **`remove repo`**, and **`init`** (when appending a global repo) also take **`flock`** on **`.lock`** in the metadata directory so concurrent writers do not read partial state; some collection-only paths use temp + **`mv`** without that global lock.
 
 ## Project discovery
 
@@ -74,7 +70,7 @@ Each global repo row’s **`merge_using_git`** only affects how **`sync`** write
 
 **`sync --no-commit`** applies the **`false`** path for that run only (direct writes; no temporary branch or sync commits), even when **`merge_using_git`** is **`true`** in the catalog.
 
-If the project is **not** a git repository, **`merge_using_git`** is ignored for that run (direct writes). The add-time probe sets **`merge_using_git`** from whether the **registered checkout directory** (that row’s **`path`**) is a git work tree; **`edit repo --merge-using-git=`** overrides. Upgrading old **`repos.json`** without the field: run **`filesync migrate`**.
+If the project is **not** a git repository, **`merge_using_git`** is ignored for that run (direct writes). The add-time probe sets **`merge_using_git`** from whether the **registered checkout directory** (that row’s **`path`**) is a git work tree; **`edit repo --merge-using-git=`** overrides. Every catalog repo row must include boolean **`merge_using_git`** (see **`filesync doctor inspect`** if the catalog looks wrong).
 
 ## Assembled state
 
@@ -184,4 +180,4 @@ Master files must contain **`filesync kind=master`** or the row is skipped (with
 
 ## Dependencies
 
-`jq` is required. **`git`** must be on `PATH` for commands that load a project and work with **`files.json`** mappings (or global repo removal that scans those projects): `check`, `sync`, `list files`, `add file`, `add master`, `add clone`, `push`, `detach file`, `attach file`, `detach files-in-repo`, `attach files-in-repo`, `remove file`, `remove repo`, `info`, and `handle-missing`. Commands that only read or edit the global catalog (`list repos`, `list collections`, `config`, `new repo`, `edit repo`, `new collection`, `edit collection`, `remove collection`) do **not** require `git` at startup. `init`, `migrate`, and `new repo` use **`git`** when it is installed (defaults and `merge_using_git` probing) but do not fail the dependency check if **`git`** is missing. **`update`** only requires `jq` (and `curl` or `wget` when fetching release metadata or assets).
+`jq` is required. **`git`** must be on `PATH` for commands that load a project and work with **`files.json`** mappings (or global repo removal that scans those projects): `check`, `sync`, `list files`, `add file`, `add master`, `add clone`, `push`, `detach file`, `attach file`, `detach files-in-repo`, `attach files-in-repo`, `remove file`, `remove repo`, `info`, and `handle-missing`. Commands that only read or edit the global catalog (`list repos`, `list collections`, `config`, `new repo`, `edit repo`, `new collection`, `edit collection`, `remove collection`) do **not** require `git` at startup. `init` and `new repo` use **`git`** when it is installed (defaults and `merge_using_git` probing) but do not fail the dependency check if **`git`** is missing. **`update`** only requires `jq` (and `curl` or `wget` when fetching release metadata or assets).

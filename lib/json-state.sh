@@ -102,7 +102,7 @@ filesync_assemble_state_to() {
         files: ($F | map(
           . as $row
           | if (($row.repo_id // "") == "" or ($row.repo_id == null)) then
-              error("files.json row local_path=\($row.local_path // "?"): has no repo_id (run: filesync migrate)")
+              error("files.json row local_path=\($row.local_path // "?"): has no repo_id (set repo_id to a catalog repo id or remove the row)")
             else
               (first($R[] | select(.id == $row.repo_id) | .name) // null) as $n
               | if $n == null then

@@ -60,7 +60,7 @@ filesync_file_rel_gather_from_path() {
     FILESYNC_REL_MODE="clone"
     FILESYNC_REL_RID=$(jq -r --arg lp "$match_lp" '.[] | select(.local_path == $lp) | .repo_id // ""' "$FILESYNC_FILES_FILE" | head -1)
     if [[ -z "$FILESYNC_REL_RID" || "$FILESYNC_REL_RID" == "null" ]]; then
-      echo -e "${RED}files.json row for $match_lp has no repo_id (run: filesync migrate).${NC}" >&2
+      echo -e "${RED}files.json row for $match_lp has no repo_id (set repo_id in files.json or remove the row).${NC}" >&2
       return 1
     fi
     FILESYNC_REL_RNAME="$(filesync_repo_name_from_id "$FILESYNC_REPOS_FILE" "$FILESYNC_REL_RID")"

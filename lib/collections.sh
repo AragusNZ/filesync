@@ -136,7 +136,8 @@ filesync_also_expand_repos() {
     --slurpfile rp "$repos_path" \
     '
     ($rp[0]) as $repos |
-    if ($repos | type) != "array" then error("repos.json must be a JSON array") else
+    if $repos == null then error("repos.json is empty or unreadable (expected a JSON array)")
+    elif ($repos | type) != "array" then error("repos.json must be a JSON array") else
     def is_repo($n): any($repos[]?; .name == $n);
     $tokens[] | . as $t |
     ($colls | map(select(.name == $t)) | .[0]) as $c |

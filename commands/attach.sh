@@ -76,7 +76,7 @@ attach_one() {
   repo_id="$(jq -r --arg local "$local_path" '.[] | select(.local_path == $local) | .repo_id // ""' "$FILESYNC_FILES_FILE")"
 
   if [[ -z "$repo_id" || "$repo_id" == "null" ]]; then
-    echo -e "${RED}Error: Missing repo_id for $local_path (run: filesync migrate)${NC}" >&2
+    echo -e "${RED}Error: Missing repo_id for $local_path (fix files.json)${NC}" >&2
     return 1
   fi
   repo_name="$(filesync_repo_name_from_id "$FILESYNC_REPOS_FILE" "$repo_id")"

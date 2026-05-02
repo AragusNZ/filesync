@@ -66,5 +66,4 @@ assert_help "remove collection --help" "collections.json" remove collection --he
 assert_help "list collections -h" "list collections" list collections -h
 assert_help "list collections shorthand l -col -h" "list collections" l -col -h
 assert_help "edit collection --help" "--add-repo" edit collection --help
-assert_help "migrate --help" "legacy-backup" migrate --help
 assert_help "handle-missing --help" "--recreate-from-master" handle-missing --help

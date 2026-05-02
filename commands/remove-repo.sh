@@ -86,7 +86,7 @@ fi
 
 repo_id="$(filesync_global_repos_id_for_name "$repos" "$REPO")"
 if [[ -z "$repo_id" ]]; then
-  echo -e "${RED}Error: Repo '$REPO' has no id in global repos (run: filesync migrate).${NC}" >&2
+  echo -e "${RED}Error: Repo '$REPO' has no id in global repos (repair repos.json).${NC}" >&2
   exit 1
 fi
 rroot="$(filesync_read_repo_path_root "$FILESYNC_SYSTEM_HOME")"

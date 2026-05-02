@@ -225,7 +225,7 @@ if [[ -n "$ID_NEW" ]]; then
   fi
   old_repo_id="$(filesync_global_repos_id_for_name "$repos" "$REPO_CURRENT")"
   if [[ -z "$old_repo_id" ]]; then
-    echo -e "${RED}Error: Repo '$REPO_CURRENT' has no id in global repos (run: filesync migrate).${NC}" >&2
+    echo -e "${RED}Error: Repo '$REPO_CURRENT' has no id in global repos (repair repos.json).${NC}" >&2
     exit 1
   fi
   if [[ "$ID_NEW" == "$old_repo_id" ]]; then

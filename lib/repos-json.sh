@@ -22,7 +22,7 @@ filesync_assert_global_repos_have_merge_using_git() {
   local f="${1:?}"
   [[ -f "$f" ]] || return 0
   if ! jq -e 'all(.[]?; (.merge_using_git | type) == "boolean")' "$f" &>/dev/null; then
-    echo "filesync: every repo in ${f} must have boolean merge_using_git (run: filesync migrate)" >&2
+    echo "filesync: every repo in ${f} must have boolean merge_using_git (try: filesync edit repo --merge-using-git=)" >&2
     return 1
   fi
   return 0

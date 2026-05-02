@@ -86,9 +86,6 @@ main() {
     config)
       exec "$ROOT/commands/config.sh" "$@"
       ;;
-    migrate)
-      exec "$ROOT/commands/migrate.sh" "$@"
-      ;;
     handle-missing)
       exec "$ROOT/commands/handle-missing.sh" "$@"
       ;;
